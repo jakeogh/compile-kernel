@@ -21,23 +21,16 @@
 
 import os
 import sys
+import time
 from pathlib import Path
 
 import click
-from enumerate_input import enumerate_input
-#from collections import defaultdict
-#from prettyprinter import cpprint, install_extras
-#install_extras(['attrs'])
-from kcl.configops import click_read_config
-from kcl.configops import click_write_config_entry
-from retry_on_exception import retry_on_exception
+import sh
+from kcl.commandops import run_command
+from kcl.userops import am_root
+from sh import ErrorReturnCode_1
+from sh.contrib import git
 
-#from kcl.pathops import path_is_block_special
-#from getdents import files
-
-# click-command-tree
-#from click_plugins import with_plugins
-#from pkg_resources import iter_entry_points
 
 def eprint(*args, **kwargs):
     if 'file' in kwargs.keys():
@@ -51,52 +44,156 @@ except ImportError:
     ic = eprint
 
 
+def symlink_config(*,
+                   verbose: bool,
+                   debug: bool,):
 
-# import pdb; pdb.set_trace()
-# from pudb import set_trace; set_trace(paused=False)
+    dot_config = Path('/usr/src/linux/.config')
+    if dot_config.exists():
+        if not dot_config.is_symlink():
+            timestamp = str(time.time())
+            sh.mv(dot_config, '/home/cfg/sysskel/usr/src/linux_configs/.config.' + timestamp)
 
-global APP_NAME
-APP_NAME = 'compile_kernel'
+    if not dot_config.exists():
+        sh.ln('-s', '/home/cfg/sysskel/usr/src/linux_configs/.config', dot_config)
 
 
-# DONT CHANGE FUNC NAME
+def check_config_enviroment(*,
+                            verbose: bool,
+                            debug: bool,):
+
+    # https://www.mail-archive.com/lede-dev@lists.infradead.org/msg07290.html
+    if not (os.getenv('KCONFIG_OVERWRITECONFIG') == '1'):
+        ic('KCONFIG_OVERWRITECONFIG=1 needs to be set to 1')
+        ic('add it to /etc/env.d/99kconfig-symlink. Exiting.')
+        sys.exit(1)
+
+
+def gcc_check(*,
+              verbose: bool,
+              debug: bool,):
+
+    test_path = Path("/usr/src/linux/init/.init_task.o.cmd")
+    if test_path.exists():
+
+        ic('found previously compiled kernel tree, checking is the current gcc version was used')
+        gcc_version = sh.gcc_config('-l')
+        gcc_version = gcc_version.splitlines()
+        for line in gcc_version:
+            if not line.endswith('*'):
+                continue
+        assert line
+        gcc_version = line.split('-')[-1]
+        gcc_version = gcc_version.split(' ')[0]
+        ic('checking for gcc version:', gcc_version)
+
+        try:
+            sh.grep('gcc/x86_64-pc-linux-gnu/' + gcc_version, '/usr/src/linux/init/.init_task.o.cmd')
+            ic(gcc_version, 'was used to compile kernel previously, not running \"make clean\"')
+        except ErrorReturnCode_1:
+            ic('old gcc version detected, make clean required. Sleeping 5.')
+            os.chdir('/usr/src/linux')
+            time.sleep(5)
+            sh.make('clean')
+
+
+def kcompile(*,
+             configure: bool,
+             force: bool,
+             no_check_boot: bool,
+             verbose: bool,
+             debug: bool,):
+    ic()
+    am_root()
+
+    if no_check_boot:
+        ic('skipped checking if /boot was mounted')
+    else:
+        if not Path('/boot/grub/grub.cfg').exists():
+            ic('/boot/grub/grub.cfg not found. Exiting.')
+            sys.exit(1)
+
+        if not Path('/boot/kernel').exists():
+            ic('mount /boot first. Exiting.')
+            sys.exit(1)
+
+    sh.emerge('genkernel', '-u')
+    sh.emerge('sys-fs/zfs')       # handle a downgrade from -9999 before genkernel calls @module-rebuild
+    sh.emerge('sys-fs/zfs-kmod')
+    sh.emerge('@module-rebuild')      # linux-gpib fails if gcc was upgraded unless this is done first  #nope. was confused
+    #sh.emerge('sci-libs/linux-gpib', '-u')  # might fail if gcc was upgraded and the kernel hasnt been recompiled yet
+
+    genkernel_command = []
+    genkernel_command.append('all')
+    if configure:
+        genkernel_command.append('--nconfig')
+    genkernel_command.append('--no-clean')
+    genkernel_command.append('--symlink')
+    genkernel_command.append('--module-rebuild')
+    genkernel_command.append('--all-ramdisk-modules')
+    genkernel_command.append('--makeopts="-j12"')
+    #--callback="/usr/bin/emerge zfs zfs-kmod sci-libs/linux-gpib-modules @module-rebuild"
+    #--callback="/usr/bin/emerge zfs zfs-kmod sci-libs/linux-gpib sci-libs/linux-gpib-modules @module-rebuild"
+    #--zfs
+    gcc_check(verbose=verbose, debug=debug,)
+    check_config_enviroment(verbose=verbose, debug=debug,)
+    symlink_config(verbose=verbose, debug=debug,)
+
+    os.chdir('/usr/src/linux')
+
+    test_path = Path("/usr/src/linux/init/.init_task.o.cmd")
+
+    if not configure:
+        if Path("/boot/initramfs").exists():
+            if Path("/boot/initramfs").stat().st_size > 0:
+                if Path("/usr/src/linux/include/linux/kconfig.h").exists():
+                    ic('/boot/initramfs and /usr/src/linux/include/linux/kconfig.h exist, skiping compile')
+                    return
+            ic('/boot/initramfs exists, checking if /usr/src/linux is configured')
+            if test_path.exists():
+                if not force:
+                    ic(test_path, 'exists, skipping kernel compile')
+                    return
+                else:
+                    ic('found configured /usr/src/linux, but --force was specified so not skipping recompile')
+
+    run_command(genkernel_command, verbose=True, system=True)
+
+    sh.rc_update('add', 'zfs-import', 'boot')
+    sh.rc_update('add', 'zfs-share', 'default')
+    sh.rc_update('add', 'zfs-zed', 'default')
+
+    sh.grub_mkconfig('-o', '/boot/grub/grub.cfg')
+
+    os.makedirs('/boot_backup', exist_ok=True)
+    os.chdir('/boot_backup')
+    if not Path('/boot_backup/.git').is_dir():
+        git.init()
+
+    timestamp = str(time.time())
+    os.makedirs(timestamp)
+    sh.cp('-ar', '/boot', timestamp + '/')
+    git.add(timestamp, '--force')
+    git.commit('-m', timestamp)
+    ic('kernel compile and install completed OK')
+
+
 @click.command()
-@click.argument("paths", type=str, nargs=-1)
-@click.argument("sysskel",
-                type=click.Path(exists=False,
-                                dir_okay=True,
-                                file_okay=False,
-                                path_type=str,
-                                allow_dash=False),
-                nargs=1,
-                required=True)
-@click.option('--add', is_flag=True)
+@click.option('--configure', is_flag=True)
 @click.option('--verbose', is_flag=True)
 @click.option('--debug', is_flag=True)
-@click.option('--simulate', is_flag=True)
+@click.option('--force', is_flag=True)
+@click.option('--no-check-boot', is_flag=True)
 @click.option('--ipython', is_flag=True)
-@click.option('--count', is_flag=True)
-@click.option('--skip', type=int, default=False)
-@click.option('--head', type=int, default=False)
-@click.option('--tail', type=int, default=False)
 @click.option("--printn", is_flag=True)
-@click.option("--progress", is_flag=True)
-#@with_plugins(iter_entry_points('click_command_tree'))
-#@click.group()
 @click.pass_context
 def cli(ctx,
-        paths,
-        sysskel,
-        add,
+        configure,
         verbose,
         debug,
-        simulate,
+        force,
+        no_check_boot,
         ipython,
-        count,
-        skip,
-        head,
-        tail,
-        progress,
         printn,):
 
     null = not printn
@@ -107,94 +204,16 @@ def cli(ctx,
         end = '\n'
         assert not ipython
 
-    #progress = False
-    if (verbose or debug):
-        progress = False
-
     ctx.ensure_object(dict)
     ctx.obj['verbose'] = verbose
     ctx.obj['debug'] = debug
     ctx.obj['end'] = end
     ctx.obj['null'] = null
-    ctx.obj['progress'] = progress
-    ctx.obj['count'] = count
-    ctx.obj['skip'] = skip
-    ctx.obj['head'] = head
-    ctx.obj['tail'] = tail
+    ctx.obj['force'] = force
 
-    global APP_NAME
-    config, config_mtime = click_read_config(click_instance=click,
-                                             app_name=APP_NAME,
-                                             verbose=verbose,
-                                             debug=debug,)
-    if verbose:
-        ic(config, config_mtime)
-
-    if add:
-        section = "test_section"
-        key = "test_key"
-        value = "test_value"
-        config, config_mtime = click_write_config_entry(click_instance=click,
-                                                        app_name=APP_NAME,
-                                                        section=section,
-                                                        key=key,
-                                                        value=value,
-                                                        verbose=verbose,
-                                                        debug=debug,)
-        if verbose:
-            ic(config)
-
-    iterator = paths
-
-    for index, path in enumerate_input(iterator=iterator,
-                                       null=null,
-                                       progress=progress,
-                                       skip=skip,
-                                       head=head,
-                                       tail=tail,
-                                       debug=debug,
-                                       verbose=verbose,):
-        path = Path(path)
-
-        if verbose or simulate:
-            ic(index, path)
-        #if count:
-        #    if count > (index + 1):
-        #        ic(count)
-        #        sys.exit(0)
-
-        if simulate:
-            continue
-
-        with open(path, 'rb') as fh:
-            path_bytes_data = fh.read()
-
-        if not count:
-            print(path, end=end)
-
-    if count:
-        print(index + 1, end=end)
-
-#        if ipython:
-#            import IPython; IPython.embed()
-
-#@cli.command()
-#@click.argument("urls", type=str, nargs=-1)
-#@click.pass_context
-#def some_command(ctx, urls):
-#    pass
-#    iterator = urls
-#    for index, url in enumerate_input(iterator=iterator,
-#                                      null=ctx.obj['null'],
-#                                      progress=ctx.obj['progress'],
-#                                      skip=ctx.obj['skip'],
-#                                      head=ctx.obj['head'],
-#                                      tail=ctx.obj['tail'],
-#                                      debug=ctx.obj['debug'],
-#                                      verbose=ctx.obj['verbose'],):
-#
-#        if ctx.obj['verbose']:
-#            ic(index, url)
-
-
+    kcompile(configure=configure,
+             force=force,
+             no_check_boot=no_check_boot,
+             verbose=verbose,
+             debug=debug,)
 
