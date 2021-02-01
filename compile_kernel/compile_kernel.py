@@ -28,8 +28,9 @@ import click
 import sh
 from kcl.commandops import run_command
 from kcl.userops import am_root
-from sh import ErrorReturnCode_1
-from sh.contrib import git
+
+#from sh import ErrorReturnCode_1
+#from sh.contrib import git
 
 
 def eprint(*args, **kwargs):
@@ -90,7 +91,7 @@ def gcc_check(*,
         try:
             sh.grep('gcc/x86_64-pc-linux-gnu/' + gcc_version, '/usr/src/linux/init/.init_task.o.cmd')
             ic(gcc_version, 'was used to compile kernel previously, not running \"make clean\"')
-        except ErrorReturnCode_1:
+        except sh.ErrorReturnCode_1:
             ic('old gcc version detected, make clean required. Sleeping 5.')
             os.chdir('/usr/src/linux')
             time.sleep(5)
@@ -123,7 +124,7 @@ def kcompile(*,
     sh.emerge('@module-rebuild')      # linux-gpib fails if gcc was upgraded unless this is done first  #nope. was confused
     #sh.emerge('sci-libs/linux-gpib', '-u')  # might fail if gcc was upgraded and the kernel hasnt been recompiled yet
 
-    genkernel_command = []
+    genkernel_command = ['genkernel']
     genkernel_command.append('all')
     if configure:
         genkernel_command.append('--nconfig')
@@ -168,13 +169,13 @@ def kcompile(*,
     os.makedirs('/boot_backup', exist_ok=True)
     os.chdir('/boot_backup')
     if not Path('/boot_backup/.git').is_dir():
-        git.init()
+        sh.git.init()
 
     timestamp = str(time.time())
     os.makedirs(timestamp)
     sh.cp('-ar', '/boot', timestamp + '/')
-    git.add(timestamp, '--force')
-    git.commit('-m', timestamp)
+    sh.git.add(timestamp, '--force')
+    sh.git.commit('-m', timestamp)
     ic('kernel compile and install completed OK')
 
 
