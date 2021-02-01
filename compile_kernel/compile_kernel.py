@@ -118,11 +118,22 @@ def kcompile(*,
             ic('mount /boot first. Exiting.')
             sys.exit(1)
 
-    sh.emerge('genkernel', '-u')
-    sh.emerge('sys-fs/zfs')       # handle a downgrade from -9999 before genkernel calls @module-rebuild
-    sh.emerge('sys-fs/zfs-kmod')
-    sh.emerge('@module-rebuild')      # linux-gpib fails if gcc was upgraded unless this is done first  #nope. was confused
-    #sh.emerge('sci-libs/linux-gpib', '-u')  # might fail if gcc was upgraded and the kernel hasnt been recompiled yet
+    for line in sh.emerge('genkernel', '-u', _err_to_out=True, _iter=True, _out_bufsize=100):
+        eprint(line)
+
+    # handle a downgrade from -9999 before genkernel calls @module-rebuild
+    for line in sh.emerge('sys-fs/zfs', _err_to_out=True, _iter=True, _out_bufsize=100):
+        eprint(line)
+
+    for line in sh.emerge('sys-fs/zfs-kmod', _err_to_out=True, _iter=True, _out_bufsize=100):
+        eprint(line)
+
+    for line in sh.emerge('@module-rebuild', _err_to_out=True, _iter=True, _out_bufsize=100):
+        eprint(line)
+
+    # might fail if gcc was upgraded and the kernel hasnt been recompiled yet
+    #for line in sh.emerge('sci-libs/linux-gpib', '-u', _err_to_out=True, _iter=True, _out_bufsize=100):
+    #   eprint(line)
 
     genkernel_command = ['genkernel']
     genkernel_command.append('all')
