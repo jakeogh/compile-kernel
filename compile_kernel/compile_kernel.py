@@ -23,6 +23,7 @@ import os
 import sys
 import time
 from pathlib import Path
+from shutil import get_terminal_size
 
 import click
 import sh
@@ -106,6 +107,7 @@ def kcompile(*,
              debug: bool,):
     ic()
     am_root()
+    columns = get_terminal_size().columns
 
     if no_check_boot:
         ic('skipped checking if /boot was mounted')
@@ -118,17 +120,17 @@ def kcompile(*,
             ic('mount /boot first. Exiting.')
             sys.exit(1)
 
-    for line in sh.emerge('genkernel', '-u', _err_to_out=True, _iter=True, _out_bufsize=100):
+    for line in sh.emerge('genkernel', '-u', _err_to_out=True, _iter=True, _out_bufsize=columns):
         eprint(line)
 
     # handle a downgrade from -9999 before genkernel calls @module-rebuild
-    for line in sh.emerge('sys-fs/zfs', _err_to_out=True, _iter=True, _out_bufsize=100):
+    for line in sh.emerge('sys-fs/zfs', _err_to_out=True, _iter=True, _out_bufsize=columns):
         eprint(line)
 
-    for line in sh.emerge('sys-fs/zfs-kmod', _err_to_out=True, _iter=True, _out_bufsize=100):
+    for line in sh.emerge('sys-fs/zfs-kmod', _err_to_out=True, _iter=True, _out_bufsize=columns):
         eprint(line)
 
-    for line in sh.emerge('@module-rebuild', _err_to_out=True, _iter=True, _out_bufsize=100):
+    for line in sh.emerge('@module-rebuild', _err_to_out=True, _iter=True, _out_bufsize=columns):
         eprint(line)
 
     # might fail if gcc was upgraded and the kernel hasnt been recompiled yet
