@@ -180,6 +180,9 @@ def kcompile(*,
 
     sh.grub_mkconfig('-o', '/boot/grub/grub.cfg')
 
+    for line in sh.emerge('sys-kernel/linux-firmware', _err_to_out=True, _iter=True, _out_bufsize=columns):
+        eprint(line)
+
     os.makedirs('/boot_backup', exist_ok=True)
     os.chdir('/boot_backup')
     if not Path('/boot_backup/.git').is_dir():
