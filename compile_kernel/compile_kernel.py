@@ -146,6 +146,7 @@ def kcompile(*,
     genkernel_command.append('--symlink')
     genkernel_command.append('--module-rebuild')
     genkernel_command.append('--all-ramdisk-modules')
+    genkernel_command.append('--firmware')
     genkernel_command.append('--makeopts="-j12"')
     #--callback="/usr/bin/emerge zfs zfs-kmod sci-libs/linux-gpib-modules @module-rebuild"
     #--callback="/usr/bin/emerge zfs zfs-kmod sci-libs/linux-gpib sci-libs/linux-gpib-modules @module-rebuild"
