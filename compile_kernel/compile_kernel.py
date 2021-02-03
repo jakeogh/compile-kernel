@@ -107,7 +107,8 @@ def kcompile(*,
              debug: bool,):
     ic()
     am_root()
-    columns = get_terminal_size().columns
+    #columns = get_terminal_size().columns
+    columns = 80
 
     if no_check_boot:
         ic('skipped checking if /boot was mounted')
