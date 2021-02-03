@@ -125,10 +125,10 @@ def kcompile(*,
         eprint(line)
 
     # handle a downgrade from -9999 before genkernel calls @module-rebuild
-    for line in sh.emerge('sys-fs/zfs', _err_to_out=True, _iter=True, _out_bufsize=columns):
+    for line in sh.emerge('sys-fs/zfs', '-u', _err_to_out=True, _iter=True, _out_bufsize=columns):
         eprint(line)
 
-    for line in sh.emerge('sys-fs/zfs-kmod', _err_to_out=True, _iter=True, _out_bufsize=columns):
+    for line in sh.emerge('sys-fs/zfs-kmod', '-u', _err_to_out=True, _iter=True, _out_bufsize=columns):
         eprint(line)
 
     for line in sh.emerge('@module-rebuild', _err_to_out=True, _iter=True, _out_bufsize=columns):
