@@ -28,6 +28,7 @@ from shutil import get_terminal_size
 import click
 import sh
 from kcl.commandops import run_command
+from kcl.debugops import pause
 from kcl.userops import am_root
 
 #from sh import ErrorReturnCode_1
@@ -44,6 +45,15 @@ try:
     from icecream import ic  # https://github.com/gruns/icecream
 except ImportError:
     ic = eprint
+
+
+def check_kernel_config():
+    locations = [sh.zcat('/proc/config.gz'), sh.zcat('/usr/src/linux/.config')]
+    for location in locations:
+        for line in location:
+            if 'CONFIG_INTEL_IOMMU=y' or 'CONFIG_INTEL_IOMMU=m' in line:
+                eprint(location, "WARNING: CONFIG_INTEL_IOMMU is enabled! See: http://forums.debian.net/viewtopic.php?t=126397")
+                pause()
 
 
 def symlink_config(*,
@@ -120,6 +130,8 @@ def kcompile(*,
         if not Path('/boot/kernel').exists():
             ic('mount /boot first. Exiting.')
             sys.exit(1)
+
+    check_kernel_config()
 
     for line in sh.emerge('genkernel', '-u', _err_to_out=True, _iter=True, _out_bufsize=columns):
         eprint(line)
