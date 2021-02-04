@@ -51,13 +51,13 @@ def check_kernel_config():
     locations = [sh.zcat('/proc/config.gz'), sh.zcat('/usr/src/linux/.config')]
     for location in locations:
         for line in location:
-            if 'CONFIG_INTEL_IOMMU' in line:
-                if 'is not set' not in line:
-                    eprint(location, "WARNING: CONFIG_INTEL_IOMMU is enabled! See: http://forums.debian.net/viewtopic.php?t=126397")
-                    pause()
+            #if 'CONFIG_INTEL_IOMMU' in line:
+            #    if 'is not set' not in line:
+            #        eprint(location, "WARNING: CONFIG_INTEL_IOMMU may be enabled! See: http://forums.debian.net/viewtopic.php?t=126397")
+            #        pause()
             if 'CONFIG_INTEL_IOMMU_DEFAULT_ON' in line:
                 if 'is not set' not in line:
-                    eprint(location, "WARNING: CONFIG_INTEL_IOMMU is enabled! See: http://forums.debian.net/viewtopic.php?t=126397")
+                    eprint(location, "WARNING: CONFIG_INTEL_IOMMU_DEFAULT_ON is enabled! See: http://forums.debian.net/viewtopic.php?t=126397")
                     pause()
 
 
