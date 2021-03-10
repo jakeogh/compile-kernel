@@ -57,8 +57,8 @@ def check_kernel_config():
         try:
             content = sh.zcat(location)
         except sh.ErrorReturnCode_1 as e:
-            if hasattr(e, 'stdout'):
-                if b'/usr/src/linux/.config: not in gzip format' in e.stdout:
+            if hasattr(e, 'stderr'):
+                if b'/usr/src/linux/.config: not in gzip format' in e.stderr:
                     content = sh.cat(location)
                 else:
                     raise e
