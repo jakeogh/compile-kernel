@@ -63,11 +63,11 @@ def check_kernel_config():
             if 'CONFIG_INTEL_IOMMU_DEFAULT_ON' in line:
                 if 'is not set' not in line:
                     eprint(location, "WARNING: CONFIG_INTEL_IOMMU_DEFAULT_ON is enabled! See: http://forums.debian.net/viewtopic.php?t=126397")
-                    pause()
+                    pause('press any key to continue')
             if 'CONFIG_FRAME_POINTER' in line:
                 if 'is not set' not in line:
                     eprint(location, "WARNING: CONFIG_FRAME_POINTER is NOT enabled! sys-fs/zfs-kmod requires this")
-                    pause()
+                    pause('press any key to continue')
 
 
 def symlink_config(*,
