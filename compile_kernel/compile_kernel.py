@@ -156,26 +156,34 @@ def kcompile(*,
         for line in sh.emerge('sys-fs/zfs', 'sys-fs/zfs-kmod', '-u', _err_to_out=True, _iter=True, _out_bufsize=columns):
             eprint(line)
     except sh.ErrorReturnCode_1 as e:
-        ic(e)
+        #ic(e)
         unconfigured_kernel = False
-        ic(dir(e))  # this lists e.stdout
-        ic(e.stdout)
-        ic(e.stderr)
+        #ic(dir(e))  # this lists e.stdout
+        #ic(e.stdout)
+        #ic(e.stderr)
         #assert False
         if hasattr(e, 'stdout'):
             ic(e.stdout)
             ic(type(e.stdout))  # <class 'bytes'>  #hmph. the next line should cause a TypeError (before making the str bytes) ... but didnt
             if b'Could not find a usable .config' in e.stdout:
                 unconfigured_kernel = True
+
         #assert e.stdout
         #if hasattr(e, 'stdout'):
         #    ic(e.stdout)
         if not unconfigured_kernel:
             raise e
+        ic('NOTE: kernel is unconfigured, skipping `emerge zfs zfs-kmod` before kernel compile')
 
+    ic('attempting emerge @module-rebuild')
+    try:
+        for line in sh.emerge('@module-rebuild', _err_to_out=True, _iter=True, _out_bufsize=columns):
+            eprint(line)
+    except sh.ErrorReturnCode_1 as e:
+        if not unconfigured_kernel:
+            raise e
+        ic('NOTE: kernel is unconfigured, skipping `emerge @module-rebuild` before kernel compile')
 
-    for line in sh.emerge('@module-rebuild', _err_to_out=True, _iter=True, _out_bufsize=columns):
-        eprint(line)
 
     # might fail if gcc was upgraded and the kernel hasnt been recompiled yet
     #for line in sh.emerge('sci-libs/linux-gpib', '-u', _err_to_out=True, _iter=True, _out_bufsize=100):
