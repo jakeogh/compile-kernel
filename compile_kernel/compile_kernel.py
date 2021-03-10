@@ -161,15 +161,16 @@ def kcompile(*,
         ic(dir(e))  # this lists e.stdout
         ic(e.stdout)
         ic(e.stderr)
-        if hasattr(e, 'stderr'):
-            ic(e.stderr)
-            if 'Could not find a usable .config' in e.stderr:
-                unconfigured_kernel = True
-        assert e.stdout
-        if hasattr(e, 'stdout'):
-            ic(e.stdout)
-        if not unconfigured_kernel:
-            raise e
+        assert False
+        #if hasattr(e, 'stderr'):
+        #    ic(e.stderr)
+        #    if 'Could not find a usable .config' in e.stderr:
+        #        unconfigured_kernel = True
+        #assert e.stdout
+        #if hasattr(e, 'stdout'):
+        #    ic(e.stdout)
+        #if not unconfigured_kernel:
+        #    raise e
 
 
     for line in sh.emerge('@module-rebuild', _err_to_out=True, _iter=True, _out_bufsize=columns):
