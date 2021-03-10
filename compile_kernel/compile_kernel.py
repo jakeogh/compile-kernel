@@ -173,7 +173,7 @@ def kcompile(*,
         #    ic(e.stdout)
         if not unconfigured_kernel:
             raise e
-        ic('NOTE: kernel is unconfigured, skipping `emerge zfs zfs-kmod` before kernel compile')
+        ic('NOTE: kernel is unconfigured, skipping `emerge sys-fs/zfs sys-fs/zfs-kmod` before kernel compile')
 
     ic('attempting emerge @module-rebuild')
     try:
@@ -215,8 +215,9 @@ def kcompile(*,
     if not configure:
         if Path("/boot/initramfs").exists():
             if Path("/boot/initramfs").stat().st_size > 0:
-                if Path("/usr/src/linux/include/linux/kconfig.h").exists():
-                    ic('/boot/initramfs and /usr/src/linux/include/linux/kconfig.h exist, skiping compile')
+                #if Path("/usr/src/linux/include/linux/kconfig.h").exists():
+                if test_path.exists():
+                    ic('/boot/initramfs and {} exist, skipping compile'.format(test_path.as_posix()))
                     return
             ic('/boot/initramfs exists, checking if /usr/src/linux is configured')
             if test_path.exists():
