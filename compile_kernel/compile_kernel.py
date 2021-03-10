@@ -55,6 +55,7 @@ def check_kernel_config():
     if linux_config_file.exists():
         locations.append(sh.zcat('/usr/src/linux/.config'))
     for location in locations:
+        location = str(location)
         for line in location:
             #if 'CONFIG_INTEL_IOMMU' in line:
             #    if 'is not set' not in line:
