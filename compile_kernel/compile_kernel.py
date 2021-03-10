@@ -23,13 +23,15 @@ import os
 import sys
 import time
 from pathlib import Path
-from shutil import get_terminal_size
 
 import click
 import sh
-from kcl.commandops import run_command
 from kcl.debugops import pause
 from kcl.userops import am_root
+from run_command import run_command
+
+#from shutil import get_terminal_size
+
 
 #from sh import ErrorReturnCode_1
 #from sh.contrib import git
