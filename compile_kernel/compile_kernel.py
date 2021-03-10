@@ -174,6 +174,8 @@ def kcompile(*,
             #ic(type(e.stdout))  # <class 'bytes'>  #hmph. the next line should cause a TypeError (before making the str bytes) ... but didnt
             if b'Could not find a usable .config' in e.stdout:
                 unconfigured_kernel = True
+            if b'Kernel sources need compiling first' in e.stdout:
+                unconfigured_kernel = True
 
         #assert e.stdout
         #if hasattr(e, 'stdout'):
