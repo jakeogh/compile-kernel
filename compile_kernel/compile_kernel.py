@@ -151,11 +151,19 @@ def kcompile(*,
         eprint(line)
 
     # handle a downgrade from -9999 before genkernel calls @module-rebuild
-    for line in sh.emerge('sys-fs/zfs', '-u', _err_to_out=True, _iter=True, _out_bufsize=columns):
-        eprint(line)
+    ic('attempting to upgrade zfs and zfs-kmod')
+    try:
+        for line in sh.emerge('sys-fs/zfs', 'sys-fs/zfs-kmod', '-u', _err_to_out=True, _iter=True, _out_bufsize=columns):
+            eprint(line)
+    except sh.ErrorReturnCode_1 as e:
+        unconfigured_kernel = False
+        if hasattr(e, 'args'):
+            for arg in e.args:
+                if 'Could not find a usable .config' in arg:
+                    unconfigured_kernel = True
+        if not unconfigured_kernel:
+            raise e
 
-    for line in sh.emerge('sys-fs/zfs-kmod', '-u', _err_to_out=True, _iter=True, _out_bufsize=columns):
-        eprint(line)
 
     for line in sh.emerge('@module-rebuild', _err_to_out=True, _iter=True, _out_bufsize=columns):
         eprint(line)
