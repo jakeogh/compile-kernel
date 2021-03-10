@@ -54,7 +54,14 @@ def check_kernel_config():
     for location in locations:
         if not location.exists():
             continue
-        content = sh.zcat(location)
+        try:
+            content = sh.zcat(location)
+        except sh.ErrorReturnCode_1 as e:
+            if hasattr(e, 'stdout'):
+                if b'/usr/src/linux/.config: not in gzip format' in e.stdout:
+                    content = sh.cat(location)
+                else:
+                    raise e
         for line in content:
             #if 'CONFIG_INTEL_IOMMU' in line:
             #    if 'is not set' not in line:
