@@ -164,6 +164,7 @@ def kcompile(*,
         #assert False
         if hasattr(e, 'stdout'):
             ic(e.stdout)
+            ic(type(e.stdout))
             if 'Could not find a usable .config' in e.stdout:
                 unconfigured_kernel = True
         #assert e.stdout
