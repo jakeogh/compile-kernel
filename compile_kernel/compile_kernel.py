@@ -50,13 +50,12 @@ except ImportError:
 
 
 def check_kernel_config():
-    locations = [sh.zcat('/proc/config.gz')]
-    linux_config_file = Path('/usr/src/linux/.config')
-    if linux_config_file.exists():
-        locations.append(sh.zcat('/usr/src/linux/.config'))
+    locations = [Path('/proc/config.gz'), Path('/usr/src/linux/.config')]
     for location in locations:
-        location = str(location)
-        for line in location:
+        if not location.exists():
+            continue
+        content = sh.zcat(location)
+        for line in content:
             #if 'CONFIG_INTEL_IOMMU' in line:
             #    if 'is not set' not in line:
             #        eprint(location, "WARNING: CONFIG_INTEL_IOMMU may be enabled! See: http://forums.debian.net/viewtopic.php?t=126397")
