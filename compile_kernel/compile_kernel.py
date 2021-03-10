@@ -65,7 +65,7 @@ def check_kernel_config():
                     eprint(location, line, "WARNING: CONFIG_INTEL_IOMMU_DEFAULT_ON is enabled! See: http://forums.debian.net/viewtopic.php?t=126397")
                     pause('press any key to continue')
             if 'CONFIG_FRAME_POINTER' in line:
-                if 'is not set' not in line:
+                if 'is not set' in line:
                     eprint(location, line, "WARNING: CONFIG_FRAME_POINTER is NOT enabled! sys-fs/zfs-kmod requires this")
                     pause('press any key to continue')
 
