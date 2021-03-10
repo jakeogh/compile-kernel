@@ -50,7 +50,10 @@ except ImportError:
 
 
 def check_kernel_config():
-    locations = [sh.zcat('/proc/config.gz'), sh.zcat('/usr/src/linux/.config')]
+    locations = [sh.zcat('/proc/config.gz')]
+    linux_config_file = Path('/usr/src/linux/.config')
+    if linux_config_file.exists():
+        locations.append(sh.zcat('/usr/src/linux/.config'))
     for location in locations:
         for line in location:
             #if 'CONFIG_INTEL_IOMMU' in line:
