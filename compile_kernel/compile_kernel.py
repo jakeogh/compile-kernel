@@ -158,11 +158,12 @@ def kcompile(*,
     except sh.ErrorReturnCode_1 as e:
         ic(e)
         unconfigured_kernel = False
-        ic(dir(e))
+        ic(dir(e))  # this lists e.stdout
         if hasattr(e, 'stderr'):
             ic(e.stderr)
             if 'Could not find a usable .config' in e.stderr:
                 unconfigured_kernel = True
+        assert e.stdout
         if hasattr(e, 'stdout'):
             ic(e.stdout)
         if not unconfigured_kernel:
