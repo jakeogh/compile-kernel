@@ -122,7 +122,7 @@ def gcc_check(*,
 
         try:
             sh.grep('gcc/x86_64-pc-linux-gnu/' + gcc_version, '/usr/src/linux/init/.init_task.o.cmd')
-            ic(gcc_version, 'was used to compile kernel previously, not running \"make clean\"')
+            ic(gcc_version, 'was used to compile kernel previously, not running `make clean`')
         except sh.ErrorReturnCode_1:
             ic('old gcc version detected, make clean required. Sleeping 5.')
             os.chdir('/usr/src/linux')
