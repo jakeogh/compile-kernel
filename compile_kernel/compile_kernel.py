@@ -75,6 +75,10 @@ def check_kernel_config():
                 if 'is not set' in line:
                     eprint(location, line, "WARNING: CONFIG_FRAME_POINTER is NOT enabled! sys-fs/zfs-kmod requires this")
                     pause('press any key to continue')
+            if 'CONFIG_CRYPTO_USER' in line:
+                if 'is not set' in line:
+                    eprint(location, line, "WARNING: CONFIG_CRYPTO_USER is NOT enabled! net-wireless/bluez requires this")
+                    pause('press any key to continue')
 
 
 def symlink_config(*,
