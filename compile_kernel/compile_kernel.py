@@ -117,6 +117,7 @@ def gcc_check(*,
         ic('found previously compiled kernel tree, checking is the current gcc version was used')
         gcc_version = sh.gcc_config('-l')
         gcc_version = gcc_version.splitlines()
+        line = None
         for line in gcc_version:
             if not line.endswith('*'):
                 continue
