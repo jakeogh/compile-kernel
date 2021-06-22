@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf8 -*-
 
+# flake8: noqa           # flake8 has no per file settings :(
 # pylint: disable=C0111  # docstrings are always outdated and wrong
 # pylint: disable=W0511  # todo is encouraged
 # pylint: disable=C0301  # line too long
@@ -17,6 +18,7 @@
 # pylint: disable=E1101  # no member for base
 # pylint: disable=W0201  # attribute defined outside __init__
 # pylint: disable=R0916  # Too many boolean expressions in if statement
+# pylint: disable=C0305  # Trailing newlines editor should fix automatically, pointless warning
 
 
 import os
@@ -94,7 +96,8 @@ def symlink_config(*,
 
 def check_config_enviroment(*,
                             verbose: bool,
-                            debug: bool,):
+                            debug: bool,
+                            ):
 
     # https://www.mail-archive.com/lede-dev@lists.infradead.org/msg07290.html
     if not (os.getenv('KCONFIG_OVERWRITECONFIG') == '1'):
@@ -105,7 +108,8 @@ def check_config_enviroment(*,
 
 def gcc_check(*,
               verbose: bool,
-              debug: bool,):
+              debug: bool,
+              ):
 
     test_path = Path("/usr/src/linux/init/.init_task.o.cmd")
     if test_path.exists():
@@ -136,7 +140,8 @@ def kcompile(*,
              force: bool,
              no_check_boot: bool,
              verbose: bool,
-             debug: bool,):
+             debug: bool,
+             ):
     ic()
     am_root()
     #columns = get_terminal_size().columns
@@ -267,32 +272,29 @@ def kcompile(*,
 @click.option('--debug', is_flag=True)
 @click.option('--force', is_flag=True)
 @click.option('--no-check-boot', is_flag=True)
-@click.option('--ipython', is_flag=True)
-@click.option("--printn", is_flag=True)
 @click.pass_context
 def cli(ctx,
-        configure,
-        verbose,
-        debug,
-        force,
-        no_check_boot,
-        ipython,
-        printn,):
+        configure: bool,
+        verbose: bool,
+        debug: bool,
+        force: bool,
+        no_check_boot: bool,
+        ):
 
-    null = not printn
-    end = '\n'
-    if null:
-        end = '\x00'
-    if sys.stdout.isatty():
-        end = '\n'
-        assert not ipython
+    #null = not printn
+    #end = '\n'
+    #if null:
+    #    end = '\x00'
+    #if sys.stdout.isatty():
+    #    end = '\n'
+    #    assert not ipython
 
-    ctx.ensure_object(dict)
-    ctx.obj['verbose'] = verbose
-    ctx.obj['debug'] = debug
-    ctx.obj['end'] = end
-    ctx.obj['null'] = null
-    ctx.obj['force'] = force
+    #ctx.ensure_object(dict)
+    #ctx.obj['verbose'] = verbose
+    #ctx.obj['debug'] = debug
+    #ctx.obj['end'] = end
+    #ctx.obj['null'] = null
+    #ctx.obj['force'] = force
 
     kcompile(configure=configure,
              force=force,
