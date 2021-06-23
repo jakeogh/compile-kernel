@@ -85,14 +85,14 @@ def verify_kernel_config_setting(*,
                     return
 
                 msg = "ERROR: " + msg
-                raise ValueError(location.as_posix(), msg)
+                raise ValueError(location.as_posix(), line, msg)
 
     if required_state is True:
         if not found_define:
             current_state = False
             msg = "{define} is {status}!".format(define=define, status=state_table[current_state],) + msg
             msg = "ERROR: " + msg
-            raise ValueError(location.as_posix(), line, msg)
+            raise ValueError(location.as_posix(), msg)
 
 
 
