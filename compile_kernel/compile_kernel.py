@@ -86,9 +86,10 @@ def verify_kernel_config_setting(*,
 
 def check_kernel_config():
     locations = [Path('/proc/config.gz'), Path('/usr/src/linux/.config')]
+    assert locations[0].exists()
     for location in locations:
-        assert location.exists()
-
+        if not location.exists():
+            continue
         try:
             content = sh.zcat(location)
         except sh.ErrorReturnCode_1 as e:
