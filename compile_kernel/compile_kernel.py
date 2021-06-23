@@ -228,14 +228,14 @@ def kcompile(*,
 
     #for line in sh.emerge('genkernel', '-u', _err_to_out=True, _iter=True, _out_bufsize=columns):
     for line in sh.emerge('genkernel', '-u', _err_to_out=True, _iter=True,):
-        eprint(line)
+        eprint(line, end='')
 
     # handle a downgrade from -9999 before genkernel calls @module-rebuild
     ic('attempting to upgrade zfs and zfs-kmod')
     try:
         #for line in sh.emerge('sys-fs/zfs', 'sys-fs/zfs-kmod', '-u', _err_to_out=True, _iter=True, _out_bufsize=columns):
         for line in sh.emerge('sys-fs/zfs', 'sys-fs/zfs-kmod', '-u', _err_to_out=True, _iter=True,):
-            eprint(line)
+            eprint(line, end='')
     except sh.ErrorReturnCode_1 as e:
         #ic(e)
         unconfigured_kernel = False
@@ -262,7 +262,6 @@ def kcompile(*,
     try:
         #for line in sh.emerge('@module-rebuild', _err_to_out=True, _iter=True, _out_bufsize=columns):
         for line in sh.emerge('@module-rebuild', _err_to_out=True, _iter=True,):
-            #ic(line)
             eprint(line, end='')
     except sh.ErrorReturnCode_1 as e:
         if not unconfigured_kernel:
@@ -272,7 +271,7 @@ def kcompile(*,
 
     # might fail if gcc was upgraded and the kernel hasnt been recompiled yet
     #for line in sh.emerge('sci-libs/linux-gpib', '-u', _err_to_out=True, _iter=True, _out_bufsize=100):
-    #   eprint(line)
+    #   eprint(line, end='')
 
     genkernel_command = ['genkernel']
     genkernel_command.append('all')
@@ -322,7 +321,7 @@ def kcompile(*,
 
     #for line in sh.emerge('sys-kernel/linux-firmware', _err_to_out=True, _iter=True, _out_bufsize=columns):
     for line in sh.emerge('sys-kernel/linux-firmware', _err_to_out=True, _iter=True,):
-        eprint(line)
+        eprint(line, end='')
 
     os.makedirs('/boot_backup', exist_ok=True)
     os.chdir('/boot_backup')
