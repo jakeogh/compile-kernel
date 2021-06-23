@@ -304,7 +304,7 @@ def kcompile(*,
 
     if configure:
         with chdir('/usr/src/linux'):
-            sh.make('nconfig')
+            os.system('make nconfig')
         check_kernel_config()  # must be done after nconfig
 
     genkernel_command = ['genkernel']
