@@ -210,7 +210,8 @@ def kcompile(*,
     ic()
     am_root()
     #columns = get_terminal_size().columns
-    columns = 80
+    #columns = 80
+    unconfigured_kernel = None
 
     if no_check_boot:
         ic('skipped checking if /boot was mounted')
@@ -225,13 +226,15 @@ def kcompile(*,
 
     check_kernel_config()
 
-    for line in sh.emerge('genkernel', '-u', _err_to_out=True, _iter=True, _out_bufsize=columns):
+    #for line in sh.emerge('genkernel', '-u', _err_to_out=True, _iter=True, _out_bufsize=columns):
+    for line in sh.emerge('genkernel', '-u', _err_to_out=True, _iter=True,):
         eprint(line)
 
     # handle a downgrade from -9999 before genkernel calls @module-rebuild
     ic('attempting to upgrade zfs and zfs-kmod')
     try:
-        for line in sh.emerge('sys-fs/zfs', 'sys-fs/zfs-kmod', '-u', _err_to_out=True, _iter=True, _out_bufsize=columns):
+        #for line in sh.emerge('sys-fs/zfs', 'sys-fs/zfs-kmod', '-u', _err_to_out=True, _iter=True, _out_bufsize=columns):
+        for line in sh.emerge('sys-fs/zfs', 'sys-fs/zfs-kmod', '-u', _err_to_out=True, _iter=True,):
             eprint(line)
     except sh.ErrorReturnCode_1 as e:
         #ic(e)
@@ -257,7 +260,8 @@ def kcompile(*,
 
     ic('attempting emerge @module-rebuild')
     try:
-        for line in sh.emerge('@module-rebuild', _err_to_out=True, _iter=True, _out_bufsize=columns):
+        #for line in sh.emerge('@module-rebuild', _err_to_out=True, _iter=True, _out_bufsize=columns):
+        for line in sh.emerge('@module-rebuild', _err_to_out=True, _iter=True,):
             eprint(line)
     except sh.ErrorReturnCode_1 as e:
         if not unconfigured_kernel:
@@ -315,7 +319,8 @@ def kcompile(*,
 
     sh.grub_mkconfig('-o', '/boot/grub/grub.cfg')
 
-    for line in sh.emerge('sys-kernel/linux-firmware', _err_to_out=True, _iter=True, _out_bufsize=columns):
+    #for line in sh.emerge('sys-kernel/linux-firmware', _err_to_out=True, _iter=True, _out_bufsize=columns):
+    for line in sh.emerge('sys-kernel/linux-firmware', _err_to_out=True, _iter=True,):
         eprint(line)
 
     os.makedirs('/boot_backup', exist_ok=True)
