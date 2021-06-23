@@ -63,7 +63,7 @@ def verify_kernel_config_setting(*,
     assert isinstance(required_state, bool)
 
     current_state = None
-    found_define = False
+    found_define = None
 
     msg = ''
     if url:
@@ -71,6 +71,7 @@ def verify_kernel_config_setting(*,
 
 
     for line in content:
+        ic(line)
         if define in line:
             found_define = True     # bug
             if 'is not set' not in line:
@@ -88,8 +89,10 @@ def verify_kernel_config_setting(*,
                 msg = "ERROR: " + msg
                 raise ValueError(location.as_posix(), line, msg)
 
+    assert define not in content
+
     if required_state is True:
-        if not found_define:
+        if found_define == False:
             current_state = False
             msg = "{define} is {status}!".format(define=define, status=state_table[current_state],) + msg
             msg = "ERROR: " + msg
