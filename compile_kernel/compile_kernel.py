@@ -25,6 +25,7 @@ import os
 import sys
 import time
 from pathlib import Path
+from typing import Optional
 
 import click
 import sh
@@ -48,6 +49,40 @@ except ImportError:
     ic = eprint
 
 
+def verify_kernel_config_setting(*,
+                                 location: Path,
+                                 line: str,
+                                 define: str,
+                                 required_state: bool,
+                                 warn: bool,
+                                 url: Optional[str] = None,
+                                 ):
+
+    state_table = {True: 'enabled', False: 'disabled'}
+
+    current_state = None
+    if define in line:
+        if 'is not set' not in line:
+            current_state = True
+            if current_state == required_state:
+                return   # all is well
+
+                msg = "{define} is {status}!".format(define=define,
+                                                              status=state_table[current_state],)
+                if url:
+                    msg += " See: {url}".format(url=url)
+
+            if warn:
+                msg = "WARNING: " + msg
+                eprint(location.as_posix(), line, msg)
+                pause('press any key to continue')
+                return
+
+            msg = "ERROR: " + msg
+            raise ValueError(location.as_posix(), line, msg)
+
+
+
 def check_kernel_config():
     locations = [Path('/proc/config.gz'), Path('/usr/src/linux/.config')]
     for location in locations:
@@ -66,10 +101,22 @@ def check_kernel_config():
             #    if 'is not set' not in line:
             #        eprint(location, "WARNING: CONFIG_INTEL_IOMMU may be enabled! See: http://forums.debian.net/viewtopic.php?t=126397")
             #        pause()
+
+
+            verify_kernel_config_setting(location=location,
+                                         line=line,
+                                         define='CONFIG_INTEL_IOMMU_DEFAULT_ON',
+                                         required_state=False,
+                                         warn=False,
+                                         url='http://forums.debian.net/viewtopic.php?t=126397',)
+
+
+
             if 'CONFIG_INTEL_IOMMU_DEFAULT_ON' in line:
                 if 'is not set' not in line:
-                    eprint(location, line, "WARNING: CONFIG_INTEL_IOMMU_DEFAULT_ON is enabled! See: http://forums.debian.net/viewtopic.php?t=126397")
+                    eprint(location, line, "old WARNING: CONFIG_INTEL_IOMMU_DEFAULT_ON is enabled! See: http://forums.debian.net/viewtopic.php?t=126397")
                     pause('press any key to continue')
+
             if 'CONFIG_FRAME_POINTER' in line:
                 if 'is not set' in line:
                     eprint(location, line, "WARNING: CONFIG_FRAME_POINTER is NOT enabled! sys-fs/zfs-kmod requires this")
