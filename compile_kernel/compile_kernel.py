@@ -67,10 +67,10 @@ def verify_kernel_config_setting(*,
             if current_state == required_state:
                 return   # all is well
 
-                msg = "{define} is {status}!".format(define=define,
-                                                              status=state_table[current_state],)
-                if url:
-                    msg += " See: {url}".format(url=url)
+            msg = "{define} is {status}!".format(define=define,
+                                                          status=state_table[current_state],)
+            if url:
+                msg += " See: {url}".format(url=url)
 
             if warn:
                 msg = "WARNING: " + msg
