@@ -129,6 +129,13 @@ def check_kernel_config():
                                          warn=False,
                                          url=None,)
 
+            verify_kernel_config_setting(location=location,
+                                         line=line,
+                                         define='CONFIG_SUNRPC_DEBUG',
+                                         required_state=True,
+                                         warn=False,
+                                         url=None,)
+
 
             if 'CONFIG_INTEL_IOMMU_DEFAULT_ON' in line:
                 if 'is not set' not in line:
