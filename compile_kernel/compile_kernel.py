@@ -89,6 +89,7 @@ def check_kernel_config():
     assert locations[0].exists()
     for location in locations:
         if not location.exists():
+            ic('skipping:', location)
             continue
         try:
             content = sh.zcat(location)
@@ -143,6 +144,12 @@ def check_kernel_config():
                                          warn=False,
                                          url=None,)
 
+            verify_kernel_config_setting(location=location,
+                                         line=line,
+                                         define='CONFIG_COMPILE_TEST',
+                                         required_state=False,
+                                         warn=False,
+                                         url=None,)
 
             #if 'CONFIG_INTEL_IOMMU_DEFAULT_ON' in line:
             #    if 'is not set' not in line:
