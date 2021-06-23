@@ -250,11 +250,14 @@ def kcompile(*,
                 unconfigured_kernel = True
             if b'Kernel sources need compiling first' in e.stdout:
                 unconfigured_kernel = True
+            if b'Could not find a Makefile in the kernel source directory.' in e.stdout:
+                unconfigured_kernel = True
 
         #assert e.stdout
         #if hasattr(e, 'stdout'):
         #    ic(e.stdout)
         if not unconfigured_kernel:
+            #ic(unconfigured_kernel)
             raise e
         ic('NOTE: kernel is unconfigured, skipping `emerge sys-fs/zfs sys-fs/zfs-kmod` before kernel compile')
 
