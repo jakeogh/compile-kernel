@@ -136,16 +136,24 @@ def check_kernel_config():
                                          warn=False,
                                          url=None,)
 
+            verify_kernel_config_setting(location=location,
+                                         line=line,
+                                         define='CONFIG_DEBUG_INFO',
+                                         required_state=True,
+                                         warn=False,
+                                         url=None,)
 
-            if 'CONFIG_INTEL_IOMMU_DEFAULT_ON' in line:
-                if 'is not set' not in line:
-                    eprint(location, line, "old WARNING: CONFIG_INTEL_IOMMU_DEFAULT_ON is enabled! See: http://forums.debian.net/viewtopic.php?t=126397")
-                    pause('press any key to continue')
+
+            #if 'CONFIG_INTEL_IOMMU_DEFAULT_ON' in line:
+            #    if 'is not set' not in line:
+            #        eprint(location, line, "old WARNING: CONFIG_INTEL_IOMMU_DEFAULT_ON is enabled! See: http://forums.debian.net/viewtopic.php?t=126397")
+            #        pause('press any key to continue')
 
             if 'CONFIG_FRAME_POINTER' in line:
                 if 'is not set' in line:
                     eprint(location, line, "WARNING: CONFIG_FRAME_POINTER is NOT enabled! sys-fs/zfs-kmod requires this")
                     pause('press any key to continue')
+
             if 'CONFIG_CRYPTO_USER' in line:
                 if 'is not set' in line:
                     eprint(location, line, "WARNING: CONFIG_CRYPTO_USER is NOT enabled! net-wireless/bluez requires this")
