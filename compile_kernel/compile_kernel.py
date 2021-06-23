@@ -59,6 +59,7 @@ def verify_kernel_config_setting(*,
                                  ):
 
     state_table = {True: 'enabled', False: 'disabled'}
+    assert isinstance(required_state, bool)
 
     current_state = None
     if define in line:
@@ -86,8 +87,8 @@ def verify_kernel_config_setting(*,
 def check_kernel_config():
     locations = [Path('/proc/config.gz'), Path('/usr/src/linux/.config')]
     for location in locations:
-        if not location.exists():
-            continue
+        assert location.exists()
+
         try:
             content = sh.zcat(location)
         except sh.ErrorReturnCode_1 as e:
@@ -96,6 +97,7 @@ def check_kernel_config():
                     content = sh.cat(location)
                 else:
                     raise e
+
         for line in content:
             #if 'CONFIG_INTEL_IOMMU' in line:
             #    if 'is not set' not in line:
@@ -107,9 +109,24 @@ def check_kernel_config():
                                          line=line,
                                          define='CONFIG_INTEL_IOMMU_DEFAULT_ON',
                                          required_state=False,
-                                         warn=False,
+                                         warn=True,
                                          url='http://forums.debian.net/viewtopic.php?t=126397',)
 
+
+            verify_kernel_config_setting(location=location,
+                                         line=line,
+                                         define='CONFIG_IKCONFIG_PROC',
+                                         required_state=True,
+                                         warn=False,
+                                         url=None,)
+
+
+            verify_kernel_config_setting(location=location,
+                                         line=line,
+                                         define='CONFIG_IKCONFIG',
+                                         required_state=True,
+                                         warn=False,
+                                         url=None,)
 
 
             if 'CONFIG_INTEL_IOMMU_DEFAULT_ON' in line:
