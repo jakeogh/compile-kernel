@@ -85,7 +85,8 @@ def verify_kernel_config_setting(*,
 
 
 def check_kernel_config():
-    locations = [Path('/proc/config.gz'), Path('/usr/src/linux/.config')]
+    #locations = [Path('/proc/config.gz'), Path('/usr/src/linux/.config')]
+    locations = [Path('/usr/src/linux/.config')]
     assert locations[0].exists()
     for location in locations:
         if not location.exists():
@@ -101,12 +102,6 @@ def check_kernel_config():
                     raise e
 
         for line in content:
-            #if 'CONFIG_INTEL_IOMMU' in line:
-            #    if 'is not set' not in line:
-            #        eprint(location, "WARNING: CONFIG_INTEL_IOMMU may be enabled! See: http://forums.debian.net/viewtopic.php?t=126397")
-            #        pause()
-
-
             verify_kernel_config_setting(location=location,
                                          line=line,
                                          define='CONFIG_INTEL_IOMMU_DEFAULT_ON',
@@ -114,14 +109,12 @@ def check_kernel_config():
                                          warn=True,
                                          url='http://forums.debian.net/viewtopic.php?t=126397',)
 
-
             verify_kernel_config_setting(location=location,
                                          line=line,
                                          define='CONFIG_IKCONFIG_PROC',
                                          required_state=True,
                                          warn=False,
                                          url=None,)
-
 
             verify_kernel_config_setting(location=location,
                                          line=line,
@@ -247,16 +240,16 @@ def kcompile(*,
             ic('mount /boot first. Exiting.')
             sys.exit(1)
 
+    check_config_enviroment(verbose=verbose, debug=debug,)
+    symlink_config(verbose=verbose, debug=debug,)
     check_kernel_config()
 
-    #for line in sh.emerge('genkernel', '-u', _err_to_out=True, _iter=True, _out_bufsize=columns):
     for line in sh.emerge('genkernel', '-u', _err_to_out=True, _iter=True,):
         eprint(line, end='')
 
     # handle a downgrade from -9999 before genkernel calls @module-rebuild
     ic('attempting to upgrade zfs and zfs-kmod')
     try:
-        #for line in sh.emerge('sys-fs/zfs', 'sys-fs/zfs-kmod', '-u', _err_to_out=True, _iter=True, _out_bufsize=columns):
         for line in sh.emerge('sys-fs/zfs', 'sys-fs/zfs-kmod', '-u', _err_to_out=True, _iter=True,):
             eprint(line, end='')
     except sh.ErrorReturnCode_1 as e:
@@ -286,7 +279,6 @@ def kcompile(*,
 
     ic('attempting emerge @module-rebuild')
     try:
-        #for line in sh.emerge('@module-rebuild', _err_to_out=True, _iter=True, _out_bufsize=columns):
         for line in sh.emerge('@module-rebuild', _err_to_out=True, _iter=True,):
             eprint(line, end='')
     except sh.ErrorReturnCode_1 as e:
@@ -316,8 +308,6 @@ def kcompile(*,
     #--callback="/usr/bin/emerge zfs zfs-kmod sci-libs/linux-gpib sci-libs/linux-gpib-modules @module-rebuild"
     #--zfs
     gcc_check(verbose=verbose, debug=debug,)
-    check_config_enviroment(verbose=verbose, debug=debug,)
-    symlink_config(verbose=verbose, debug=debug,)
 
     os.chdir('/usr/src/linux')
 
