@@ -32,6 +32,7 @@ import sh
 from kcl.debugops import pause
 from kcl.userops import am_root
 from run_command import run_command
+from with_chdir import chdir
 
 #from sh import ErrorReturnCode_1
 #from sh.contrib import git
@@ -252,7 +253,6 @@ def kcompile(*,
 
     check_config_enviroment(verbose=verbose, debug=debug,)
     symlink_config(verbose=verbose, debug=debug,)
-    check_kernel_config()
 
     for line in sh.emerge('genkernel', '-u', _err_to_out=True, _iter=True,):
         eprint(line, end='')
@@ -302,10 +302,15 @@ def kcompile(*,
     #for line in sh.emerge('sci-libs/linux-gpib', '-u', _err_to_out=True, _iter=True, _out_bufsize=100):
     #   eprint(line, end='')
 
+    if configure:
+        with chdir('/usr/src/linux'):
+            sh.make('nconfig')
+        check_kernel_config()  # must be done after nconfig
+
     genkernel_command = ['genkernel']
     genkernel_command.append('all')
-    if configure:
-        genkernel_command.append('--nconfig')
+    #if configure:
+    #    genkernel_command.append('--nconfig')
     genkernel_command.append('--no-clean')
     genkernel_command.append('--symlink')
     genkernel_command.append('--module-rebuild')
