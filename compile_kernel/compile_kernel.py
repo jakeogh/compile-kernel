@@ -64,10 +64,10 @@ def verify_kernel_config_setting(*,
     current_state = None
     found_define = False
 
-    msg = "{define} is {status}!".format(define=define,
-                                                  status=state_table[current_state],)
+    msg = ''
     if url:
         msg += " See: {url}".format(url=url)
+
 
     for line in content:
         if define in line:
@@ -77,6 +77,7 @@ def verify_kernel_config_setting(*,
                 if current_state == required_state:
                     return   # all is well
 
+                msg = "{define} is {status}!".format(define=define, status=state_table[current_state],) + msg
                 if warn:
                     msg = "WARNING: " + msg
                     eprint(location.as_posix(), line, msg)
@@ -88,6 +89,8 @@ def verify_kernel_config_setting(*,
 
     if required_state is True:
         if not found_define:
+            current_state = False
+            msg = "{define} is {status}!".format(define=define, status=state_table[current_state],) + msg
             msg = "ERROR: " + msg
             raise ValueError(location.as_posix(), line, msg)
 
