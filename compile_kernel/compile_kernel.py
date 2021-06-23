@@ -69,34 +69,51 @@ def verify_kernel_config_setting(*,
     if url:
         msg += " See: {url}".format(url=url)
 
+    if define + ' is not set' not in content:
+        # the define could be enabled
+        if define + '=y' in content:
+            found_define = True
+            current_state = True
+        if define + 'm' in content:
+            found_define = True
+            current_state = True
+    else:
+        # the define is disabled
+        found_define = False
+        current_state = False
 
-    for line in content:
-        ic(line)
-        if define in line:
-            found_define = True     # bug
-            if 'is not set' not in line:
-                current_state = True
-                if current_state == required_state:
-                    return   # all is well
+    if current_state == required_state:
+        return   # all is well
 
-                msg = "{define} is {status}!".format(define=define, status=state_table[current_state],) + msg
-                if warn:
-                    msg = "WARNING: " + msg
-                    eprint(location.as_posix(), line, msg)
-                    pause('press any key to continue')
-                    return
 
-                msg = "ERROR: " + msg
-                raise ValueError(location.as_posix(), line, msg)
+    msg = "{define} is {status}!".format(define=define, status=state_table[current_state],) + msg
+    if warn:
+        msg = "WARNING: " + msg
+        eprint(location.as_posix(), msg)
+        pause('press any key to continue')
+        return
 
-    assert define not in content
+    msg = "ERROR: " + msg
+    raise ValueError(location.as_posix(), msg)
 
-    if required_state is True:
-        if found_define == False:
-            current_state = False
-            msg = "{define} is {status}!".format(define=define, status=state_table[current_state],) + msg
-            msg = "ERROR: " + msg
-            raise ValueError(location.as_posix(), msg)
+
+    #for line in content:
+    #    ic(line)
+    #    if define in line:
+    #        found_define = True     # bug
+    #        if 'is not set' not in line:
+    #            current_state = True
+
+
+
+    #assert define not in content
+
+    #if required_state is True:
+    #    if found_define == False:
+    #        current_state = False
+    #        msg = "{define} is {status}!".format(define=define, status=state_table[current_state],) + msg
+    #        msg = "ERROR: " + msg
+    #        raise ValueError(location.as_posix(), msg)
 
 
 
