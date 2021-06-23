@@ -51,7 +51,7 @@ except ImportError:
 
 def verify_kernel_config_setting(*,
                                  location: Path,
-                                 line: str,
+                                 content,
                                  define: str,
                                  required_state: bool,
                                  warn: bool,
@@ -62,23 +62,32 @@ def verify_kernel_config_setting(*,
     assert isinstance(required_state, bool)
 
     current_state = None
-    if define in line:
-        if 'is not set' not in line:
-            current_state = True
-            if current_state == required_state:
-                return   # all is well
+    found_define = False
 
-            msg = "{define} is {status}!".format(define=define,
-                                                          status=state_table[current_state],)
-            if url:
-                msg += " See: {url}".format(url=url)
+    msg = "{define} is {status}!".format(define=define,
+                                                  status=state_table[current_state],)
+    if url:
+        msg += " See: {url}".format(url=url)
 
-            if warn:
-                msg = "WARNING: " + msg
-                eprint(location.as_posix(), line, msg)
-                pause('press any key to continue')
-                return
+    for line in content:
+        if define in line:
+            found_define = True     # bug
+            if 'is not set' not in line:
+                current_state = True
+                if current_state == required_state:
+                    return   # all is well
 
+                if warn:
+                    msg = "WARNING: " + msg
+                    eprint(location.as_posix(), line, msg)
+                    pause('press any key to continue')
+                    return
+
+                msg = "ERROR: " + msg
+                raise ValueError(location.as_posix(), line, msg)
+
+    if required_state is True:
+        if not found_define:
             msg = "ERROR: " + msg
             raise ValueError(location.as_posix(), line, msg)
 
@@ -101,63 +110,61 @@ def check_kernel_config():
                 else:
                     raise e
 
-        for line in content:
-            verify_kernel_config_setting(location=location,
-                                         line=line,
-                                         define='CONFIG_INTEL_IOMMU_DEFAULT_ON',
-                                         required_state=False,
-                                         warn=True,
-                                         url='http://forums.debian.net/viewtopic.php?t=126397',)
+        verify_kernel_config_setting(location=location,
+                                     content=content,
+                                     define='CONFIG_INTEL_IOMMU_DEFAULT_ON',
+                                     required_state=False,
+                                     warn=True,
+                                     url='http://forums.debian.net/viewtopic.php?t=126397',)
 
-            verify_kernel_config_setting(location=location,
-                                         line=line,
-                                         define='CONFIG_IKCONFIG_PROC',
-                                         required_state=True,
-                                         warn=False,
-                                         url=None,)
+        verify_kernel_config_setting(location=location,
+                                     content=content,
+                                     define='CONFIG_IKCONFIG_PROC',
+                                     required_state=True,
+                                     warn=False,
+                                     url=None,)
 
-            verify_kernel_config_setting(location=location,
-                                         line=line,
-                                         define='CONFIG_IKCONFIG',
-                                         required_state=True,
-                                         warn=False,
-                                         url=None,)
+        verify_kernel_config_setting(location=location,
+                                     content=content,
+                                     define='CONFIG_IKCONFIG',
+                                     required_state=True,
+                                     warn=False,
+                                     url=None,)
 
-            verify_kernel_config_setting(location=location,
-                                         line=line,
-                                         define='CONFIG_SUNRPC_DEBUG',
-                                         required_state=True,
-                                         warn=False,
-                                         url=None,)
+        verify_kernel_config_setting(location=location,
+                                     content=content,
+                                     define='CONFIG_SUNRPC_DEBUG',
+                                     required_state=True,
+                                     warn=False,
+                                     url=None,)
 
-            verify_kernel_config_setting(location=location,
-                                         line=line,
-                                         define='CONFIG_DEBUG_INFO',
-                                         required_state=True,
-                                         warn=False,
-                                         url=None,)
+        verify_kernel_config_setting(location=location,
+                                     content=content,
+                                     define='CONFIG_DEBUG_INFO',
+                                     required_state=True,
+                                     warn=False,
+                                     url=None,)
 
-            verify_kernel_config_setting(location=location,
-                                         line=line,
-                                         define='CONFIG_COMPILE_TEST',
-                                         required_state=False,
-                                         warn=False,
-                                         url=None,)
+        verify_kernel_config_setting(location=location,
+                                     content=content,
+                                     define='CONFIG_COMPILE_TEST',
+                                     required_state=False,
+                                     warn=False,
+                                     url=None,)
 
-            #if 'CONFIG_INTEL_IOMMU_DEFAULT_ON' in line:
-            #    if 'is not set' not in line:
-            #        eprint(location, line, "old WARNING: CONFIG_INTEL_IOMMU_DEFAULT_ON is enabled! See: http://forums.debian.net/viewtopic.php?t=126397")
-            #        pause('press any key to continue')
+        verify_kernel_config_setting(location=location,
+                                     content=content,
+                                     define='CONFIG_FRAME_POINTER',
+                                     required_state=True,
+                                     warn=False,
+                                     url=None,)
 
-            if 'CONFIG_FRAME_POINTER' in line:
-                if 'is not set' in line:
-                    eprint(location, line, "WARNING: CONFIG_FRAME_POINTER is NOT enabled! sys-fs/zfs-kmod requires this")
-                    pause('press any key to continue')
-
-            if 'CONFIG_CRYPTO_USER' in line:
-                if 'is not set' in line:
-                    eprint(location, line, "WARNING: CONFIG_CRYPTO_USER is NOT enabled! net-wireless/bluez requires this")
-                    pause('press any key to continue')
+        verify_kernel_config_setting(location=location,
+                                     content=content,
+                                     define='CONFIG_CRYPTO_USER',
+                                     required_state=True,
+                                     warn=False,
+                                     url=None,)
 
 
 def symlink_config(*,
