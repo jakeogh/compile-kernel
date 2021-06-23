@@ -267,6 +267,7 @@ def kcompile(*,
         for line in sh.emerge('@module-rebuild', _err_to_out=True, _iter=True,):
             eprint(line, end='')
     except sh.ErrorReturnCode_1 as e:
+        unconfigured_kernel = True # todo, get conditions from above
         if not unconfigured_kernel:
             raise e
         ic('NOTE: kernel is unconfigured, skipping `emerge @module-rebuild` before kernel compile')
