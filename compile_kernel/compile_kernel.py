@@ -235,6 +235,7 @@ def kcompile(*,
     try:
         #for line in sh.emerge('sys-fs/zfs', 'sys-fs/zfs-kmod', '-u', _err_to_out=True, _iter=True, _out_bufsize=columns):
         for line in sh.emerge('sys-fs/zfs', 'sys-fs/zfs-kmod', '-u', _err_to_out=True, _iter=True,):
+            ic(line)
             eprint(line)
     except sh.ErrorReturnCode_1 as e:
         #ic(e)
