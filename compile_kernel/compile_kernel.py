@@ -349,11 +349,11 @@ def kcompile(*,
     test_path = Path("/usr/src/linux/init/.init_task.o.cmd")
 
     if not configure:
-        if Path("/boot/initramfs").exists():
+        if Path("/boot/initramfs").exists():    # should be looking for the current kernel version
             if Path("/boot/initramfs").stat().st_size > 0:
                 #if Path("/usr/src/linux/include/linux/kconfig.h").exists():
                 if test_path.exists():
-                    ic('/boot/initramfs and {} exist, skipping compile'.format(test_path.as_posix()))
+                    eprint('/boot/initramfs and {} exist, skipping compile'.format(test_path.as_posix()))
                     return
             ic('/boot/initramfs exists, checking if /usr/src/linux is configured')
             if test_path.exists():
