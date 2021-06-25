@@ -31,6 +31,7 @@ import click
 import sh
 from kcl.debugops import pause
 from kcl.userops import am_root
+from pathtool import file_exists_nonzero
 from run_command import run_command
 from with_chdir import chdir
 
@@ -217,6 +218,27 @@ def check_config_enviroment(*,
         sys.exit(1)
 
 
+def get_kernel_version_from_symlink():
+    linux = Path('/usr/src/linux')
+    assert linux.is_symlink()
+    path = linux.resolve()
+    version = path.parts[-1]
+    version = version.split('linux-')[-1]
+    return version
+
+
+def boot_is_correct(linux_version: str,
+                    verbose: bool,
+                    debug: bool,
+                    ):
+    assets = ['System.map', 'initramfs', 'vmlinux']
+    for asset in assets:
+        path = Path(asset) / Path('-') / Path(linux_version)
+        if not file_exists_nonzero(path):
+            return False
+    return True
+
+
 def gcc_check(*,
               verbose: bool,
               debug: bool,
@@ -245,6 +267,25 @@ def gcc_check(*,
             os.chdir('/usr/src/linux')
             time.sleep(5)
             sh.make('clean')
+
+
+def kernel_is_already_compiled(verbose: bool,
+                               debug: bool,
+                               ):
+    kernel_version = get_kernel_version_from_symlink()
+    ic(kernel_version)
+    test_path = Path("/usr/src/linux/init/.init_task.o.cmd")
+
+    if Path("/boot/initramfs").exists():    # should be looking for the current kernel version
+        if Path("/boot/initramfs").stat().st_size > 0:
+            #if Path("/usr/src/linux/include/linux/kconfig.h").exists():
+            if test_path.exists():
+                eprint('/boot/initramfs and {} exist, skipping compile'.format(test_path.as_posix()))
+                return True
+        ic('/boot/initramfs exists, checking if /usr/src/linux is configured')
+        if test_path.exists():
+            ic(test_path, 'exists, skipping kernel compile')
+            return True
 
 
 def kcompile(*,
@@ -327,6 +368,22 @@ def kcompile(*,
             os.system('make nconfig')
         check_kernel_config()  # must be done after nconfig
 
+    gcc_check(verbose=verbose, debug=debug,)
+
+    os.chdir('/usr/src/linux')
+
+    linux_version = get_kernel_version_from_symlink()
+    ic(boot_is_correct(linux_version=linux_version,
+                       verbose=verbose,
+                       debug=debug,))
+
+    if not force:
+        if kernel_is_already_compiled(verbose=verbose,
+                                      debug=debug,):
+            ic('kernel is already compiled, skipping')
+            return
+
+
     genkernel_command = ['genkernel']
     genkernel_command.append('all')
     #if configure:
@@ -342,27 +399,6 @@ def kcompile(*,
     #--callback="/usr/bin/emerge zfs zfs-kmod sci-libs/linux-gpib-modules @module-rebuild"
     #--callback="/usr/bin/emerge zfs zfs-kmod sci-libs/linux-gpib sci-libs/linux-gpib-modules @module-rebuild"
     #--zfs
-    gcc_check(verbose=verbose, debug=debug,)
-
-    os.chdir('/usr/src/linux')
-
-    test_path = Path("/usr/src/linux/init/.init_task.o.cmd")
-
-    if not configure:
-        if Path("/boot/initramfs").exists():    # should be looking for the current kernel version
-            if Path("/boot/initramfs").stat().st_size > 0:
-                #if Path("/usr/src/linux/include/linux/kconfig.h").exists():
-                if test_path.exists():
-                    eprint('/boot/initramfs and {} exist, skipping compile'.format(test_path.as_posix()))
-                    return
-            ic('/boot/initramfs exists, checking if /usr/src/linux is configured')
-            if test_path.exists():
-                if not force:
-                    ic(test_path, 'exists, skipping kernel compile')
-                    return
-                else:
-                    ic('found configured /usr/src/linux, but --force was specified so not skipping recompile')
-
     run_command(genkernel_command, verbose=True, system=True)
 
     sh.rc_update('add', 'zfs-import', 'boot')
@@ -371,7 +407,6 @@ def kcompile(*,
 
     sh.grub_mkconfig('-o', '/boot/grub/grub.cfg')
 
-    #for line in sh.emerge('sys-kernel/linux-firmware', _err_to_out=True, _iter=True, _out_bufsize=columns):
     for line in sh.emerge('sys-kernel/linux-firmware', _err_to_out=True, _iter=True,):
         eprint(line, end='')
 
