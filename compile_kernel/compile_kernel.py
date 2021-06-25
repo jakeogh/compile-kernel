@@ -29,8 +29,8 @@ from typing import Optional
 
 import click
 import sh
-from kcl.debugops import pause
-from kcl.userops import am_root
+from asserttool import am_root
+from asserttool import pause
 from pathtool import file_exists_nonzero
 from run_command import run_command
 from with_chdir import chdir
