@@ -29,8 +29,8 @@ from typing import Optional
 
 import click
 import sh
-from asserttool import am_root
 from asserttool import pause
+from asserttool import root_user
 from pathtool import file_exists_nonzero
 from run_command import run_command
 from with_chdir import chdir
@@ -296,7 +296,9 @@ def kcompile(*,
              debug: bool,
              ):
     ic()
-    am_root()
+    if not root_user():
+        raise ValueError('you must be root')
+
     #columns = get_terminal_size().columns
     #columns = 80
     unconfigured_kernel = None
