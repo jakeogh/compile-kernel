@@ -98,26 +98,6 @@ def verify_kernel_config_setting(*,
     raise ValueError(location.as_posix(), msg)
 
 
-    #for line in content:
-    #    ic(line)
-    #    if define in line:
-    #        found_define = True     # bug
-    #        if 'is not set' not in line:
-    #            current_state = True
-
-
-
-    #assert define not in content
-
-    #if required_state is True:
-    #    if found_define == False:
-    #        current_state = False
-    #        msg = "{define} is {status}!".format(define=define, status=state_table[current_state],) + msg
-    #        msg = "ERROR: " + msg
-    #        raise ValueError(location.as_posix(), msg)
-
-
-
 def check_kernel_config():
     #locations = [Path('/proc/config.gz'), Path('/usr/src/linux/.config')]
     locations = [Path('/usr/src/linux/.config')]
@@ -194,7 +174,8 @@ def check_kernel_config():
 
 def symlink_config(*,
                    verbose: bool,
-                   debug: bool,):
+                   debug: bool,
+                   ):
 
     dot_config = Path('/usr/src/linux/.config')
     if dot_config.exists():
@@ -407,7 +388,8 @@ def kcompile(*,
     sh.rc_update('add', 'zfs-share', 'default')
     sh.rc_update('add', 'zfs-zed', 'default')
 
-    sh.grub_mkconfig('-o', '/boot/grub/grub.cfg')
+    if Path('/mnt/boot/grub').is_dir():
+        sh.grub_mkconfig('-o', '/boot/grub/grub.cfg')
 
     for line in sh.emerge('sys-kernel/linux-firmware', _err_to_out=True, _iter=True,):
         eprint(line, end='')
