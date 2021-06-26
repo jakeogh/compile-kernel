@@ -422,24 +422,8 @@ def cli(ctx,
         no_check_boot: bool,
         ):
 
-    #null = not printn
-    #end = '\n'
-    #if null:
-    #    end = '\x00'
-    #if sys.stdout.isatty():
-    #    end = '\n'
-    #    assert not ipython
-
-    #ctx.ensure_object(dict)
-    #ctx.obj['verbose'] = verbose
-    #ctx.obj['debug'] = debug
-    #ctx.obj['end'] = end
-    #ctx.obj['null'] = null
-    #ctx.obj['force'] = force
-
     kcompile(configure=configure,
              force=force,
              no_check_boot=no_check_boot,
              verbose=verbose,
              debug=debug,)
-
