@@ -395,15 +395,19 @@ def kcompile(*,
         eprint(line, end='')
 
     os.makedirs('/boot_backup', exist_ok=True)
-    os.chdir('/boot_backup')
-    if not Path('/boot_backup/.git').is_dir():
-        sh.git.init()
+    with chdir('/boot_backup'):
+        if not Path('/boot_backup/.git').is_dir():
+            sh.git.init()
 
-    timestamp = str(time.time())
-    os.makedirs(timestamp)
-    sh.cp('-ar', '/boot', timestamp + '/')
-    sh.git.add(timestamp, '--force')
-    sh.git.commit('-m', timestamp)
+        sh.git.config('user.email', "user@example.com")
+        sh.git.config('user.name', "user")
+
+        timestamp = str(time.time())
+        os.makedirs(timestamp)
+        sh.cp('-ar', '/boot', timestamp + '/')
+        sh.git.add(timestamp, '--force')
+        sh.git.commit('-m', timestamp)
+
     ic('kernel compile and install completed OK')
 
 
