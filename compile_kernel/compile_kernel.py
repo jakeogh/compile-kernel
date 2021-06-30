@@ -171,6 +171,27 @@ def check_kernel_config():
                                      warn=False,
                                      url=None,)
 
+        verify_kernel_config_setting(location=location,
+                                     content=content,
+                                     define='CONFIG_DRM',
+                                     required_state=True,
+                                     warn=False,
+                                     url='https://wiki.gentoo.org/wiki/Nouveau',)
+
+        verify_kernel_config_setting(location=location,
+                                     content=content,
+                                     define='CONFIG_DRM_FBDEV_EMULATION',
+                                     required_state=True,
+                                     warn=False,
+                                     url='https://wiki.gentoo.org/wiki/Nouveau',)
+
+        verify_kernel_config_setting(location=location,
+                                     content=content,
+                                     define='CONFIG_DRM_NOUVEAU:',
+                                     required_state=True,   # =m
+                                     warn=False,
+                                     url='https://wiki.gentoo.org/wiki/Nouveau',)
+
 
 def symlink_config(*,
                    verbose: bool,
