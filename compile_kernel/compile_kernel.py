@@ -413,7 +413,7 @@ def kcompile(*,
 
 
 @click.command()
-@click.option('--configure', is_flag=True)
+@click.option('--configure', '--config', is_flag=True)
 @click.option('--verbose', is_flag=True)
 @click.option('--debug', is_flag=True)
 @click.option('--force', is_flag=True)
