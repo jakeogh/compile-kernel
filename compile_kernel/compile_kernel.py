@@ -53,7 +53,7 @@ except ImportError:
 
 def verify_kernel_config_setting(*,
                                  location: Path,
-                                 content,
+                                 content: str,
                                  define: str,
                                  required_state: bool,
                                  warn: bool,
@@ -64,7 +64,7 @@ def verify_kernel_config_setting(*,
     assert isinstance(required_state, bool)
 
     current_state = None
-    found_define = None
+    #found_define = None
 
     msg = ''
     if url:
@@ -86,7 +86,7 @@ def verify_kernel_config_setting(*,
     if current_state == required_state:
         return   # all is well
 
-
+    # mypy: Invalid index type "Optional[bool]" for "Dict[bool, str]"; expected type "bool"  [index] (E)
     msg = "{define} is {status}!".format(define=define, status=state_table[current_state],) + msg
     if warn:
         msg = "WARNING: " + msg
@@ -297,6 +297,7 @@ def kcompile(*,
 
     check_config_enviroment(verbose=verbose, debug=debug,)
     symlink_config(verbose=verbose, debug=debug,)
+    assert Path('/usr/src/linux/.config').is_symlink()
 
     for line in sh.emerge('genkernel', '-u', _err_to_out=True, _iter=True,):
         eprint(line, end='')
