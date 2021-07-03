@@ -229,7 +229,8 @@ def get_kernel_version_from_symlink():
     return version
 
 
-def boot_is_correct(linux_version: str,
+def boot_is_correct(*,
+                    linux_version: str,
                     verbose: bool,
                     debug: bool,
                     ):
