@@ -57,8 +57,12 @@ def verify_kernel_config_setting(*,
                                  define: str,
                                  required_state: bool,
                                  warn: bool,
+                                 verbose: bool,
+                                 debug: bool,
                                  url: Optional[str] = None,
                                  ):
+    if verbose or debug:
+        ic(location, len(content), define, required_state, warn, url)
 
     state_table = {True: 'enabled', False: 'disabled'}
     assert isinstance(required_state, bool)
@@ -98,7 +102,10 @@ def verify_kernel_config_setting(*,
     raise ValueError(location.as_posix(), msg)
 
 
-def check_kernel_config():
+def check_kernel_config(*,
+                        verbose: bool,
+                        debug: bool,
+                        ):
     #locations = [Path('/proc/config.gz'), Path('/usr/src/linux/.config')]
     locations = [Path('/usr/src/linux/.config')]
     assert locations[0].exists()
@@ -120,77 +127,110 @@ def check_kernel_config():
                                      define='CONFIG_INTEL_IOMMU_DEFAULT_ON',
                                      required_state=False,
                                      warn=True,
-                                     url='http://forums.debian.net/viewtopic.php?t=126397',)
+                                     url='http://forums.debian.net/viewtopic.php?t=126397',
+                                     verbose=verbose,
+                                     debug=debug,
+                                     )
 
         verify_kernel_config_setting(location=location,
                                      content=content,
                                      define='CONFIG_IKCONFIG_PROC',
                                      required_state=True,
                                      warn=False,
-                                     url=None,)
+                                     url=None,
+                                     verbose=verbose,
+                                     debug=debug,
+                                     )
 
         verify_kernel_config_setting(location=location,
                                      content=content,
                                      define='CONFIG_IKCONFIG',
                                      required_state=True,
                                      warn=False,
-                                     url=None,)
+                                     url=None,
+                                     verbose=verbose,
+                                     debug=debug,
+                                     )
 
         verify_kernel_config_setting(location=location,
                                      content=content,
                                      define='CONFIG_SUNRPC_DEBUG',
                                      required_state=True,
                                      warn=False,
-                                     url=None,)
+                                     url=None,
+                                     verbose=verbose,
+                                     debug=debug,
+                                     )
 
         verify_kernel_config_setting(location=location,
                                      content=content,
                                      define='CONFIG_DEBUG_INFO',
                                      required_state=True,
                                      warn=False,
-                                     url=None,)
+                                     url=None,
+                                     verbose=verbose,
+                                     debug=debug,
+                                     )
 
         verify_kernel_config_setting(location=location,
                                      content=content,
                                      define='CONFIG_COMPILE_TEST',
                                      required_state=False,
                                      warn=False,
-                                     url=None,)
+                                     url=None,
+                                     verbose=verbose,
+                                     debug=debug,
+                                     )
 
         verify_kernel_config_setting(location=location,
                                      content=content,
                                      define='CONFIG_FRAME_POINTER',
                                      required_state=True,
                                      warn=False,
-                                     url=None,)
+                                     url=None,
+                                     verbose=verbose,
+                                     debug=debug,
+                                     )
 
         verify_kernel_config_setting(location=location,
                                      content=content,
                                      define='CONFIG_CRYPTO_USER',
                                      required_state=True,
                                      warn=False,
-                                     url=None,)
+                                     url=None,
+                                     verbose=verbose,
+                                     debug=debug,
+                                     )
 
         verify_kernel_config_setting(location=location,
                                      content=content,
                                      define='CONFIG_DRM',
                                      required_state=True,
                                      warn=False,
-                                     url='https://wiki.gentoo.org/wiki/Nouveau',)
+                                     url='https://wiki.gentoo.org/wiki/Nouveau',
+                                     verbose=verbose,
+                                     debug=debug,
+                                     )
 
         verify_kernel_config_setting(location=location,
                                      content=content,
                                      define='CONFIG_DRM_FBDEV_EMULATION',
                                      required_state=True,
                                      warn=False,
-                                     url='https://wiki.gentoo.org/wiki/Nouveau',)
+                                     url='https://wiki.gentoo.org/wiki/Nouveau',
+                                     verbose=verbose,
+                                     debug=debug,
+                                     )
 
         verify_kernel_config_setting(location=location,
                                      content=content,
                                      define='CONFIG_DRM_NOUVEAU:',
                                      required_state=True,   # =m
                                      warn=False,
-                                     url='https://wiki.gentoo.org/wiki/Nouveau',)
+                                     url='https://wiki.gentoo.org/wiki/Nouveau',
+                                     verbose=verbose,
+                                     debug=debug,
+                                     )
 
 
 def symlink_config(*,
@@ -372,7 +412,7 @@ def kcompile(*,
     if configure:
         with chdir('/usr/src/linux'):
             os.system('make nconfig')
-        check_kernel_config()  # must be done after nconfig
+        check_kernel_config(verbose=verbose, debug=debug,)  # must be done after nconfig
 
     gcc_check(verbose=verbose, debug=debug,)
 
