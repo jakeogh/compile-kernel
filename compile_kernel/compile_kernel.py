@@ -66,6 +66,7 @@ def verify_kernel_config_setting(*,
 
     state_table = {True: 'enabled', False: 'disabled'}
     assert isinstance(required_state, bool)
+    assert not define.endswith(':')
 
     current_state = None
     #found_define = None
@@ -224,7 +225,7 @@ def check_kernel_config(*,
 
         verify_kernel_config_setting(location=location,
                                      content=content,
-                                     define='CONFIG_DRM_NOUVEAU:',
+                                     define='CONFIG_DRM_NOUVEAU',
                                      required_state=True,   # =m
                                      warn=False,
                                      url='https://wiki.gentoo.org/wiki/Nouveau',
