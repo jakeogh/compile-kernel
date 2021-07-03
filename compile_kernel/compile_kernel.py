@@ -80,7 +80,7 @@ def verify_kernel_config_setting(*,
         if define + '=y' in content:
             found_define = True
             current_state = True
-        if define + 'm' in content:
+        if define + '=m' in content:
             found_define = True
             current_state = True
     else:
@@ -92,6 +92,8 @@ def verify_kernel_config_setting(*,
         return   # all is well
 
     # mypy: Invalid index type "Optional[bool]" for "Dict[bool, str]"; expected type "bool"  [index] (E)
+    if debug:
+        ic(define, state_table[current_state])
     msg = "{define} is {status}!".format(define=define, status=state_table[current_state],) + msg
     if warn:
         msg = "WARNING: " + msg
