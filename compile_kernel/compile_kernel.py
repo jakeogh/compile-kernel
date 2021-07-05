@@ -454,7 +454,7 @@ def kcompile(*,
     sh.rc_update('add', 'zfs-share', 'default')
     sh.rc_update('add', 'zfs-zed', 'default')
 
-    assert Path('/mnt/boot/grub').is_dir()
+    assert Path('/boot/grub').is_dir()
     sh.grub_mkconfig('-o', '/boot/grub/grub.cfg')
 
     for line in sh.emerge('sys-kernel/linux-firmware', _err_to_out=True, _iter=True,):
