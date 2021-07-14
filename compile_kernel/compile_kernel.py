@@ -29,6 +29,8 @@ from typing import Optional
 
 import click
 import sh
+from asserttool import eprint
+from asserttool import ic
 from asserttool import pause
 from asserttool import root_user
 from pathtool import file_exists_nonzero
@@ -37,18 +39,6 @@ from with_chdir import chdir
 
 #from sh import ErrorReturnCode_1
 #from sh.contrib import git
-
-
-def eprint(*args, **kwargs):
-    if 'file' in kwargs.keys():
-        kwargs.pop('file')
-    print(*args, file=sys.stderr, **kwargs)
-
-
-try:
-    from icecream import ic  # https://github.com/gruns/icecream
-except ImportError:
-    ic = eprint
 
 
 def verify_kernel_config_setting(*,
