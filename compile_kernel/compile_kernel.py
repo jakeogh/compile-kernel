@@ -354,14 +354,12 @@ def kcompile(*,
     symlink_config(verbose=verbose, debug=debug,)
     assert Path('/usr/src/linux/.config').is_symlink()
 
-    for line in sh.emerge('genkernel', '-u', _err_to_out=True, _iter=True,):
-        eprint(line, end='')
+    sh.emerge('genkernel', '-u', _out=sys.stdout, _err=sys.stderr)
 
     # handle a downgrade from -9999 before genkernel calls @module-rebuild
     ic('attempting to upgrade zfs and zfs-kmod')
     try:
-        for line in sh.emerge('sys-fs/zfs', 'sys-fs/zfs-kmod', '-u', _err_to_out=True, _iter=True,):
-            eprint(line, end='')
+        sh.emerge('sys-fs/zfs', 'sys-fs/zfs-kmod', '-u', _out=sys.stdout, _err=sys.stderr)
     except sh.ErrorReturnCode_1 as e:
         #ic(e)
         unconfigured_kernel = False
@@ -389,8 +387,7 @@ def kcompile(*,
 
     ic('attempting emerge @module-rebuild')
     try:
-        for line in sh.emerge('@module-rebuild', _err_to_out=True, _iter=True,):
-            eprint(line, end='')
+        sh.emerge('@module-rebuild', _out=sys.stdout, _err=sys.stderr)
     except sh.ErrorReturnCode_1 as e:
         unconfigured_kernel = True # todo, get conditions from above
         if not unconfigured_kernel:
@@ -447,8 +444,7 @@ def kcompile(*,
     assert Path('/boot/grub').is_dir()
     sh.grub_mkconfig('-o', '/boot/grub/grub.cfg')
 
-    for line in sh.emerge('sys-kernel/linux-firmware', _err_to_out=True, _iter=True,):
-        eprint(line, end='')
+    sh.emerge('sys-kernel/linux-firmware', _out=sys.stdout, _err=sys.stderr)
 
     os.makedirs('/boot_backup', exist_ok=True)
     with chdir('/boot_backup'):
