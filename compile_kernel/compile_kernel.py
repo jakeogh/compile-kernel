@@ -382,6 +382,7 @@ def kcompile(*,
         #    ic(e.stdout)
         if not unconfigured_kernel:
             #ic(unconfigured_kernel)
+            ic("unconfigured_kernel:", unconfigured_kernel)
             raise e
         ic('NOTE: kernel is unconfigured, skipping `emerge sys-fs/zfs sys-fs/zfs-kmod` before kernel compile')
 
