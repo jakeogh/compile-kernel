@@ -225,6 +225,15 @@ def check_kernel_config(*,
                                      debug=debug,
                                      )
 
+        verify_kernel_config_setting(location=location,
+                                     content=content,
+                                     define='CONFIG_BINFMT_MISC',
+                                     required_state=True,   # =m
+                                     warn=False,
+                                     url='https://pypi.org/project/fchroot',
+                                     verbose=verbose,
+                                     debug=debug,
+                                     )
 
 def symlink_config(*,
                    verbose: bool,
