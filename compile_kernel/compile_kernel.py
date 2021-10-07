@@ -84,6 +84,7 @@ def verify_kernel_config_setting(*,
     # mypy: Invalid index type "Optional[bool]" for "Dict[bool, str]"; expected type "bool"  [index] (E)
     if debug:
         ic(define, state_table[current_state])
+
     msg = "{define} is {status}!".format(define=define, status=state_table[current_state],) + msg
     if warn:
         msg = "WARNING: " + msg
@@ -235,6 +236,7 @@ def check_kernel_config(*,
                                      debug=debug,
                                      )
 
+
 def symlink_config(*,
                    verbose: bool,
                    debug: bool,
@@ -344,8 +346,6 @@ def kcompile(*,
     if not root_user():
         raise ValueError('you must be root')
 
-    #columns = get_terminal_size().columns
-    #columns = 80
     unconfigured_kernel = None
 
     if no_check_boot:
@@ -353,11 +353,11 @@ def kcompile(*,
     else:
         if not Path('/boot/grub/grub.cfg').exists():
             ic('/boot/grub/grub.cfg not found. Exiting.')
-            sys.exit(1)
+            raise ValueError('/boot/grub/grub.cfg not found')
 
         if not Path('/boot/kernel').exists():
             ic('mount /boot first. Exiting.')
-            sys.exit(1)
+            raise ValueError('mount /boot first')
 
     check_config_enviroment(verbose=verbose, debug=debug,)
     symlink_config(verbose=verbose, debug=debug,)
@@ -377,13 +377,15 @@ def kcompile(*,
         #ic(e.stderr)
         #assert False
         if hasattr(e, 'stdout'):
-            #ic(e.stdout)
+            ic(e.stdout)
             #ic(type(e.stdout))  # <class 'bytes'>  #hmph. the next line should cause a TypeError (before making the str bytes) ... but didnt
             if b'Could not find a usable .config' in e.stdout:
                 unconfigured_kernel = True
             if b'Kernel sources need compiling first' in e.stdout:
                 unconfigured_kernel = True
-            if b'Could not find a Makefile in the kernel source directory.' in e.stdout:
+            if b'Could not find a Makefile in the kernel source directory' in e.stdout:
+                unconfigured_kernel = True
+            if b'These sources have not yet been prepared' in e.stdout:
                 unconfigured_kernel = True
 
         #assert e.stdout
