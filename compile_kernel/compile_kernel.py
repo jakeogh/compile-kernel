@@ -59,7 +59,6 @@ def verify_kernel_config_setting(*,
     assert not define.endswith(':')
 
     current_state = None
-    #found_define = None
 
     msg = ''
     if url:
