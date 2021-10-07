@@ -368,7 +368,7 @@ def kcompile(*,
     # handle a downgrade from -9999 before genkernel calls @module-rebuild
     ic('attempting to upgrade zfs and zfs-kmod')
     try:
-        sh.emerge('sys-fs/zfs', 'sys-fs/zfs-kmod', '-u', _out=sys.stdout, _err=sys.stderr)
+        sh.emerge('sys-fs/zfs', 'sys-fs/zfs-kmod', '-u', _out=sys.stdout, _err=sys.stderr, _tee=True)
     except sh.ErrorReturnCode_1 as e:
         #ic(e)
         unconfigured_kernel = False
@@ -377,7 +377,8 @@ def kcompile(*,
         #ic(e.stderr)
         #assert False
         if hasattr(e, 'stdout'):
-            ic(e.stdout)
+            ic('e.stdout', e.stdout)
+            ic('e.stderr', e.stdout)
             #ic(type(e.stdout))  # <class 'bytes'>  #hmph. the next line should cause a TypeError (before making the str bytes) ... but didnt
             if b'Could not find a usable .config' in e.stdout:
                 unconfigured_kernel = True
