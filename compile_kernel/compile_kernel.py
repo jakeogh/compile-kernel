@@ -96,11 +96,13 @@ def verify_kernel_config_setting(*,
 
 
 def check_kernel_config(*,
+                        path: Path,
                         verbose: bool,
                         debug: bool,
                         ):
     #locations = [Path('/proc/config.gz'), Path('/usr/src/linux/.config')]
-    locations = [Path('/usr/src/linux/.config')]
+    #locations = [Path('/usr/src/linux/.config')]
+    locations = [path]
     assert locations[0].exists()
     for location in locations:
         if not location.exists():
@@ -414,7 +416,7 @@ def kcompile(*,
     if configure:
         with chdir('/usr/src/linux'):
             os.system('make nconfig')
-        check_kernel_config(verbose=verbose, debug=debug,)  # must be done after nconfig
+        check_kernel_config(path=Path('/usr/src/linux/.config'), verbose=verbose, debug=debug,)  # must be done after nconfig
 
     gcc_check(verbose=verbose, debug=debug,)
 
@@ -431,14 +433,14 @@ def kcompile(*,
             ic('kernel is already compiled, skipping')
             return
 
-
-    check_kernel_config(verbose=verbose, debug=debug,)  # must be done after nconfig
+    #check_kernel_config(verbose=verbose, debug=debug,)  # must be done after nconfig
     genkernel_command = ['genkernel']
     genkernel_command.append('all')
     #if configure:
     #    genkernel_command.append('--nconfig')
     genkernel_command.append('--no-clean')
     genkernel_command.append('--symlink')
+    genkernel_command.append('--luks')
     genkernel_command.append('--module-rebuild')
     genkernel_command.append('--all-ramdisk-modules')
     genkernel_command.append('--firmware')
@@ -481,6 +483,7 @@ def kcompile(*,
 @click.option('--verbose', is_flag=True)
 @click.option('--debug', is_flag=True)
 @click.option('--force', is_flag=True)
+@click.option('--only-check', is_flag=True)
 @click.option('--no-check-boot', is_flag=True)
 @click.pass_context
 def cli(ctx,
@@ -488,8 +491,13 @@ def cli(ctx,
         verbose: bool,
         debug: bool,
         force: bool,
+        only_check: bool,
         no_check_boot: bool,
         ):
+
+    if only_check:
+        check_kernel_config(path=Path('/usr/src/linux/.config'), verbose=verbose, debug=debug,)  # must be done after nconfig
+        return
 
     kcompile(configure=configure,
              force=force,
