@@ -432,6 +432,7 @@ def kcompile(*,
             return
 
 
+    check_kernel_config(verbose=verbose, debug=debug,)  # must be done after nconfig
     genkernel_command = ['genkernel']
     genkernel_command.append('all')
     #if configure:
