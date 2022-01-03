@@ -24,6 +24,7 @@
 import os
 import sys
 import time
+from math import inf
 from pathlib import Path
 from typing import Optional
 
@@ -33,6 +34,8 @@ from asserttool import eprint
 from asserttool import ic
 from asserttool import pause
 from asserttool import root_user
+from clicktool import click_add_options
+from clicktool import click_global_options
 from pathtool import file_exists_nonzero
 from run_command import run_command
 from with_chdir import chdir
@@ -47,11 +50,10 @@ def verify_kernel_config_setting(*,
                                  define: str,
                                  required_state: bool,
                                  warn: bool,
-                                 verbose: bool,
-                                 debug: bool,
+                                 verbose: int,
                                  url: Optional[str] = None,
                                  ):
-    if verbose or debug:
+    if verbose:
         ic(location, len(content), define, required_state, warn, url)
 
     state_table = {True: 'enabled', False: 'disabled'}
@@ -81,7 +83,7 @@ def verify_kernel_config_setting(*,
         return   # all is well
 
     # mypy: Invalid index type "Optional[bool]" for "Dict[bool, str]"; expected type "bool"  [index] (E)
-    if debug:
+    if verbose == inf:
         ic(define, state_table[current_state])
 
     msg = "{define} is {status}!".format(define=define, status=state_table[current_state],) + msg
@@ -97,9 +99,8 @@ def verify_kernel_config_setting(*,
 
 def check_kernel_config(*,
                         path: Path,
-                        verbose: bool,
-                        debug: bool,
-                        ):
+                        verbose: int,
+                                                ):
     #locations = [Path('/proc/config.gz'), Path('/usr/src/linux/.config')]
     #locations = [Path('/usr/src/linux/.config')]
     locations = [path]
@@ -124,7 +125,6 @@ def check_kernel_config(*,
                                      warn=True,
                                      url='http://forums.debian.net/viewtopic.php?t=126397',
                                      verbose=verbose,
-                                     debug=debug,
                                      )
 
         verify_kernel_config_setting(location=location,
@@ -134,7 +134,6 @@ def check_kernel_config(*,
                                      warn=False,
                                      url=None,
                                      verbose=verbose,
-                                     debug=debug,
                                      )
 
         verify_kernel_config_setting(location=location,
@@ -144,7 +143,6 @@ def check_kernel_config(*,
                                      warn=False,
                                      url=None,
                                      verbose=verbose,
-                                     debug=debug,
                                      )
 
         verify_kernel_config_setting(location=location,
@@ -154,7 +152,6 @@ def check_kernel_config(*,
                                      warn=False,
                                      url=None,
                                      verbose=verbose,
-                                     debug=debug,
                                      )
 
         verify_kernel_config_setting(location=location,
@@ -164,7 +161,6 @@ def check_kernel_config(*,
                                      warn=False,
                                      url=None,
                                      verbose=verbose,
-                                     debug=debug,
                                      )
 
         verify_kernel_config_setting(location=location,
@@ -174,7 +170,6 @@ def check_kernel_config(*,
                                      warn=False,
                                      url=None,
                                      verbose=verbose,
-                                     debug=debug,
                                      )
 
         verify_kernel_config_setting(location=location,
@@ -184,7 +179,6 @@ def check_kernel_config(*,
                                      warn=False,
                                      url=None,
                                      verbose=verbose,
-                                     debug=debug,
                                      )
 
         verify_kernel_config_setting(location=location,
@@ -194,7 +188,6 @@ def check_kernel_config(*,
                                      warn=False,
                                      url=None,
                                      verbose=verbose,
-                                     debug=debug,
                                      )
 
         verify_kernel_config_setting(location=location,
@@ -204,7 +197,6 @@ def check_kernel_config(*,
                                      warn=False,
                                      url='https://wiki.gentoo.org/wiki/Nouveau',
                                      verbose=verbose,
-                                     debug=debug,
                                      )
 
         verify_kernel_config_setting(location=location,
@@ -214,7 +206,6 @@ def check_kernel_config(*,
                                      warn=False,
                                      url='https://wiki.gentoo.org/wiki/Nouveau',
                                      verbose=verbose,
-                                     debug=debug,
                                      )
 
         verify_kernel_config_setting(location=location,
@@ -224,7 +215,6 @@ def check_kernel_config(*,
                                      warn=False,
                                      url='https://wiki.gentoo.org/wiki/Nouveau',
                                      verbose=verbose,
-                                     debug=debug,
                                      )
 
         verify_kernel_config_setting(location=location,
@@ -234,13 +224,11 @@ def check_kernel_config(*,
                                      warn=False,
                                      url='https://pypi.org/project/fchroot',
                                      verbose=verbose,
-                                     debug=debug,
                                      )
 
 
 def symlink_config(*,
-                   verbose: bool,
-                   debug: bool,
+                   verbose: int,
                    ):
 
     dot_config = Path('/usr/src/linux/.config')
@@ -254,8 +242,7 @@ def symlink_config(*,
 
 
 def check_config_enviroment(*,
-                            verbose: bool,
-                            debug: bool,
+                            verbose: int,
                             ):
 
     # https://www.mail-archive.com/lede-dev@lists.infradead.org/msg07290.html
@@ -276,8 +263,7 @@ def get_kernel_version_from_symlink():
 
 def boot_is_correct(*,
                     linux_version: str,
-                    verbose: bool,
-                    debug: bool,
+                    verbose: int,
                     ):
     assets = ['System.map', 'initramfs', 'vmlinux']
     for asset in assets:
@@ -288,8 +274,7 @@ def boot_is_correct(*,
 
 
 def gcc_check(*,
-              verbose: bool,
-              debug: bool,
+              verbose: int,
               ):
 
     test_path = Path("/usr/src/linux/init/.init_task.o.cmd")
@@ -317,8 +302,7 @@ def gcc_check(*,
             sh.make('clean')
 
 
-def kernel_is_already_compiled(verbose: bool,
-                               debug: bool,
+def kernel_is_already_compiled(verbose: int,
                                ):
     kernel_version = get_kernel_version_from_symlink()
     ic(kernel_version)
@@ -340,8 +324,7 @@ def kcompile(*,
              configure: bool,
              force: bool,
              no_check_boot: bool,
-             verbose: bool,
-             debug: bool,
+             verbose: int,
              ):
     ic()
     if not root_user():
@@ -360,8 +343,8 @@ def kcompile(*,
             ic('mount /boot first. Exiting.')
             raise ValueError('mount /boot first')
 
-    check_config_enviroment(verbose=verbose, debug=debug,)
-    symlink_config(verbose=verbose, debug=debug,)
+    check_config_enviroment(verbose=verbose, )
+    symlink_config(verbose=verbose, )
     assert Path('/usr/src/linux/.config').is_symlink()
 
     sh.emerge('genkernel', '-u', _out=sys.stdout, _err=sys.stderr)
@@ -416,24 +399,24 @@ def kcompile(*,
     if configure:
         with chdir('/usr/src/linux'):
             os.system('make nconfig')
-        check_kernel_config(path=Path('/usr/src/linux/.config'), verbose=verbose, debug=debug,)  # must be done after nconfig
+        check_kernel_config(path=Path('/usr/src/linux/.config'), verbose=verbose, )  # must be done after nconfig
 
-    gcc_check(verbose=verbose, debug=debug,)
+    gcc_check(verbose=verbose, )
 
     os.chdir('/usr/src/linux')
 
     linux_version = get_kernel_version_from_symlink()
     ic(boot_is_correct(linux_version=linux_version,
                        verbose=verbose,
-                       debug=debug,))
+                       ))
 
     if not force:
         if kernel_is_already_compiled(verbose=verbose,
-                                      debug=debug,):
+                                      ):
             ic('kernel is already compiled, skipping')
             return
 
-    #check_kernel_config(verbose=verbose, debug=debug,)  # must be done after nconfig
+    #check_kernel_config(verbose=verbose, )  # must be done after nconfig
     genkernel_command = ['genkernel']
     genkernel_command.append('all')
     #if configure:
@@ -480,27 +463,26 @@ def kcompile(*,
 
 @click.command()
 @click.option('--configure', '--config', is_flag=True)
-@click.option('--verbose', is_flag=True)
-@click.option('--debug', is_flag=True)
 @click.option('--force', is_flag=True)
 @click.option('--only-check', is_flag=True)
 @click.option('--no-check-boot', is_flag=True)
+@click_add_options(click_global_options)
 @click.pass_context
 def cli(ctx,
         configure: bool,
-        verbose: bool,
-        debug: bool,
+        verbose: int,
+        verbose_inf: bool,
         force: bool,
         only_check: bool,
         no_check_boot: bool,
         ):
 
     if only_check:
-        check_kernel_config(path=Path('/usr/src/linux/.config'), verbose=verbose, debug=debug,)  # must be done after nconfig
+        check_kernel_config(path=Path('/usr/src/linux/.config'), verbose=verbose, )  # must be done after nconfig
         return
 
     kcompile(configure=configure,
              force=force,
              no_check_boot=no_check_boot,
              verbose=verbose,
-             debug=debug,)
+             )
