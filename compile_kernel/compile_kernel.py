@@ -64,7 +64,7 @@ def verify_kernel_config_setting(*,
 
     msg = ''
     if url:
-        msg += " See: {url}".format(url=url)
+        msg += f" See: {url}"
 
     if define + ' is not set' not in content:
         # the define could be enabled
@@ -226,6 +226,14 @@ def check_kernel_config(*,
                                      verbose=verbose,
                                      )
 
+        verify_kernel_config_setting(location=location,
+                                     content=content,
+                                     define='HID_WACOM',
+                                     required_state=True,
+                                     warn=False,
+                                     url='https://github.com/gentoo/gentoo/blob/master/x11-drivers/xf86-input-wacom/xf86-input-wacom-0.40.0.ebuild',
+                                     verbose=verbose,
+                                     )
 
 def symlink_config(*,
                    verbose: int,
@@ -312,7 +320,7 @@ def kernel_is_already_compiled(verbose: int,
         if Path("/boot/initramfs").stat().st_size > 0:
             #if Path("/usr/src/linux/include/linux/kconfig.h").exists():
             if test_path.exists():
-                eprint('/boot/initramfs and {} exist, skipping compile'.format(test_path.as_posix()))
+                eprint(f'/boot/initramfs and {test_path.as_posix()} exist, skipping compile')
                 return True
         ic('/boot/initramfs exists, checking if /usr/src/linux is configured')
         if test_path.exists():
