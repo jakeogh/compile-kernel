@@ -43,6 +43,7 @@ from with_chdir import chdir
 #from sh import ErrorReturnCode_1
 #from sh.contrib import git
 
+sh.mv = None
 
 def verify_kernel_config_setting(*,
                                  location: Path,
@@ -235,6 +236,15 @@ def check_kernel_config(*,
                                      verbose=verbose,
                                      )
 
+        verify_kernel_config_setting(location=location,
+                                     content=content,
+                                     define='CONFIG_TASK_DELAY_ACCT',
+                                     required_state=True,   # =m
+                                     warn=False,
+                                     url='http://guichaz.free.fr/iotop/',
+                                     verbose=verbose,
+                                     )
+
 def symlink_config(*,
                    verbose: int,
                    ):
@@ -243,7 +253,7 @@ def symlink_config(*,
     if dot_config.exists():
         if not dot_config.is_symlink():
             timestamp = str(time.time())
-            sh.mv(dot_config, '/home/cfg/sysskel/usr/src/linux_configs/.config.' + timestamp)
+            sh.busybox.mv(dot_config, '/home/cfg/sysskel/usr/src/linux_configs/.config.' + timestamp)
 
     if not dot_config.exists():
         sh.ln('-s', '/home/cfg/sysskel/usr/src/linux_configs/.config', dot_config)
