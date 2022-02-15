@@ -27,21 +27,19 @@ import time
 from math import inf
 from pathlib import Path
 from typing import Optional
+from typing import Union
 
 import click
 import sh
-from asserttool import eprint
 from asserttool import ic
 from asserttool import pause
 from asserttool import root_user
 from clicktool import click_add_options
 from clicktool import click_global_options
+from eprint import eprint
 from pathtool import file_exists_nonzero
 from run_command import run_command
 from with_chdir import chdir
-
-#from sh import ErrorReturnCode_1
-#from sh.contrib import git
 
 sh.mv = None
 
@@ -51,7 +49,7 @@ def verify_kernel_config_setting(*,
                                  define: str,
                                  required_state: bool,
                                  warn: bool,
-                                 verbose: int,
+                                 verbose: Union[bool, int, float],
                                  url: Optional[str] = None,
                                  ):
     if verbose:
@@ -100,7 +98,7 @@ def verify_kernel_config_setting(*,
 
 def check_kernel_config(*,
                         path: Path,
-                        verbose: int,
+                        verbose: Union[bool, int, float],
                                                 ):
     #locations = [Path('/proc/config.gz'), Path('/usr/src/linux/.config')]
     #locations = [Path('/usr/src/linux/.config')]
@@ -246,7 +244,7 @@ def check_kernel_config(*,
                                      )
 
 def symlink_config(*,
-                   verbose: int,
+                   verbose: Union[bool, int, float],
                    ):
 
     dot_config = Path('/usr/src/linux/.config')
@@ -260,7 +258,7 @@ def symlink_config(*,
 
 
 def check_config_enviroment(*,
-                            verbose: int,
+                            verbose: Union[bool, int, float],
                             ):
 
     # https://www.mail-archive.com/lede-dev@lists.infradead.org/msg07290.html
@@ -281,7 +279,7 @@ def get_kernel_version_from_symlink():
 
 def boot_is_correct(*,
                     linux_version: str,
-                    verbose: int,
+                    verbose: Union[bool, int, float],
                     ):
     assets = ['System.map', 'initramfs', 'vmlinux']
     for asset in assets:
@@ -292,7 +290,7 @@ def boot_is_correct(*,
 
 
 def gcc_check(*,
-              verbose: int,
+              verbose: Union[bool, int, float],
               ):
 
     test_path = Path("/usr/src/linux/init/.init_task.o.cmd")
@@ -320,7 +318,7 @@ def gcc_check(*,
             sh.make('clean')
 
 
-def kernel_is_already_compiled(verbose: int,
+def kernel_is_already_compiled(verbose: Union[bool, int, float],
                                ):
     kernel_version = get_kernel_version_from_symlink()
     ic(kernel_version)
@@ -342,7 +340,7 @@ def kcompile(*,
              configure: bool,
              force: bool,
              no_check_boot: bool,
-             verbose: int,
+             verbose: Union[bool, int, float],
              ):
     ic()
     if not root_user():
@@ -488,7 +486,7 @@ def kcompile(*,
 @click.pass_context
 def cli(ctx,
         configure: bool,
-        verbose: int,
+        verbose: Union[bool, int, float],
         verbose_inf: bool,
         force: bool,
         only_check: bool,
