@@ -413,7 +413,7 @@ def kcompile(*,
     #   eprint(line, end='')
 
     if configure:
-        with chdir('/usr/src/linux'):
+        with chdir('/usr/src/linux', verbose=verbose,):
             os.system('make nconfig')
         check_kernel_config(path=Path('/usr/src/linux/.config'), verbose=verbose, )  # must be done after nconfig
 
@@ -461,7 +461,7 @@ def kcompile(*,
     sh.emerge('sys-kernel/linux-firmware', _out=sys.stdout, _err=sys.stderr)
 
     os.makedirs('/boot_backup', exist_ok=True)
-    with chdir('/boot_backup'):
+    with chdir('/boot_backup', verbose=verbose,):
         if not Path('/boot_backup/.git').is_dir():
             sh.git.init()
 
