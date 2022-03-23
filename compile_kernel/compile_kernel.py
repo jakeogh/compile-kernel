@@ -568,6 +568,7 @@ def cli(
     configure: bool,
     verbose: Union[bool, int, float],
     verbose_inf: bool,
+    dict_input: bool,
     force: bool,
     only_check: bool,
     no_check_boot: bool,
