@@ -587,3 +587,4 @@ def cli(
         no_check_boot=no_check_boot,
         verbose=verbose,
     )
+    eprint("DONT FORGET TO UMOUNT /boot")
