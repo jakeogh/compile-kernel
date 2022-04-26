@@ -507,25 +507,28 @@ def kcompile(
         path=Path("/usr/src/linux/.config"),
         verbose=verbose,
     )  # must be done after nconfig
-    genkernel_command = ["genkernel"]
-    genkernel_command.append("all")
+    genkernel_command = sh.Command("genkernel")
+    # genkernel_command = ["genkernel"]
+    genkernel_command = genkernel_command.bake("all")
     # if configure:
     #    genkernel_command.append('--nconfig')
-    genkernel_command.append("--no-clean")
-    genkernel_command.append("--symlink")
-    genkernel_command.append("--luks")
-    genkernel_command.append("--module-rebuild")
-    genkernel_command.append("--all-ramdisk-modules")
-    genkernel_command.append("--firmware")
-    genkernel_command.append("--microcode=all")
-    genkernel_command.append("--microcode-initramfs")
-    genkernel_command.append('--makeopts="-j12"')
-    genkernel_command.append(
+    genernel_command = genkernel_command.bake("--no-clean")
+    genernel_command = genkernel_command.bake("--symlink")
+    genernel_command = genkernel_command.bake("--luks")
+    genernel_command = genkernel_command.bake("--module-rebuild")
+    genernel_command = genkernel_command.bake("--all-ramdisk-modules")
+    genernel_command = genkernel_command.bake("--firmware")
+    genernel_command = genkernel_command.bake("--microcode=all")
+    genernel_command = genkernel_command.bake("--microcode-initramfs")
+    genernel_command = genkernel_command.bake('--makeopts="-j12"')
+    genernel_command = genkernel_command.bake(
         '--callback="/usr/bin/emerge zfs zfs-kmod @module-rebuild"'
     )
     # --callback="/usr/bin/emerge zfs zfs-kmod sci-libs/linux-gpib sci-libs/linux-gpib-modules @module-rebuild"
     # --zfs
-    run_command(genkernel_command, verbose=True, system=True)
+    # run_command(genkernel_command, verbose=True, system=True)
+    ic(genkernel_command)
+    genkernel_command(_fg=True)
 
     sh.rc_update("add", "zfs-import", "boot")
     sh.rc_update("add", "zfs-share", "default")
