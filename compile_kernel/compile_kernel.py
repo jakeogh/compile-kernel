@@ -534,27 +534,28 @@ def kcompile(
     sh.rc_update("add", "zfs-share", "default")
     sh.rc_update("add", "zfs-zed", "default")
 
-    assert Path("/boot/grub").is_dir()
-    sh.grub_mkconfig("-o", "/boot/grub/grub.cfg")
+    if Path("/boot/grub").is_dir():
+        sh.grub_mkconfig("-o", "/boot/grub/grub.cfg")
 
     sh.emerge("sys-kernel/linux-firmware", _out=sys.stdout, _err=sys.stderr)
 
-    os.makedirs("/boot_backup", exist_ok=True)
-    with chdir(
-        "/boot_backup",
-        verbose=verbose,
-    ):
-        if not Path("/boot_backup/.git").is_dir():
-            sh.git.init()
+    if Path("/boot/grub").is_dir():
+        os.makedirs("/boot_backup", exist_ok=True)
+        with chdir(
+            "/boot_backup",
+            verbose=verbose,
+        ):
+            if not Path("/boot_backup/.git").is_dir():
+                sh.git.init()
 
-        sh.git.config("user.email", "user@example.com")
-        sh.git.config("user.name", "user")
+            sh.git.config("user.email", "user@example.com")
+            sh.git.config("user.name", "user")
 
-        timestamp = str(time.time())
-        os.makedirs(timestamp)
-        sh.cp("-ar", "/boot", timestamp + "/")
-        sh.git.add(timestamp, "--force")
-        sh.git.commit("-m", timestamp)
+            timestamp = str(time.time())
+            os.makedirs(timestamp)
+            sh.cp("-ar", "/boot", timestamp + "/")
+            sh.git.add(timestamp, "--force")
+            sh.git.commit("-m", timestamp)
 
     ic("kernel compile and install completed OK")
 
