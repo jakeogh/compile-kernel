@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf8 -*-
 
-# flake8: noqa           # flake8 has no per file settings :(
 # pylint: disable=C0111  # docstrings are always outdated and wrong
 # pylint: disable=W0511  # todo is encouraged
 # pylint: disable=C0301  # line too long
@@ -18,7 +17,6 @@
 # pylint: disable=E1101  # no member for base
 # pylint: disable=W0201  # attribute defined outside __init__
 # pylint: disable=R0916  # Too many boolean expressions in if statement
-# pylint: disable=C0305  # Trailing newlines editor should fix automatically, pointless warning
 
 
 import os
@@ -38,7 +36,7 @@ from clicktool import click_add_options
 from clicktool import click_global_options
 from eprint import eprint
 from pathtool import file_exists_nonzero
-from run_command import run_command
+# from run_command import run_command
 from with_chdir import chdir
 
 sh.mv = None
