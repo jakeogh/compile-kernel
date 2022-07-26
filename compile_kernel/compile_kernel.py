@@ -99,8 +99,6 @@ def check_kernel_config(
     path: Path,
     verbose: bool | int | float,
 ):
-    # locations = [Path('/proc/config.gz'), Path('/usr/src/linux/.config')]
-    # locations = [Path('/usr/src/linux/.config')]
     locations = [path]
     assert locations[0].exists()
     for location in locations:
