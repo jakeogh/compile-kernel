@@ -227,6 +227,16 @@ def check_kernel_config(
         verify_kernel_config_setting(
             location=location,
             content=content,
+            define="CONFIG_DRM_RADEON",
+            required_state=True,  # =m
+            warn=False,
+            url="https://wiki.gentoo.org/wiki/Nouveau",
+            verbose=verbose,
+        )
+
+        verify_kernel_config_setting(
+            location=location,
+            content=content,
             define="CONFIG_BINFMT_MISC",
             required_state=True,  # =m
             warn=False,
