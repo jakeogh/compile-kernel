@@ -519,9 +519,9 @@ def kcompile(
     genkernel_command = genkernel_command.bake("--microcode=all")
     genkernel_command = genkernel_command.bake("--microcode-initramfs")
     genkernel_command = genkernel_command.bake('--makeopts="-j12"')
-    genkernel_command = genkernel_command.bake(
-        "--callback=/usr/bin/emerge zfs zfs-kmod @module-rebuild"
-    )
+    # genkernel_command = genkernel_command.bake(
+    #    "--callback=/usr/bin/emerge zfs zfs-kmod @module-rebuild"
+    # )
     # --callback="/usr/bin/emerge zfs zfs-kmod sci-libs/linux-gpib sci-libs/linux-gpib-modules @module-rebuild"
     # --zfs
     # run_command(genkernel_command, verbose=True, system=True)
