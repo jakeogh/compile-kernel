@@ -570,7 +570,7 @@ def cli(
     configure: bool,
     verbose: bool | int | float,
     verbose_inf: bool,
-    dict_input: bool,
+    dict_output: bool,
     force: bool,
     only_check: bool,
     no_check_boot: bool,
