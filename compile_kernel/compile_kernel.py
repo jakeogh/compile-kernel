@@ -264,6 +264,36 @@ def check_kernel_config(
             verbose=verbose,
         )
 
+        verify_kernel_config_setting(
+            location=location,
+            content=content,
+            define="CONFIG_NET_CORE",
+            required_state=True,  # =y
+            warn=False,
+            url="",
+            verbose=verbose,
+        )
+
+        verify_kernel_config_setting(
+            location=location,
+            content=content,
+            define="CONFIG_TUN",
+            required_state=True,  # =m
+            warn=False,
+            url="https://www.kernel.org/doc/html/latest/networking/tuntap.html",
+            verbose=verbose,
+        )
+
+        verify_kernel_config_setting(
+            location=location,
+            content=content,
+            define="CONFIG_VIRTIO_NET",
+            required_state=True,  # =m
+            warn=False,
+            url="",
+            verbose=verbose,
+        )
+
 
 def symlink_config(
     *,
