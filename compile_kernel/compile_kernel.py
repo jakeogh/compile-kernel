@@ -411,11 +411,14 @@ def kernel_is_already_compiled(
 def kcompile(
     *,
     configure: bool,
+    configure_only: bool,
     force: bool,
     no_check_boot: bool,
     verbose: bool | int | float,
 ):
     ic()
+    if configure_only:
+        configure = True
     if not root_user():
         raise ValueError("you must be root")
 
@@ -440,60 +443,66 @@ def kcompile(
     )
     assert Path("/usr/src/linux/.config").is_symlink()
 
-    sh.emerge("genkernel", "-u", _out=sys.stdout, _err=sys.stderr)
+    if not configure_only:
+        sh.emerge("genkernel", "-u", _out=sys.stdout, _err=sys.stderr)
 
-    # handle a downgrade from -9999 before genkernel calls @module-rebuild
-    ic("attempting to upgrade zfs and zfs-kmod")
-    try:
-        sh.emerge(
-            "sys-fs/zfs",
-            "sys-fs/zfs-kmod",
-            "-u",
-            _out=sys.stdout,
-            _err=sys.stderr,
-            _tee=True,
-        )
-    except sh.ErrorReturnCode_1 as e:
-        # ic(e)
-        unconfigured_kernel = False
-        # ic(dir(e))  # this lists e.stdout
-        # ic(e.stdout)
-        # ic(e.stderr)
-        # assert False
-        if hasattr(e, "stdout"):
-            # ic('e.stdout', e.stdout)
-            # ic('e.stderr', e.stdout)
-            # ic(type(e.stdout))  # <class 'bytes'>  #hmph. the next line should cause a TypeError (before making the str bytes) ... but didnt
-            if b"Could not find a usable .config" in e.stdout:
-                unconfigured_kernel = True
-            if b"Kernel sources need compiling first" in e.stdout:
-                unconfigured_kernel = True
-            if b"Could not find a Makefile in the kernel source directory" in e.stdout:
-                unconfigured_kernel = True
-            if b"These sources have not yet been prepared" in e.stdout:
-                unconfigured_kernel = True
+    if not configure_only:
+        # handle a downgrade from -9999 before genkernel calls @module-rebuild
+        ic("attempting to upgrade zfs and zfs-kmod")
+        try:
+            sh.emerge(
+                "sys-fs/zfs",
+                "sys-fs/zfs-kmod",
+                "-u",
+                _out=sys.stdout,
+                _err=sys.stderr,
+                _tee=True,
+            )
+        except sh.ErrorReturnCode_1 as e:
+            # ic(e)
+            unconfigured_kernel = False
+            # ic(dir(e))  # this lists e.stdout
+            # ic(e.stdout)
+            # ic(e.stderr)
+            # assert False
+            if hasattr(e, "stdout"):
+                # ic('e.stdout', e.stdout)
+                # ic('e.stderr', e.stdout)
+                # ic(type(e.stdout))  # <class 'bytes'>  #hmph. the next line should cause a TypeError (before making the str bytes) ... but didnt
+                if b"Could not find a usable .config" in e.stdout:
+                    unconfigured_kernel = True
+                if b"Kernel sources need compiling first" in e.stdout:
+                    unconfigured_kernel = True
+                if (
+                    b"Could not find a Makefile in the kernel source directory"
+                    in e.stdout
+                ):
+                    unconfigured_kernel = True
+                if b"These sources have not yet been prepared" in e.stdout:
+                    unconfigured_kernel = True
 
-        # assert e.stdout
-        # if hasattr(e, 'stdout'):
-        #    ic(e.stdout)
+            # assert e.stdout
+            # if hasattr(e, 'stdout'):
+            #    ic(e.stdout)
+            if not unconfigured_kernel:
+                # ic(unconfigured_kernel)
+                ic("unconfigured_kernel:", unconfigured_kernel)
+                raise e
+            ic(
+                "NOTE: kernel is unconfigured, skipping `emerge sys-fs/zfs sys-fs/zfs-kmod` before kernel compile"
+            )
+
         if not unconfigured_kernel:
-            # ic(unconfigured_kernel)
-            ic("unconfigured_kernel:", unconfigured_kernel)
-            raise e
-        ic(
-            "NOTE: kernel is unconfigured, skipping `emerge sys-fs/zfs sys-fs/zfs-kmod` before kernel compile"
-        )
-
-    ic("attempting emerge @module-rebuild")
-    try:
-        sh.emerge("@module-rebuild", _out=sys.stdout, _err=sys.stderr)
-    except sh.ErrorReturnCode_1 as e:
-        unconfigured_kernel = True  # todo, get conditions from above
-        if not unconfigured_kernel:
-            raise e
-        ic(
-            "NOTE: kernel is unconfigured, skipping `emerge @module-rebuild` before kernel compile"
-        )
+            ic("attempting emerge @module-rebuild")
+            try:
+                sh.emerge("@module-rebuild", _out=sys.stdout, _err=sys.stderr)
+            except sh.ErrorReturnCode_1 as e:
+                unconfigured_kernel = True  # todo, get conditions from above
+                if not unconfigured_kernel:
+                    raise e
+                ic(
+                    "NOTE: kernel is unconfigured, skipping `emerge @module-rebuild` before kernel compile"
+                )
 
     # might fail if gcc was upgraded and the kernel hasnt been recompiled yet
     # for line in sh.emerge('sci-libs/linux-gpib', '-u', _err_to_out=True, _iter=True, _out_bufsize=100):
@@ -510,6 +519,9 @@ def kcompile(
             verbose=verbose,
         )  # must be done after nconfig
 
+    if configure_only:
+        return
+
     gcc_check(
         verbose=verbose,
     )
@@ -524,12 +536,13 @@ def kcompile(
         )
     )
 
-    if not force:
-        if kernel_is_already_compiled(
-            verbose=verbose,
-        ):
-            ic("kernel is already compiled, skipping")
-            return
+    if not configure_only:
+        if not force:
+            if kernel_is_already_compiled(
+                verbose=verbose,
+            ):
+                ic("kernel is already compiled, skipping")
+                return
 
     check_kernel_config(
         path=Path("/usr/src/linux/.config"),
@@ -590,6 +603,7 @@ def kcompile(
 
 @click.command()
 @click.option("--configure", "--config", is_flag=True)
+@click.option("--configure-only", "--config-only", is_flag=True)
 @click.option("--force", is_flag=True)
 @click.option("--only-check", is_flag=True)
 @click.option("--no-check-boot", is_flag=True)
@@ -598,6 +612,7 @@ def kcompile(
 def cli(
     ctx,
     configure: bool,
+    configure_only: bool,
     verbose: bool | int | float,
     verbose_inf: bool,
     dict_output: bool,
@@ -615,6 +630,7 @@ def cli(
 
     kcompile(
         configure=configure,
+        configure_only=configure_only,
         force=force,
         no_check_boot=no_check_boot,
         verbose=verbose,
