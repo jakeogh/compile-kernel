@@ -294,6 +294,88 @@ def check_kernel_config(
             verbose=verbose,
         )
 
+        verify_kernel_config_setting(
+            location=location,
+            content=content,
+            define="CONFIG_APPLE_PROPERTIES",
+            required_state=True,  # =m
+            warn=False,
+            url="",
+            verbose=verbose,
+        )
+        verify_kernel_config_setting(
+            location=location,
+            content=content,
+            define="CONFIG_KEYBOARD_APPLESPI",
+            required_state=True,  # =m
+            warn=False,
+            url="",
+            verbose=verbose,
+        )
+        verify_kernel_config_setting(
+            location=location,
+            content=content,
+            define="CONFIG_MOUSE_APPLETOUCH",
+            required_state=True,  # =m
+            warn=False,
+            url="https://www.kernel.org/doc/html/v6.1-rc4/input/devices/appletouch.html",
+            verbose=verbose,
+        )
+        verify_kernel_config_setting(
+            location=location,
+            content=content,
+            define="CONFIG_BACKLIGHT_APPLE",
+            required_state=True,  # =m
+            warn=False,
+            url="",
+            verbose=verbose,
+        )
+        verify_kernel_config_setting(
+            location=location,
+            content=content,
+            define="CONFIG_HID_APPLE",
+            required_state=True,  # =m
+            warn=False,
+            url="",
+            verbose=verbose,
+        )
+        verify_kernel_config_setting(
+            location=location,
+            content=content,
+            define="CONFIG_HID_APPLEIR",
+            required_state=True,  # =m
+            warn=False,
+            url="",
+            verbose=verbose,
+        )
+        verify_kernel_config_setting(
+            location=location,
+            content=content,
+            define="CONFIG_USB_APPLEDISPLAY",
+            required_state=True,  # =m
+            warn=False,
+            url="",
+            verbose=verbose,
+        )
+        verify_kernel_config_setting(
+            location=location,
+            content=content,
+            define="CONFIG_APPLE_MFI_FASTCHARGE",
+            required_state=True,  # =m
+            warn=False,
+            url="",
+            verbose=verbose,
+        )
+        verify_kernel_config_setting(
+            location=location,
+            content=content,
+            define="CONFIG_APPLE_GMUX",
+            required_state=True,  # =m
+            warn=False,
+            url="",
+            verbose=verbose,
+        )
+
 
 def symlink_config(
     *,
