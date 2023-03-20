@@ -47,8 +47,8 @@ def verify_kernel_config_setting(
     define: str,
     required_state: bool,
     warn: bool,
-    verbose: bool | int | float,
     url: None | str = None,
+    verbose: bool | int | float = False,
 ):
     if verbose:
         ic(location, len(content), define, required_state, warn, url)
@@ -97,7 +97,7 @@ def verify_kernel_config_setting(
 def check_kernel_config(
     *,
     path: Path,
-    verbose: bool | int | float,
+    verbose: bool | int | float = False,
 ):
     locations = [path]
     assert locations[0].exists()
@@ -379,9 +379,8 @@ def check_kernel_config(
 
 def symlink_config(
     *,
-    verbose: bool | int | float,
+    verbose: bool | int | float = False,
 ):
-
     dot_config = Path("/usr/src/linux/.config")
     if dot_config.exists():
         if not dot_config.is_symlink():
@@ -397,9 +396,8 @@ def symlink_config(
 
 def check_config_enviroment(
     *,
-    verbose: bool | int | float,
+    verbose: bool | int | float = False,
 ):
-
     # https://www.mail-archive.com/lede-dev@lists.infradead.org/msg07290.html
     if not (os.getenv("KCONFIG_OVERWRITECONFIG") == "1"):
         ic("KCONFIG_OVERWRITECONFIG=1 needs to be set to 1")
@@ -419,7 +417,7 @@ def get_kernel_version_from_symlink():
 def boot_is_correct(
     *,
     linux_version: str,
-    verbose: bool | int | float,
+    verbose: bool | int | float = False,
 ):
     assets = ["System.map", "initramfs", "vmlinux"]
     for asset in assets:
@@ -431,12 +429,10 @@ def boot_is_correct(
 
 def gcc_check(
     *,
-    verbose: bool | int | float,
+    verbose: bool | int | float = False,
 ):
-
     test_path = Path("/usr/src/linux/init/.init_task.o.cmd")
     if test_path.exists():
-
         ic(
             "found previously compiled kernel tree, checking is the current gcc version was used"
         )
@@ -468,7 +464,7 @@ def gcc_check(
 
 
 def kernel_is_already_compiled(
-    verbose: bool | int | float,
+    verbose: bool | int | float = False,
 ):
     kernel_version = get_kernel_version_from_symlink()
     ic(kernel_version)
@@ -496,7 +492,7 @@ def kcompile(
     configure_only: bool,
     force: bool,
     no_check_boot: bool,
-    verbose: bool | int | float,
+    verbose: bool | int | float = False,
 ):
     ic()
     if configure_only:
@@ -694,14 +690,13 @@ def cli(
     ctx,
     configure: bool,
     configure_only: bool,
-    verbose: bool | int | float,
     verbose_inf: bool,
     dict_output: bool,
     force: bool,
     only_check: bool,
     no_check_boot: bool,
+    verbose: bool | int | float = False,
 ):
-
     if only_check:
         check_kernel_config(
             path=Path("/usr/src/linux/.config"),
