@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf8 -*-
 
+# pylint: disable=useless-suppression             # [I0021]
 # pylint: disable=missing-docstring               # [C0111] docstrings are always outdated and wrong
-# pylint: disable=fixme                           # [W0511] todo is encouraged
+# pylint: disable=missing-param-doc               # [W9015]
+# pylint: disable=missing-module-docstring        # [C0114]
+# pylint: disable=fixme                           # [W0511] todo encouraged
 # pylint: disable=line-too-long                   # [C0301]
 # pylint: disable=too-many-instance-attributes    # [R0902]
 # pylint: disable=too-many-lines                  # [C0302] too many lines in module
@@ -13,6 +16,7 @@
 # pylint: disable=too-many-arguments              # [R0913]
 # pylint: disable=too-many-nested-blocks          # [R1702]
 # pylint: disable=too-many-locals                 # [R0914]
+# pylint: disable=too-many-public-methods         # [R0904]
 # pylint: disable=too-few-public-methods          # [R0903]
 # pylint: disable=no-member                       # [E1101] no member for base
 # pylint: disable=attribute-defined-outside-init  # [W0201]
@@ -29,6 +33,7 @@ from pathlib import Path
 import click
 import sh
 from asserttool import ic
+from asserttool import icp
 from asserttool import pause
 from asserttool import root_user
 from clicktool import click_add_options
@@ -37,7 +42,7 @@ from eprint import eprint
 from pathtool import file_exists_nonzero
 from with_chdir import chdir
 
-sh.mv = None
+sh.mv = None  # use sh.busybox('mv'), coreutils ignores stdin read errors
 
 
 def verify_kernel_config_setting(
@@ -103,7 +108,7 @@ def check_kernel_config(
     assert locations[0].exists()
     for location in locations:
         if not location.exists():
-            ic("skipping:", location)
+            icp("skipping:", location)
             continue
         try:
             content = sh.zcat(location)
@@ -400,8 +405,8 @@ def check_config_enviroment(
 ):
     # https://www.mail-archive.com/lede-dev@lists.infradead.org/msg07290.html
     if not (os.getenv("KCONFIG_OVERWRITECONFIG") == "1"):
-        ic("KCONFIG_OVERWRITECONFIG=1 needs to be set to 1")
-        ic("add it to /etc/env.d/99kconfig-symlink. Exiting.")
+        icp("KCONFIG_OVERWRITECONFIG=1 needs to be set to 1")
+        icp("add it to /etc/env.d/99kconfig-symlink. Exiting.")
         sys.exit(1)
 
 
@@ -433,7 +438,7 @@ def gcc_check(
 ):
     test_path = Path("/usr/src/linux/init/.init_task.o.cmd")
     if test_path.exists():
-        ic(
+        icp(
             "found previously compiled kernel tree, checking is the current gcc version was used"
         )
         gcc_version = sh.gcc_config("-l")
@@ -445,19 +450,19 @@ def gcc_check(
         assert line
         gcc_version = line.split("-")[-1]
         gcc_version = gcc_version.split(" ")[0]
-        ic("checking for gcc version:", gcc_version)
+        icp("checking for gcc version:", gcc_version)
 
         try:
             sh.grep(
                 "gcc/x86_64-pc-linux-gnu/" + gcc_version,
                 "/usr/src/linux/init/.init_task.o.cmd",
             )
-            ic(
+            icp(
                 gcc_version,
                 "was used to compile kernel previously, not running `make clean`",
             )
         except sh.ErrorReturnCode_1:
-            ic("old gcc version detected, make clean required. Sleeping 5.")
+            icp("old gcc version detected, make clean required. Sleeping 5.")
             os.chdir("/usr/src/linux")
             time.sleep(5)
             sh.make("clean")
@@ -467,7 +472,7 @@ def kernel_is_already_compiled(
     verbose: bool | int | float = False,
 ):
     kernel_version = get_kernel_version_from_symlink()
-    ic(kernel_version)
+    icp(kernel_version)
     test_path = Path("/usr/src/linux/init/.init_task.o.cmd")
 
     if Path(
@@ -480,9 +485,9 @@ def kernel_is_already_compiled(
                     f"/boot/initramfs and {test_path.as_posix()} exist, skipping compile"
                 )
                 return True
-        ic("/boot/initramfs exists, checking if /usr/src/linux is configured")
+        icp("/boot/initramfs exists, checking if /usr/src/linux is configured")
         if test_path.exists():
-            ic(test_path, "exists, skipping kernel compile")
+            icp(test_path, "exists, skipping kernel compile")
             return True
 
 
@@ -494,7 +499,7 @@ def kcompile(
     no_check_boot: bool,
     verbose: bool | int | float = False,
 ):
-    ic()
+    icp()
     if configure_only:
         configure = True
     if not root_user():
@@ -503,14 +508,14 @@ def kcompile(
     unconfigured_kernel = None
 
     if no_check_boot:
-        ic("skipped checking if /boot was mounted")
+        icp("skipped checking if /boot was mounted")
     else:
         if not Path("/boot/grub/grub.cfg").exists():
-            ic("/boot/grub/grub.cfg not found. Exiting.")
+            icp("/boot/grub/grub.cfg not found. Exiting.")
             raise ValueError("/boot/grub/grub.cfg not found")
 
         if not Path("/boot/kernel").exists():
-            ic("mount /boot first. Exiting.")
+            icp("mount /boot first. Exiting.")
             raise ValueError("mount /boot first")
 
     check_config_enviroment(
@@ -526,7 +531,7 @@ def kcompile(
 
     if not configure_only:
         # handle a downgrade from -9999 before genkernel calls @module-rebuild
-        ic("attempting to upgrade zfs and zfs-kmod")
+        icp("attempting to upgrade zfs and zfs-kmod")
         try:
             sh.emerge(
                 "sys-fs/zfs",
@@ -564,21 +569,21 @@ def kcompile(
             #    ic(e.stdout)
             if not unconfigured_kernel:
                 # ic(unconfigured_kernel)
-                ic("unconfigured_kernel:", unconfigured_kernel)
+                icp("unconfigured_kernel:", unconfigured_kernel)
                 raise e
-            ic(
+            icp(
                 "NOTE: kernel is unconfigured, skipping `emerge sys-fs/zfs sys-fs/zfs-kmod` before kernel compile"
             )
 
         if not unconfigured_kernel:
-            ic("attempting emerge @module-rebuild")
+            icp("attempting emerge @module-rebuild")
             try:
                 sh.emerge("@module-rebuild", _out=sys.stdout, _err=sys.stderr)
             except sh.ErrorReturnCode_1 as e:
                 unconfigured_kernel = True  # todo, get conditions from above
                 if not unconfigured_kernel:
                     raise e
-                ic(
+                icp(
                     "NOTE: kernel is unconfigured, skipping `emerge @module-rebuild` before kernel compile"
                 )
 
@@ -607,7 +612,7 @@ def kcompile(
     os.chdir("/usr/src/linux")
 
     linux_version = get_kernel_version_from_symlink()
-    ic(
+    icp(
         boot_is_correct(
             linux_version=linux_version,
             verbose=verbose,
@@ -619,7 +624,7 @@ def kcompile(
             if kernel_is_already_compiled(
                 verbose=verbose,
             ):
-                ic("kernel is already compiled, skipping")
+                icp("kernel is already compiled, skipping")
                 return
 
     check_kernel_config(
@@ -645,7 +650,7 @@ def kcompile(
     )
     # --callback="/usr/bin/emerge zfs zfs-kmod sci-libs/linux-gpib sci-libs/linux-gpib-modules @module-rebuild"
     # --zfs
-    ic(genkernel_command)
+    icp(genkernel_command)
     genkernel_command(_fg=True)
 
     sh.rc_update("add", "zfs-import", "boot")
@@ -675,7 +680,7 @@ def kcompile(
             sh.git.add(timestamp, "--force")
             sh.git.commit("-m", timestamp)
 
-    ic("kernel compile and install completed OK")
+    icp("kernel compile and install completed OK")
 
 
 @click.command()
@@ -703,6 +708,9 @@ def cli(
             verbose=verbose,
         )  # must be done after nconfig
         return
+
+    if not verbose:
+        ic.disable()
 
     kcompile(
         configure=configure,
