@@ -27,7 +27,6 @@ from __future__ import annotations
 import os
 import sys
 import time
-from math import inf
 from pathlib import Path
 
 import click
@@ -39,6 +38,7 @@ from asserttool import root_user
 from clicktool import click_add_options
 from clicktool import click_global_options
 from eprint import eprint
+from globalverbose import gvd
 from pathtool import file_exists_nonzero
 from with_chdir import chdir
 
@@ -85,7 +85,7 @@ def verify_kernel_config_setting(
         return  # all is well
 
     # mypy: Invalid index type "None | bool" for "Dict[bool, str]"; expected type "bool"  [index] (E)
-    if verbose == inf:
+    if gvd:
         ic(define, current_state, state_table)
 
     msg = f"{define} is {state_table[current_state]}!" + msg
@@ -711,6 +711,8 @@ def cli(
 
     if not verbose:
         ic.disable()
+    if verbose_inf:
+        gvd.enable()
 
     kcompile(
         configure=configure,
