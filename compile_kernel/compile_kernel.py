@@ -392,11 +392,11 @@ def symlink_config(
             timestamp = str(time.time())
             sh.busybox.mv(
                 dot_config,
-                "/home/cfg/sysskel/usr/src/linux_configs/.config." + timestamp,
+                "/home/sysskel/usr/src/linux_configs/.config." + timestamp,
             )
 
     if not dot_config.exists():
-        sh.ln("-s", "/home/cfg/sysskel/usr/src/linux_configs/.config", dot_config)
+        sh.ln("-s", "/home/sysskel/usr/src/linux_configs/.config", dot_config)
 
 
 def check_config_enviroment(
