@@ -123,6 +123,26 @@ def check_kernel_config(
         verify_kernel_config_setting(
             location=location,
             content=content,
+            define="CONFIG_FB_EFI",
+            required_state=True,
+            warn=False,
+            url="",
+            verbose=verbose,
+        )
+
+        verify_kernel_config_setting(
+            location=location,
+            content=content,
+            define="CONFIG_TRIM_UNUSED_KSYMS",
+            required_state=False,
+            warn=False,
+            url="",
+            verbose=verbose,
+        )
+
+        verify_kernel_config_setting(
+            location=location,
+            content=content,
             define="CONFIG_INTEL_IOMMU_DEFAULT_ON",
             required_state=False,
             warn=True,
