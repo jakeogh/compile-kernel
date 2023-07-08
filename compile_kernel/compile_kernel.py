@@ -522,12 +522,8 @@ def kcompile(
             icp("mount /boot first. Exiting.")
             raise ValueError("mount /boot first")
 
-    check_config_enviroment(
-        verbose=verbose,
-    )
-    symlink_config(
-        verbose=verbose,
-    )
+    check_config_enviroment()
+    symlink_config()
     assert Path("/usr/src/linux/.config").is_symlink()
 
     if not configure_only:
