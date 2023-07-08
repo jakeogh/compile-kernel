@@ -27,6 +27,7 @@ from __future__ import annotations
 import os
 import sys
 import time
+from importlib import resources
 from pathlib import Path
 
 import click
@@ -392,11 +393,14 @@ def symlink_config(
             timestamp = str(time.time())
             sh.busybox.mv(
                 dot_config,
-                "/home/sysskel/usr/src/linux_configs/.config." + timestamp,
+                f"{dot_config}.{timestamp}",
             )
 
     if not dot_config.exists():
-        sh.ln("-s", "/home/sysskel/usr/src/linux_configs/.config", dot_config)
+        with resources.path("compile_kernel", ".config") as _kernel_config:
+            icp(_kernel_config)
+
+            sh.ln("-s", _kernel_config, dot_config)
 
 
 def check_config_enviroment(
