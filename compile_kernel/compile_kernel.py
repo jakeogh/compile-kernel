@@ -106,6 +106,7 @@ def check_kernel_config(
     verbose: bool | int | float = False,
 ):
     locations = [path]
+    icp(locations)
     assert locations[0].exists()
     for location in locations:
         if not location.exists():
