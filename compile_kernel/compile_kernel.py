@@ -115,6 +115,7 @@ def check_kernel_config(
         try:
             content = sh.zcat(location)
         except sh.ErrorReturnCode_1 as e:
+            icp(dir(e))
             if hasattr(e, "stderr"):
                 if b"/usr/src/linux/.config: not in gzip format" in e.stderr:
                     content = sh.cat(location)
@@ -565,12 +566,14 @@ def kcompile(
             )
         except sh.ErrorReturnCode_1 as e:
             icp(e)
+            icp(dir(e))
             unconfigured_kernel = False
             # ic(dir(e))  # this lists e.stdout
             # ic(e.stdout)
             # ic(e.stderr)
             # assert False
             if hasattr(e, "stdout"):
+                icp(type(e.stdout))
                 # ic('e.stdout', e.stdout)
                 # ic('e.stderr', e.stdout)
                 # ic(type(e.stdout))  # <class 'bytes'>  #hmph. the next line should cause a TypeError (before making the str bytes) ... but didnt
