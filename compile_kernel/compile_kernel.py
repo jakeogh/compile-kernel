@@ -558,8 +558,8 @@ def kcompile(
                 "sys-fs/zfs",
                 "sys-fs/zfs-kmod",
                 "-u",
-                _out=sys.stdout,
-                _err=sys.stderr,
+                # _out=sys.stdout,
+                # _err=sys.stderr,
                 _tee=True,
                 _tty_out=False,
             )
