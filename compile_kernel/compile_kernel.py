@@ -561,6 +561,7 @@ def kcompile(
                 _out=sys.stdout,
                 _err=sys.stderr,
                 _tee=True,
+                _tty_out=False,
             )
         except sh.ErrorReturnCode_1 as e:
             icp(e)
