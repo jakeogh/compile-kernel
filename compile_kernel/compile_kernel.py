@@ -563,7 +563,7 @@ def kcompile(
                 _tee=True,
             )
         except sh.ErrorReturnCode_1 as e:
-            # ic(e)
+            icp(e)
             unconfigured_kernel = False
             # ic(dir(e))  # this lists e.stdout
             # ic(e.stdout)
