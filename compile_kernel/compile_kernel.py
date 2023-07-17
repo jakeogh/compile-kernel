@@ -56,8 +56,7 @@ def verify_kernel_config_setting(
     url: None | str = None,
     verbose: bool | int | float = False,
 ):
-    if verbose:
-        ic(location, len(content), define, required_state, warn, url)
+    ic(location, len(content), define, required_state, warn, url)
 
     state_table = {True: "enabled", False: "disabled"}
     assert isinstance(required_state, bool)
@@ -129,7 +128,6 @@ def check_kernel_config(
             required_state=True,
             warn=False,
             url="",
-            verbose=verbose,
         )
 
         verify_kernel_config_setting(
@@ -139,7 +137,6 @@ def check_kernel_config(
             required_state=False,
             warn=False,
             url="",
-            verbose=verbose,
         )
 
         verify_kernel_config_setting(
@@ -149,7 +146,6 @@ def check_kernel_config(
             required_state=False,
             warn=True,
             url="http://forums.debian.net/viewtopic.php?t=126397",
-            verbose=verbose,
         )
 
         verify_kernel_config_setting(
@@ -159,7 +155,6 @@ def check_kernel_config(
             required_state=True,
             warn=False,
             url=None,
-            verbose=verbose,
         )
 
         verify_kernel_config_setting(
@@ -169,7 +164,6 @@ def check_kernel_config(
             required_state=True,
             warn=False,
             url=None,
-            verbose=verbose,
         )
 
         verify_kernel_config_setting(
@@ -179,7 +173,6 @@ def check_kernel_config(
             required_state=True,
             warn=False,
             url=None,
-            verbose=verbose,
         )
 
         verify_kernel_config_setting(
@@ -189,7 +182,6 @@ def check_kernel_config(
             required_state=True,
             warn=False,
             url=None,
-            verbose=verbose,
         )
 
         verify_kernel_config_setting(
@@ -199,7 +191,6 @@ def check_kernel_config(
             required_state=False,
             warn=False,
             url=None,
-            verbose=verbose,
         )
 
         verify_kernel_config_setting(
@@ -209,7 +200,6 @@ def check_kernel_config(
             required_state=True,
             warn=False,
             url=None,
-            verbose=verbose,
         )
 
         verify_kernel_config_setting(
@@ -219,7 +209,6 @@ def check_kernel_config(
             required_state=True,
             warn=False,
             url=None,
-            verbose=verbose,
         )
 
         verify_kernel_config_setting(
@@ -229,7 +218,6 @@ def check_kernel_config(
             required_state=True,
             warn=False,
             url="https://wiki.gentoo.org/wiki/Nouveau",
-            verbose=verbose,
         )
 
         verify_kernel_config_setting(
@@ -239,7 +227,6 @@ def check_kernel_config(
             required_state=True,
             warn=False,
             url="https://wiki.gentoo.org/wiki/Nouveau",
-            verbose=verbose,
         )
 
         verify_kernel_config_setting(
@@ -249,7 +236,6 @@ def check_kernel_config(
             required_state=True,  # =m
             warn=False,
             url="https://wiki.gentoo.org/wiki/Nouveau",
-            verbose=verbose,
         )
 
         verify_kernel_config_setting(
@@ -259,7 +245,6 @@ def check_kernel_config(
             required_state=True,  # =m
             warn=False,
             url="https://wiki.gentoo.org/wiki/Nouveau",
-            verbose=verbose,
         )
 
         verify_kernel_config_setting(
@@ -269,7 +254,6 @@ def check_kernel_config(
             required_state=True,  # =m
             warn=False,
             url="https://pypi.org/project/fchroot",
-            verbose=verbose,
         )
 
         verify_kernel_config_setting(
@@ -279,7 +263,6 @@ def check_kernel_config(
             required_state=True,
             warn=False,
             url="https://github.com/gentoo/gentoo/blob/master/x11-drivers/xf86-input-wacom/xf86-input-wacom-0.40.0.ebuild",
-            verbose=verbose,
         )
 
         verify_kernel_config_setting(
@@ -289,7 +272,6 @@ def check_kernel_config(
             required_state=True,  # =m
             warn=False,
             url="http://guichaz.free.fr/iotop/",
-            verbose=verbose,
         )
 
         verify_kernel_config_setting(
@@ -299,7 +281,6 @@ def check_kernel_config(
             required_state=True,  # =y
             warn=False,
             url="",
-            verbose=verbose,
         )
 
         verify_kernel_config_setting(
@@ -309,7 +290,6 @@ def check_kernel_config(
             required_state=True,  # =m
             warn=False,
             url="https://www.kernel.org/doc/html/latest/networking/tuntap.html",
-            verbose=verbose,
         )
 
         verify_kernel_config_setting(
@@ -319,7 +299,6 @@ def check_kernel_config(
             required_state=True,  # =m
             warn=False,
             url="",
-            verbose=verbose,
         )
 
         verify_kernel_config_setting(
@@ -329,7 +308,6 @@ def check_kernel_config(
             required_state=True,  # =m
             warn=False,
             url="",
-            verbose=verbose,
         )
         verify_kernel_config_setting(
             location=location,
@@ -338,7 +316,6 @@ def check_kernel_config(
             required_state=True,  # =m
             warn=False,
             url="",
-            verbose=verbose,
         )
         verify_kernel_config_setting(
             location=location,
@@ -347,7 +324,6 @@ def check_kernel_config(
             required_state=True,  # =m
             warn=False,
             url="https://www.kernel.org/doc/html/v6.1-rc4/input/devices/appletouch.html",
-            verbose=verbose,
         )
         verify_kernel_config_setting(
             location=location,
@@ -356,7 +332,6 @@ def check_kernel_config(
             required_state=True,  # =m
             warn=False,
             url="",
-            verbose=verbose,
         )
         verify_kernel_config_setting(
             location=location,
@@ -365,7 +340,6 @@ def check_kernel_config(
             required_state=True,  # =m
             warn=False,
             url="",
-            verbose=verbose,
         )
         verify_kernel_config_setting(
             location=location,
@@ -374,7 +348,6 @@ def check_kernel_config(
             required_state=True,  # =m
             warn=False,
             url="",
-            verbose=verbose,
         )
         verify_kernel_config_setting(
             location=location,
@@ -383,7 +356,6 @@ def check_kernel_config(
             required_state=True,  # =m
             warn=False,
             url="",
-            verbose=verbose,
         )
         verify_kernel_config_setting(
             location=location,
@@ -392,7 +364,6 @@ def check_kernel_config(
             required_state=True,  # =m
             warn=False,
             url="",
-            verbose=verbose,
         )
         verify_kernel_config_setting(
             location=location,
@@ -401,7 +372,15 @@ def check_kernel_config(
             required_state=True,  # =m
             warn=False,
             url="",
-            verbose=verbose,
+        )
+        # for GPM
+        verify_kernel_config_setting(
+            location=location,
+            content=content,
+            define="CONFIG_INPUT_MOUSEDEV",
+            required_state=True,
+            warn=False,
+            url="",
         )
 
 
