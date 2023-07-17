@@ -24,6 +24,7 @@
 
 from __future__ import annotations
 
+import logging
 import os
 import sys
 import time
@@ -43,6 +44,7 @@ from globalverbose import gvd
 from pathtool import file_exists_nonzero
 from with_chdir import chdir
 
+logging.basicConfig(level=logging.INFO)
 sh.mv = None  # use sh.busybox('mv'), coreutils ignores stdin read errors
 
 
@@ -447,6 +449,7 @@ def gcc_check(
             "found previously compiled kernel tree, checking is the current gcc version was used"
         )
         gcc_version = sh.gcc_config("-l")
+        icp(gcc_version)
         gcc_version = gcc_version.splitlines()
         line = None
         for line in gcc_version:
@@ -458,15 +461,18 @@ def gcc_check(
         icp("checking for gcc version:", gcc_version)
 
         try:
+            grep_target = ("gcc/x86_64-pc-linux-gnu/" + gcc_version,)
+            icp(grep_target)
             sh.grep(
-                "gcc/x86_64-pc-linux-gnu/" + gcc_version,
+                grep_target,
                 "/usr/src/linux/init/.init_task.o.cmd",
             )
             icp(
                 gcc_version,
                 "was used to compile kernel previously, not running `make clean`",
             )
-        except sh.ErrorReturnCode_1:
+        except sh.ErrorReturnCode_1 as e:
+            icp(e)
             icp("old gcc version detected, make clean required. Sleeping 5.")
             os.chdir("/usr/src/linux")
             time.sleep(5)
