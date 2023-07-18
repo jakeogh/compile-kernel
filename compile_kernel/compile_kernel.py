@@ -400,6 +400,14 @@ def check_kernel_config(
             warn=False,
             url="",
         )
+        verify_kernel_config_setting(
+            location=location,
+            content=content,
+            define="CONFIG_EARLY_PRINTK",
+            required_state=True,
+            warn=False,
+            url="",
+        )
 
 
 def symlink_config(
