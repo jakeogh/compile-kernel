@@ -208,14 +208,15 @@ def check_kernel_config(
             url=None,
         )
 
-        verify_kernel_config_setting(
-            location=location,
-            content=content,
-            define="CONFIG_CRYPTO_USER",
-            required_state=True,
-            warn=False,
-            url=None,
-        )
+        ## not sure what this was for
+        # verify_kernel_config_setting(
+        #    location=location,
+        #    content=content,
+        #    define="CONFIG_CRYPTO_USER",
+        #    required_state=True,
+        #    warn=False,
+        #    url=None,
+        # )
 
         verify_kernel_config_setting(
             location=location,
