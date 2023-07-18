@@ -84,9 +84,10 @@ def set_kernel_config_option(*, path: Path, define: str, state: bool, module: bo
         config_command = sh.Command(script_path)
         config_command = config_command.bake("--file", path.as_posix())
         config_command = config_command.bake("--module")
-    config_command = config_command.bake(define)
-    _result = config_command()
-    icp(_result)
+        config_command = config_command.bake(define)
+        _result = config_command()
+        icp(_result)
+
     content = read_content_of_kernel_config(path)
     return content
 
