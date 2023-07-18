@@ -207,14 +207,14 @@ def check_kernel_config(
         url=None,
     )
 
-    verify_kernel_config_setting(
-        path=path,
-        content=content,
-        define="CONFIG_DEBUG_INFO",
-        required_state=True,
-        warn=False,
-        url=None,
-    )
+    # verify_kernel_config_setting(
+    #    path=path,
+    #    content=content,
+    #    define="CONFIG_DEBUG_INFO",
+    #    required_state=True,
+    #    warn=False,
+    #    url=None,
+    # )
 
     verify_kernel_config_setting(
         path=path,
