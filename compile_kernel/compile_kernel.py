@@ -50,6 +50,47 @@ logging.basicConfig(level=logging.INFO)
 sh.mv = None  # use sh.busybox('mv'), coreutils ignores stdin read errors
 
 
+def read_content_of_kernel_config(path: Path):
+    try:
+        content = sh.zcat(path)
+    except sh.ErrorReturnCode_1 as e:
+        icp(dir(e))
+        if hasattr(e, "stderr"):
+            # icp(e.stderr)
+            if f"{path.as_posix()}: not in gzip format" in e.stderr.decode("utf8"):
+                content = sh.cat(path)
+            else:
+                raise e
+    return content
+
+
+def set_kernel_config_option(*, path: Path, define: str, state: bool, module: bool):
+    if not state:
+        assert not module
+    script_path = Path("/usr/src/linux/scripts/config")
+    config_command = sh.Command(script_path)
+    config_command = config_command.bake("--file", path.as_posix())
+    if not state:
+        config_command = config_command.bake("--disable")
+    else:
+        config_command = config_command.bake("--enable")
+
+    config_command = config_command.bake(define)
+    _result = config_command()
+    icp(_result)
+
+    del config_command
+    if module:
+        config_command = sh.Command(script_path)
+        config_command = config_command.bake("--file", path.as_posix())
+        config_command = config_command.bake("--module")
+    config_command = config_command.bake(define)
+    _result = config_command()
+    icp(_result)
+    content = read_content_of_kernel_config(path)
+    return content
+
+
 def verify_kernel_config_setting(
     *,
     path: Path,
@@ -62,6 +103,11 @@ def verify_kernel_config_setting(
     verbose: bool | int | float = False,
 ):
     ic(path, len(content), define, required_state, warn, url)
+
+    if fix:
+        content = set_kernel_config_option(
+            path=path, define=define, state=required_state, module=False
+        )
 
     state_table = {True: "enabled", False: "disabled"}
     assert isinstance(required_state, bool)
@@ -116,16 +162,7 @@ def check_kernel_config(
     verbose: bool | int | float = False,
 ):
     path = path.resolve()
-    try:
-        content = sh.zcat(path)
-    except sh.ErrorReturnCode_1 as e:
-        icp(dir(e))
-        if hasattr(e, "stderr"):
-            # icp(e.stderr)
-            if f"{path.as_posix()}: not in gzip format" in e.stderr.decode("utf8"):
-                content = sh.cat(path)
-            else:
-                raise e
+    content = read_content_of_kernel_config(path)
 
     # to see options like CONFIG_TRIM_UNUSED_KSYMS
     verify_kernel_config_setting(
