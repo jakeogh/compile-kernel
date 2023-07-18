@@ -72,7 +72,9 @@ def verify_kernel_config_setting(
     if url:
         msg += f" See: {url}"
 
-    if define + " is not set" not in content:
+    if define not in content:
+        current_state = False
+    elif define + " is not set" not in content:
         # the define could be enabled
         if define + "=y" in content:
             # found_define = True
@@ -88,10 +90,13 @@ def verify_kernel_config_setting(
     if current_state == required_state:
         return  # all is well
 
+    ic(current_state)
+
     # mypy: Invalid index type "None | bool" for "Dict[bool, str]"; expected type "bool"  [index] (E)
     if gvd:
         ic(define, current_state, state_table)
 
+    assert current_state is not None
     msg = f"{define} is {state_table[current_state]}!" + msg
     if warn:
         msg = "WARNING: " + msg
@@ -119,6 +124,16 @@ def check_kernel_config(
                 content = sh.cat(path)
             else:
                 raise e
+
+    # to see options like CONFIG_TRIM_UNUSED_KSYMS
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_EXPERT",
+        required_state=True,
+        warn=False,
+        url="",
+    )
 
     verify_kernel_config_setting(
         path=path,
