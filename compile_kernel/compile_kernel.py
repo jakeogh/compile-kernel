@@ -52,7 +52,7 @@ sh.mv = None  # use sh.busybox('mv'), coreutils ignores stdin read errors
 
 def verify_kernel_config_setting(
     *,
-    location: Path,
+    path: Path,
     content: str,
     define: str,
     required_state: bool,
@@ -60,7 +60,7 @@ def verify_kernel_config_setting(
     url: None | str = None,
     verbose: bool | int | float = False,
 ):
-    ic(location, len(content), define, required_state, warn, url)
+    ic(path, len(content), define, required_state, warn, url)
 
     state_table = {True: "enabled", False: "disabled"}
     assert isinstance(required_state, bool)
@@ -95,12 +95,12 @@ def verify_kernel_config_setting(
     msg = f"{define} is {state_table[current_state]}!" + msg
     if warn:
         msg = "WARNING: " + msg
-        eprint(location.as_posix(), msg)
+        eprint(path.as_posix(), msg)
         pause("press any key to continue")
         return
 
     msg = "ERROR: " + msg
-    raise ValueError(location.as_posix(), msg)
+    raise ValueError(path.as_posix(), msg)
 
 
 def check_kernel_config(
@@ -109,310 +109,303 @@ def check_kernel_config(
     verbose: bool | int | float = False,
 ):
     path = path.resolve()
-    locations = [path]
-    icp(locations)
-    assert locations[0].exists()
-    for location in locations:
-        if not location.exists():
-            icp("skipping:", location)
-            continue
-        try:
-            content = sh.zcat(location)
-        except sh.ErrorReturnCode_1 as e:
-            icp(dir(e))
-            if hasattr(e, "stderr"):
-                # icp(e.stderr)
-                if f"{path.as_posix()}: not in gzip format" in e.stderr.decode("utf8"):
-                    content = sh.cat(location)
-                else:
-                    raise e
+    try:
+        content = sh.zcat(path)
+    except sh.ErrorReturnCode_1 as e:
+        icp(dir(e))
+        if hasattr(e, "stderr"):
+            # icp(e.stderr)
+            if f"{path.as_posix()}: not in gzip format" in e.stderr.decode("utf8"):
+                content = sh.cat(path)
+            else:
+                raise e
 
-        verify_kernel_config_setting(
-            location=location,
-            content=content,
-            define="CONFIG_FB_EFI",
-            required_state=True,
-            warn=False,
-            url="",
-        )
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_FB_EFI",
+        required_state=True,
+        warn=False,
+        url="",
+    )
 
-        verify_kernel_config_setting(
-            location=location,
-            content=content,
-            define="CONFIG_TRIM_UNUSED_KSYMS",
-            required_state=False,
-            warn=False,
-            url="",
-        )
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_TRIM_UNUSED_KSYMS",
+        required_state=False,
+        warn=False,
+        url="",
+    )
 
-        verify_kernel_config_setting(
-            location=location,
-            content=content,
-            define="CONFIG_INTEL_IOMMU_DEFAULT_ON",
-            required_state=False,
-            warn=True,
-            url="http://forums.debian.net/viewtopic.php?t=126397",
-        )
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_INTEL_IOMMU_DEFAULT_ON",
+        required_state=False,
+        warn=True,
+        url="http://forums.debian.net/viewtopic.php?t=126397",
+    )
 
-        verify_kernel_config_setting(
-            location=location,
-            content=content,
-            define="CONFIG_IKCONFIG_PROC",
-            required_state=True,
-            warn=False,
-            url=None,
-        )
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_IKCONFIG_PROC",
+        required_state=True,
+        warn=False,
+        url=None,
+    )
 
-        verify_kernel_config_setting(
-            location=location,
-            content=content,
-            define="CONFIG_IKCONFIG",
-            required_state=True,
-            warn=False,
-            url=None,
-        )
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_IKCONFIG",
+        required_state=True,
+        warn=False,
+        url=None,
+    )
 
-        verify_kernel_config_setting(
-            location=location,
-            content=content,
-            define="CONFIG_SUNRPC_DEBUG",
-            required_state=True,
-            warn=False,
-            url=None,
-        )
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_SUNRPC_DEBUG",
+        required_state=True,
+        warn=False,
+        url=None,
+    )
 
-        verify_kernel_config_setting(
-            location=location,
-            content=content,
-            define="CONFIG_DEBUG_INFO",
-            required_state=True,
-            warn=False,
-            url=None,
-        )
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_DEBUG_INFO",
+        required_state=True,
+        warn=False,
+        url=None,
+    )
 
-        verify_kernel_config_setting(
-            location=location,
-            content=content,
-            define="CONFIG_COMPILE_TEST",
-            required_state=False,
-            warn=False,
-            url=None,
-        )
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_COMPILE_TEST",
+        required_state=False,
+        warn=False,
+        url=None,
+    )
 
-        verify_kernel_config_setting(
-            location=location,
-            content=content,
-            define="CONFIG_FRAME_POINTER",
-            required_state=True,
-            warn=False,
-            url=None,
-        )
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_FRAME_POINTER",
+        required_state=True,
+        warn=False,
+        url=None,
+    )
 
-        ## not sure what this was for
-        # verify_kernel_config_setting(
-        #    location=location,
-        #    content=content,
-        #    define="CONFIG_CRYPTO_USER",
-        #    required_state=True,
-        #    warn=False,
-        #    url=None,
-        # )
+    ## not sure what this was for
+    # verify_kernel_config_setting(
+    #    path=path,
+    #    content=content,
+    #    define="CONFIG_CRYPTO_USER",
+    #    required_state=True,
+    #    warn=False,
+    #    url=None,
+    # )
 
-        verify_kernel_config_setting(
-            location=location,
-            content=content,
-            define="CONFIG_DRM",
-            required_state=True,
-            warn=False,
-            url="https://wiki.gentoo.org/wiki/Nouveau",
-        )
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_DRM",
+        required_state=True,
+        warn=False,
+        url="https://wiki.gentoo.org/wiki/Nouveau",
+    )
 
-        verify_kernel_config_setting(
-            location=location,
-            content=content,
-            define="CONFIG_DRM_FBDEV_EMULATION",
-            required_state=True,
-            warn=False,
-            url="https://wiki.gentoo.org/wiki/Nouveau",
-        )
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_DRM_FBDEV_EMULATION",
+        required_state=True,
+        warn=False,
+        url="https://wiki.gentoo.org/wiki/Nouveau",
+    )
 
-        verify_kernel_config_setting(
-            location=location,
-            content=content,
-            define="CONFIG_DRM_NOUVEAU",
-            required_state=True,  # =m
-            warn=False,
-            url="https://wiki.gentoo.org/wiki/Nouveau",
-        )
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_DRM_NOUVEAU",
+        required_state=True,  # =m
+        warn=False,
+        url="https://wiki.gentoo.org/wiki/Nouveau",
+    )
 
-        verify_kernel_config_setting(
-            location=location,
-            content=content,
-            define="CONFIG_DRM_RADEON",
-            required_state=True,  # =m
-            warn=False,
-            url="https://wiki.gentoo.org/wiki/Nouveau",
-        )
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_DRM_RADEON",
+        required_state=True,  # =m
+        warn=False,
+        url="https://wiki.gentoo.org/wiki/Nouveau",
+    )
 
-        verify_kernel_config_setting(
-            location=location,
-            content=content,
-            define="CONFIG_BINFMT_MISC",
-            required_state=True,  # =m
-            warn=False,
-            url="https://pypi.org/project/fchroot",
-        )
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_BINFMT_MISC",
+        required_state=True,  # =m
+        warn=False,
+        url="https://pypi.org/project/fchroot",
+    )
 
-        verify_kernel_config_setting(
-            location=location,
-            content=content,
-            define="HID_WACOM",
-            required_state=True,
-            warn=False,
-            url="https://github.com/gentoo/gentoo/blob/master/x11-drivers/xf86-input-wacom/xf86-input-wacom-0.40.0.ebuild",
-        )
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="HID_WACOM",
+        required_state=True,
+        warn=False,
+        url="https://github.com/gentoo/gentoo/blob/master/x11-drivers/xf86-input-wacom/xf86-input-wacom-0.40.0.ebuild",
+    )
 
-        verify_kernel_config_setting(
-            location=location,
-            content=content,
-            define="CONFIG_TASK_DELAY_ACCT",
-            required_state=True,  # =m
-            warn=False,
-            url="http://guichaz.free.fr/iotop/",
-        )
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_TASK_DELAY_ACCT",
+        required_state=True,  # =m
+        warn=False,
+        url="http://guichaz.free.fr/iotop/",
+    )
 
-        verify_kernel_config_setting(
-            location=location,
-            content=content,
-            define="CONFIG_NET_CORE",
-            required_state=True,  # =y
-            warn=False,
-            url="",
-        )
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_NET_CORE",
+        required_state=True,  # =y
+        warn=False,
+        url="",
+    )
 
-        verify_kernel_config_setting(
-            location=location,
-            content=content,
-            define="CONFIG_TUN",
-            required_state=True,  # =m
-            warn=False,
-            url="https://www.kernel.org/doc/html/latest/networking/tuntap.html",
-        )
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_TUN",
+        required_state=True,  # =m
+        warn=False,
+        url="https://www.kernel.org/doc/html/latest/networking/tuntap.html",
+    )
 
-        verify_kernel_config_setting(
-            location=location,
-            content=content,
-            define="CONFIG_VIRTIO_NET",
-            required_state=True,  # =m
-            warn=False,
-            url="",
-        )
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_VIRTIO_NET",
+        required_state=True,  # =m
+        warn=False,
+        url="",
+    )
 
-        verify_kernel_config_setting(
-            location=location,
-            content=content,
-            define="CONFIG_APPLE_PROPERTIES",
-            required_state=True,  # =m
-            warn=False,
-            url="",
-        )
-        verify_kernel_config_setting(
-            location=location,
-            content=content,
-            define="CONFIG_KEYBOARD_APPLESPI",
-            required_state=True,  # =m
-            warn=False,
-            url="",
-        )
-        verify_kernel_config_setting(
-            location=location,
-            content=content,
-            define="CONFIG_MOUSE_APPLETOUCH",
-            required_state=True,  # =m
-            warn=False,
-            url="https://www.kernel.org/doc/html/v6.1-rc4/input/devices/appletouch.html",
-        )
-        verify_kernel_config_setting(
-            location=location,
-            content=content,
-            define="CONFIG_BACKLIGHT_APPLE",
-            required_state=True,  # =m
-            warn=False,
-            url="",
-        )
-        verify_kernel_config_setting(
-            location=location,
-            content=content,
-            define="CONFIG_HID_APPLE",
-            required_state=True,  # =m
-            warn=False,
-            url="",
-        )
-        verify_kernel_config_setting(
-            location=location,
-            content=content,
-            define="CONFIG_HID_APPLEIR",
-            required_state=True,  # =m
-            warn=False,
-            url="",
-        )
-        verify_kernel_config_setting(
-            location=location,
-            content=content,
-            define="CONFIG_USB_APPLEDISPLAY",
-            required_state=True,  # =m
-            warn=False,
-            url="",
-        )
-        verify_kernel_config_setting(
-            location=location,
-            content=content,
-            define="CONFIG_APPLE_MFI_FASTCHARGE",
-            required_state=True,  # =m
-            warn=False,
-            url="",
-        )
-        verify_kernel_config_setting(
-            location=location,
-            content=content,
-            define="CONFIG_APPLE_GMUX",
-            required_state=True,  # =m
-            warn=False,
-            url="",
-        )
-        # for GPM
-        verify_kernel_config_setting(
-            location=location,
-            content=content,
-            define="CONFIG_INPUT_MOUSEDEV",
-            required_state=True,
-            warn=False,
-            url="",
-        )
-        verify_kernel_config_setting(
-            location=location,
-            content=content,
-            define="CONFIG_ZRAM",
-            required_state=True,
-            warn=False,
-            url="",
-        )
-        verify_kernel_config_setting(
-            location=location,
-            content=content,
-            define="CONFIG_BLK_DEV_FD",
-            required_state=True,
-            warn=False,
-            url="",
-        )
-        verify_kernel_config_setting(
-            location=location,
-            content=content,
-            define="CONFIG_EARLY_PRINTK",
-            required_state=True,
-            warn=False,
-            url="",
-        )
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_APPLE_PROPERTIES",
+        required_state=True,  # =m
+        warn=False,
+        url="",
+    )
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_KEYBOARD_APPLESPI",
+        required_state=True,  # =m
+        warn=False,
+        url="",
+    )
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_MOUSE_APPLETOUCH",
+        required_state=True,  # =m
+        warn=False,
+        url="https://www.kernel.org/doc/html/v6.1-rc4/input/devices/appletouch.html",
+    )
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_BACKLIGHT_APPLE",
+        required_state=True,  # =m
+        warn=False,
+        url="",
+    )
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_HID_APPLE",
+        required_state=True,  # =m
+        warn=False,
+        url="",
+    )
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_HID_APPLEIR",
+        required_state=True,  # =m
+        warn=False,
+        url="",
+    )
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_USB_APPLEDISPLAY",
+        required_state=True,  # =m
+        warn=False,
+        url="",
+    )
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_APPLE_MFI_FASTCHARGE",
+        required_state=True,  # =m
+        warn=False,
+        url="",
+    )
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_APPLE_GMUX",
+        required_state=True,  # =m
+        warn=False,
+        url="",
+    )
+    # for GPM
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_INPUT_MOUSEDEV",
+        required_state=True,
+        warn=False,
+        url="",
+    )
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_ZRAM",
+        required_state=True,
+        warn=False,
+        url="",
+    )
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_BLK_DEV_FD",
+        required_state=True,
+        warn=False,
+        url="",
+    )
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_EARLY_PRINTK",
+        required_state=True,
+        warn=False,
+        url="",
+    )
 
 
 def _symlink_config(
