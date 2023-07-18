@@ -183,6 +183,24 @@ def check_kernel_config(
     verify_kernel_config_setting(
         path=path,
         content=content,
+        define="CONFIG_NFS_FS",
+        required_state=True,
+        warn=False,
+        url=None,
+    )
+
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_NFSD",
+        required_state=True,
+        warn=False,
+        url=None,
+    )
+
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
         define="CONFIG_SUNRPC_DEBUG",
         required_state=True,
         warn=False,
