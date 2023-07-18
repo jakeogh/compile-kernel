@@ -192,7 +192,7 @@ def check_kernel_config(
     verify_kernel_config_setting(
         path=path,
         content=content,
-        define="CONFIG_NFSD",
+        define="CONFIG_NFSD_V4",
         required_state=True,
         warn=False,
         url=None,
