@@ -225,14 +225,14 @@ def check_kernel_config(
         url=None,
     )
 
-    verify_kernel_config_setting(
-        path=path,
-        content=content,
-        define="CONFIG_FRAME_POINTER",
-        required_state=True,
-        warn=False,
-        url=None,
-    )
+    # verify_kernel_config_setting(
+    #    path=path,
+    #    content=content,
+    #    define="CONFIG_FRAME_POINTER",
+    #    required_state=True,
+    #    warn=False,
+    #    url=None,
+    # )
 
     ## not sure what this was for
     # verify_kernel_config_setting(
