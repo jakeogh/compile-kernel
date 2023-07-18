@@ -72,7 +72,7 @@ def verify_kernel_config_setting(
     if url:
         msg += f" See: {url}"
 
-    if define not in content:
+    if (define + "" not in content) and (define + "=" not in content):
         current_state = False
     elif define + " is not set" not in content:
         # the define could be enabled
