@@ -761,6 +761,11 @@ def compile(
     no_check_boot: bool,
     verbose: bool | int | float = False,
 ):
+    tty, verbose = tv(
+        ctx=ctx,
+        verbose=verbose,
+        verbose_inf=verbose_inf,
+    )
     if not verbose:
         ic.disable()
     if verbose_inf:
@@ -798,6 +803,11 @@ def check_config(
     dict_output: bool,
     verbose: bool | int | float = False,
 ):
+    tty, verbose = tv(
+        ctx=ctx,
+        verbose=verbose,
+        verbose_inf=verbose_inf,
+    )
     if not verbose:
         ic.disable()
     if verbose_inf:
