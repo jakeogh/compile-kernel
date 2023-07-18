@@ -108,6 +108,7 @@ def check_kernel_config(
     path: Path,
     verbose: bool | int | float = False,
 ):
+    path = path.resolve()
     locations = [path]
     icp(locations)
     assert locations[0].exists()
@@ -120,7 +121,8 @@ def check_kernel_config(
         except sh.ErrorReturnCode_1 as e:
             icp(dir(e))
             if hasattr(e, "stderr"):
-                if b"/usr/src/linux/.config: not in gzip format" in e.stderr:
+                # icp(e.stderr)
+                if f"{path.as_posix()}: not in gzip format" in e.stderr.decode("utf8"):
                     content = sh.cat(location)
                 else:
                     raise e
