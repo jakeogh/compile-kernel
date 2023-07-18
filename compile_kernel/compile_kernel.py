@@ -57,6 +57,7 @@ def verify_kernel_config_setting(
     define: str,
     required_state: bool,
     warn: bool,
+    fix: bool,
     url: None | str = None,
     verbose: bool | int | float = False,
 ):
@@ -111,6 +112,7 @@ def verify_kernel_config_setting(
 def check_kernel_config(
     *,
     path: Path,
+    fix: bool,
     verbose: bool | int | float = False,
 ):
     path = path.resolve()
@@ -132,6 +134,7 @@ def check_kernel_config(
         define="CONFIG_EXPERT",
         required_state=True,
         warn=False,
+        fix=fix,
         url="",
     )
 
@@ -141,6 +144,7 @@ def check_kernel_config(
         define="CONFIG_FB_EFI",
         required_state=True,
         warn=False,
+        fix=fix,
         url="",
     )
 
@@ -150,6 +154,7 @@ def check_kernel_config(
         define="CONFIG_TRIM_UNUSED_KSYMS",
         required_state=False,
         warn=False,
+        fix=fix,
         url="",
     )
 
@@ -159,6 +164,7 @@ def check_kernel_config(
         define="CONFIG_INTEL_IOMMU_DEFAULT_ON",
         required_state=False,
         warn=True,
+        fix=fix,
         url="http://forums.debian.net/viewtopic.php?t=126397",
     )
 
@@ -168,6 +174,7 @@ def check_kernel_config(
         define="CONFIG_IKCONFIG_PROC",
         required_state=True,
         warn=False,
+        fix=fix,
         url=None,
     )
 
@@ -177,6 +184,7 @@ def check_kernel_config(
         define="CONFIG_IKCONFIG",
         required_state=True,
         warn=False,
+        fix=fix,
         url=None,
     )
 
@@ -186,6 +194,7 @@ def check_kernel_config(
         define="CONFIG_NFS_FS",
         required_state=True,
         warn=False,
+        fix=fix,
         url=None,
     )
 
@@ -195,6 +204,7 @@ def check_kernel_config(
         define="CONFIG_NFSD_V4",
         required_state=True,
         warn=False,
+        fix=fix,
         url=None,
     )
 
@@ -204,6 +214,7 @@ def check_kernel_config(
         define="CONFIG_SUNRPC_DEBUG",
         required_state=True,
         warn=False,
+        fix=fix,
         url=None,
     )
 
@@ -212,7 +223,7 @@ def check_kernel_config(
     #    content=content,
     #    define="CONFIG_DEBUG_INFO",
     #    required_state=True,
-    #    warn=False,
+    #    warn=False, fix=fix,
     #    url=None,
     # )
 
@@ -222,6 +233,7 @@ def check_kernel_config(
         define="CONFIG_COMPILE_TEST",
         required_state=False,
         warn=False,
+        fix=fix,
         url=None,
     )
 
@@ -230,7 +242,7 @@ def check_kernel_config(
     #    content=content,
     #    define="CONFIG_FRAME_POINTER",
     #    required_state=True,
-    #    warn=False,
+    #    warn=False, fix=fix,
     #    url=None,
     # )
 
@@ -240,7 +252,7 @@ def check_kernel_config(
     #    content=content,
     #    define="CONFIG_CRYPTO_USER",
     #    required_state=True,
-    #    warn=False,
+    #    warn=False, fix=fix,
     #    url=None,
     # )
 
@@ -250,6 +262,7 @@ def check_kernel_config(
         define="CONFIG_DRM",
         required_state=True,
         warn=False,
+        fix=fix,
         url="https://wiki.gentoo.org/wiki/Nouveau",
     )
 
@@ -259,6 +272,7 @@ def check_kernel_config(
         define="CONFIG_DRM_FBDEV_EMULATION",
         required_state=True,
         warn=False,
+        fix=fix,
         url="https://wiki.gentoo.org/wiki/Nouveau",
     )
 
@@ -268,6 +282,7 @@ def check_kernel_config(
         define="CONFIG_DRM_NOUVEAU",
         required_state=True,  # =m
         warn=False,
+        fix=fix,
         url="https://wiki.gentoo.org/wiki/Nouveau",
     )
 
@@ -277,6 +292,7 @@ def check_kernel_config(
         define="CONFIG_DRM_RADEON",
         required_state=True,  # =m
         warn=False,
+        fix=fix,
         url="https://wiki.gentoo.org/wiki/Nouveau",
     )
 
@@ -286,6 +302,7 @@ def check_kernel_config(
         define="CONFIG_BINFMT_MISC",
         required_state=True,  # =m
         warn=False,
+        fix=fix,
         url="https://pypi.org/project/fchroot",
     )
 
@@ -295,6 +312,7 @@ def check_kernel_config(
         define="HID_WACOM",
         required_state=True,
         warn=False,
+        fix=fix,
         url="https://github.com/gentoo/gentoo/blob/master/x11-drivers/xf86-input-wacom/xf86-input-wacom-0.40.0.ebuild",
     )
 
@@ -304,6 +322,7 @@ def check_kernel_config(
         define="CONFIG_TASK_DELAY_ACCT",
         required_state=True,  # =m
         warn=False,
+        fix=fix,
         url="http://guichaz.free.fr/iotop/",
     )
 
@@ -313,6 +332,7 @@ def check_kernel_config(
         define="CONFIG_NET_CORE",
         required_state=True,  # =y
         warn=False,
+        fix=fix,
         url="",
     )
 
@@ -322,6 +342,7 @@ def check_kernel_config(
         define="CONFIG_TUN",
         required_state=True,  # =m
         warn=False,
+        fix=fix,
         url="https://www.kernel.org/doc/html/latest/networking/tuntap.html",
     )
 
@@ -331,6 +352,7 @@ def check_kernel_config(
         define="CONFIG_VIRTIO_NET",
         required_state=True,  # =m
         warn=False,
+        fix=fix,
         url="",
     )
 
@@ -340,6 +362,7 @@ def check_kernel_config(
         define="CONFIG_APPLE_PROPERTIES",
         required_state=True,  # =m
         warn=False,
+        fix=fix,
         url="",
     )
     verify_kernel_config_setting(
@@ -348,6 +371,7 @@ def check_kernel_config(
         define="CONFIG_KEYBOARD_APPLESPI",
         required_state=True,  # =m
         warn=False,
+        fix=fix,
         url="",
     )
     verify_kernel_config_setting(
@@ -356,6 +380,7 @@ def check_kernel_config(
         define="CONFIG_MOUSE_APPLETOUCH",
         required_state=True,  # =m
         warn=False,
+        fix=fix,
         url="https://www.kernel.org/doc/html/v6.1-rc4/input/devices/appletouch.html",
     )
     verify_kernel_config_setting(
@@ -364,6 +389,7 @@ def check_kernel_config(
         define="CONFIG_BACKLIGHT_APPLE",
         required_state=True,  # =m
         warn=False,
+        fix=fix,
         url="",
     )
     verify_kernel_config_setting(
@@ -372,6 +398,7 @@ def check_kernel_config(
         define="CONFIG_HID_APPLE",
         required_state=True,  # =m
         warn=False,
+        fix=fix,
         url="",
     )
     verify_kernel_config_setting(
@@ -380,6 +407,7 @@ def check_kernel_config(
         define="CONFIG_HID_APPLEIR",
         required_state=True,  # =m
         warn=False,
+        fix=fix,
         url="",
     )
     verify_kernel_config_setting(
@@ -388,6 +416,7 @@ def check_kernel_config(
         define="CONFIG_USB_APPLEDISPLAY",
         required_state=True,  # =m
         warn=False,
+        fix=fix,
         url="",
     )
     verify_kernel_config_setting(
@@ -396,6 +425,7 @@ def check_kernel_config(
         define="CONFIG_APPLE_MFI_FASTCHARGE",
         required_state=True,  # =m
         warn=False,
+        fix=fix,
         url="",
     )
     verify_kernel_config_setting(
@@ -404,6 +434,7 @@ def check_kernel_config(
         define="CONFIG_APPLE_GMUX",
         required_state=True,  # =m
         warn=False,
+        fix=fix,
         url="",
     )
     # for GPM
@@ -413,6 +444,7 @@ def check_kernel_config(
         define="CONFIG_INPUT_MOUSEDEV",
         required_state=True,
         warn=False,
+        fix=fix,
         url="",
     )
     verify_kernel_config_setting(
@@ -421,6 +453,7 @@ def check_kernel_config(
         define="CONFIG_ZRAM",
         required_state=True,
         warn=False,
+        fix=fix,
         url="",
     )
     verify_kernel_config_setting(
@@ -429,6 +462,7 @@ def check_kernel_config(
         define="CONFIG_BLK_DEV_FD",
         required_state=True,
         warn=False,
+        fix=fix,
         url="",
     )
     verify_kernel_config_setting(
@@ -437,6 +471,7 @@ def check_kernel_config(
         define="CONFIG_EARLY_PRINTK",
         required_state=True,
         warn=False,
+        fix=fix,
         url="",
     )
 
@@ -562,6 +597,7 @@ def kcompile(
     configure: bool,
     configure_only: bool,
     force: bool,
+    fix: bool,
     no_check_boot: bool,
     symlink_config: bool,
     verbose: bool | int | float = False,
@@ -668,7 +704,7 @@ def kcompile(
             os.system("make nconfig")
         check_kernel_config(
             path=Path("/usr/src/linux/.config"),
-            verbose=verbose,
+            fix=fix,
         )  # must be done after nconfig
 
     if configure_only:
@@ -698,7 +734,7 @@ def kcompile(
 
     check_kernel_config(
         path=Path("/usr/src/linux/.config"),
-        verbose=verbose,
+        fix=fix,
     )  # must be done after nconfig
     genkernel_command = sh.Command("genkernel")
     # genkernel_command = ["genkernel"]
@@ -779,6 +815,7 @@ def cli(
 @click.option("--configure", "--config", is_flag=True)
 @click.option("--configure-only", "--config-only", is_flag=True)
 @click.option("--force", is_flag=True)
+@click.option("--fix", is_flag=True)
 @click.option("--symlink-config", is_flag=True)
 @click.option("--no-check-boot", is_flag=True)
 @click_add_options(click_global_options)
@@ -787,6 +824,7 @@ def compile(
     ctx,
     configure: bool,
     configure_only: bool,
+    fix: bool,
     symlink_config: bool,
     verbose_inf: bool,
     dict_output: bool,
@@ -808,6 +846,7 @@ def compile(
         configure=configure,
         configure_only=configure_only,
         force=force,
+        fix=fix,
         no_check_boot=no_check_boot,
         symlink_config=symlink_config,
         verbose=verbose,
@@ -827,11 +866,13 @@ def compile(
     ),
     nargs=-1,
 )
+@click.option("--fix", is_flag=True)
 @click_add_options(click_global_options)
 @click.pass_context
 def check_config(
     ctx,
     dotconfigs: tuple[Path, ...],
+    fix: bool,
     verbose_inf: bool,
     dict_output: bool,
     verbose: bool | int | float = False,
@@ -849,5 +890,6 @@ def check_config(
     for config in dotconfigs:
         check_kernel_config(
             path=config,
+            fix=fix,
         )  # must be done after nconfig
         return
