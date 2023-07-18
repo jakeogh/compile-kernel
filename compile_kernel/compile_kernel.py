@@ -37,8 +37,10 @@ from asserttool import ic
 from asserttool import icp
 from asserttool import pause
 from asserttool import root_user
+from click_auto_help import AHGroup
 from clicktool import click_add_options
 from clicktool import click_global_options
+from clicktool import tv
 from eprint import eprint
 from globalverbose import gvd
 from pathtool import file_exists_nonzero
@@ -410,7 +412,7 @@ def check_kernel_config(
         )
 
 
-def symlink_config(
+def _symlink_config(
     *,
     verbose: bool | int | float = False,
 ):
@@ -532,6 +534,7 @@ def kcompile(
     configure_only: bool,
     force: bool,
     no_check_boot: bool,
+    symlink_config: bool,
     verbose: bool | int | float = False,
 ):
     icp()
@@ -553,8 +556,9 @@ def kcompile(
             icp("mount /boot first. Exiting.")
             raise ValueError("mount /boot first")
 
-    check_config_enviroment()
-    symlink_config()
+    if symlink_config:
+        check_config_enviroment()
+        _symlink_config()
     assert Path("/usr/src/linux/.config").is_symlink()
 
     if not configure_only:
@@ -719,32 +723,48 @@ def kcompile(
     icp("kernel compile and install completed OK")
 
 
-@click.command()
-@click.option("--configure", "--config", is_flag=True)
-@click.option("--configure-only", "--config-only", is_flag=True)
-@click.option("--force", is_flag=True)
-@click.option("--only-check", is_flag=True)
-@click.option("--no-check-boot", is_flag=True)
+@click.group(no_args_is_help=True, cls=AHGroup)
 @click_add_options(click_global_options)
 @click.pass_context
 def cli(
     ctx,
+    verbose_inf: bool,
+    dict_output: bool,
+    verbose: bool | int | float = False,
+) -> None:
+    tty, verbose = tv(
+        ctx=ctx,
+        verbose=verbose,
+        verbose_inf=verbose_inf,
+    )
+    if not verbose:
+        ic.disable()
+    else:
+        ic.enable()
+
+    if verbose_inf:
+        gvd.enable()
+
+
+@cli.command()
+@click.option("--configure", "--config", is_flag=True)
+@click.option("--configure-only", "--config-only", is_flag=True)
+@click.option("--force", is_flag=True)
+@click.option("--symlink-config", is_flag=True)
+@click.option("--no-check-boot", is_flag=True)
+@click_add_options(click_global_options)
+@click.pass_context
+def compile(
+    ctx,
     configure: bool,
     configure_only: bool,
+    symlink_config: bool,
     verbose_inf: bool,
     dict_output: bool,
     force: bool,
-    only_check: bool,
     no_check_boot: bool,
     verbose: bool | int | float = False,
 ):
-    if only_check:
-        check_kernel_config(
-            path=Path("/usr/src/linux/.config"),
-            verbose=verbose,
-        )  # must be done after nconfig
-        return
-
     if not verbose:
         ic.disable()
     if verbose_inf:
@@ -755,6 +775,40 @@ def cli(
         configure_only=configure_only,
         force=force,
         no_check_boot=no_check_boot,
+        symlink_config=symlink_config,
         verbose=verbose,
     )
     eprint("DONT FORGET TO UMOUNT /boot")
+
+
+@cli.command()
+@click.argument(
+    "dotconfigs",
+    type=click.Path(
+        exists=True,
+        dir_okay=False,
+        file_okay=True,
+        allow_dash=False,
+        path_type=Path,
+    ),
+    nargs=-1,
+)
+@click_add_options(click_global_options)
+@click.pass_context
+def check_config(
+    ctx,
+    dotconfigs: tuple[Path, ...],
+    verbose_inf: bool,
+    dict_output: bool,
+    verbose: bool | int | float = False,
+):
+    if not verbose:
+        ic.disable()
+    if verbose_inf:
+        gvd.enable()
+
+    for config in dotconfigs:
+        check_kernel_config(
+            path=config,
+        )  # must be done after nconfig
+        return
