@@ -662,7 +662,7 @@ def kcompile(
     if symlink_config:
         check_config_enviroment()
         _symlink_config()
-    assert Path("/usr/src/linux/.config").is_symlink()
+        assert Path("/usr/src/linux/.config").is_symlink()
 
     if not configure_only:
         sh.emerge("genkernel", "-u", _out=sys.stdout, _err=sys.stderr)
