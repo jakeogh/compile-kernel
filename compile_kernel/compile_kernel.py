@@ -277,6 +277,16 @@ def check_kernel_config(
         fix=fix,
         url=None,
     )
+    # required by sys-fs/zfs-kmod-9999
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_UNWINDER_ORC",
+        required_state=False,  # so CONFIG_FRAME_POINTER can be set
+        warn=False,
+        fix=fix,
+        url=None,
+    )
 
     # required by sys-fs/zfs-kmod-9999
     verify_kernel_config_setting(
