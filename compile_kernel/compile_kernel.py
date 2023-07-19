@@ -261,7 +261,7 @@ def check_kernel_config(
     verify_kernel_config_setting(
         path=path,
         content=content,
-        define="CONFIG_DEBUG_INFO",
+        define="CONFIG_DEBUG_INFO_DWARF5",
         required_state=True,
         warn=False,
         fix=fix,
