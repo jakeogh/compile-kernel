@@ -138,7 +138,7 @@ def verify_kernel_config_setting(
     if current_state == required_state:
         return  # all is well
 
-    ic(current_state)
+    ic("a", current_state)
 
     # mypy: Invalid index type "None | bool" for "Dict[bool, str]"; expected type "bool"  [index] (E)
     if gvd:
