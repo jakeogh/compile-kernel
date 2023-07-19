@@ -256,14 +256,16 @@ def check_kernel_config(
         url=None,
     )
 
-    # verify_kernel_config_setting(
-    #    path=path,
-    #    content=content,
-    #    define="CONFIG_DEBUG_INFO",
-    #    required_state=True,
-    #    warn=False, fix=fix,
-    #    url=None,
-    # )
+    # required by sys-fs/zfs-kmod-9999
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_DEBUG_INFO",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url=None,
+    )
 
     verify_kernel_config_setting(
         path=path,
@@ -275,14 +277,16 @@ def check_kernel_config(
         url=None,
     )
 
-    # verify_kernel_config_setting(
-    #    path=path,
-    #    content=content,
-    #    define="CONFIG_FRAME_POINTER",
-    #    required_state=True,
-    #    warn=False, fix=fix,
-    #    url=None,
-    # )
+    # required by sys-fs/zfs-kmod-9999
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_FRAME_POINTER",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url=None,
+    )
 
     ## not sure what this was for
     # verify_kernel_config_setting(
