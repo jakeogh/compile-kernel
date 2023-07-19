@@ -527,6 +527,46 @@ def check_kernel_config(
         fix=fix,
         url="",
     )
+    # sshuttle
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_NF_NAT",
+        required_state=True,  # =m
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # sshuttle
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_IP_NF_MATCH_TTL",
+        required_state=True,  # =m
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # sshuttle
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_IP_NF_TARGET_REDIRECT",
+        required_state=True,  # =m
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # sshuttle
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_NETFILTER_XT_TARGET_HL",
+        required_state=True,  # =m
+        warn=False,
+        fix=fix,
+        url="",
+    )
 
 
 def _symlink_config(
