@@ -164,6 +164,7 @@ def check_kernel_config(
 ):
     path = path.resolve()
     content = read_content_of_kernel_config(path)
+    icp(path)
 
     # to see options like CONFIG_TRIM_UNUSED_KSYMS
     verify_kernel_config_setting(
