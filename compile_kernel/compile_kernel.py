@@ -881,6 +881,8 @@ def compile(
     )
     if not verbose:
         ic.disable()
+    else:
+        ic.enable()
     if verbose_inf:
         gvd.enable()
 
@@ -926,6 +928,8 @@ def check_config(
     )
     if not verbose:
         ic.disable()
+    else:
+        ic.enable()
     if verbose_inf:
         gvd.enable()
 
