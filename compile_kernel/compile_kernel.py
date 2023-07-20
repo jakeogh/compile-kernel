@@ -268,15 +268,15 @@ def check_kernel_config(
         url=None,
     )
 
-    verify_kernel_config_setting(
-        path=path,
-        content=content,
-        define="CONFIG_COMPILE_TEST",
-        required_state=False,
-        warn=False,
-        fix=fix,
-        url=None,
-    )
+    # verify_kernel_config_setting(
+    #    path=path,
+    #    content=content,
+    #    define="CONFIG_COMPILE_TEST",
+    #    required_state=False,
+    #    warn=False,
+    #    fix=fix,
+    #    url=None,
+    # )
     # required by sys-fs/zfs-kmod-9999
     verify_kernel_config_setting(
         path=path,
