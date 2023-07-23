@@ -908,7 +908,7 @@ def cli(
 @click.option("--configure", "--config", is_flag=True)
 @click.option("--configure-only", "--config-only", is_flag=True)
 @click.option("--force", is_flag=True)
-@click.option("--fix", is_flag=True)
+@click.option("--no-fix", is_flag=True)
 @click.option("--symlink-config", is_flag=True)
 @click.option("--no-check-boot", is_flag=True)
 @click_add_options(click_global_options)
@@ -917,7 +917,7 @@ def compile(
     ctx,
     configure: bool,
     configure_only: bool,
-    fix: bool,
+    no_fix: bool,
     symlink_config: bool,
     verbose_inf: bool,
     dict_output: bool,
@@ -936,6 +936,8 @@ def compile(
         ic.enable()
     if verbose_inf:
         gvd.enable()
+
+    fix = not no_fix
 
     kcompile(
         configure=configure,
