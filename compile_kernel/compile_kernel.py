@@ -293,6 +293,16 @@ def check_kernel_config(
         fix=fix,
         url=None,
     )
+    # required by sys-fs/zfs-kmod-9999
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_UNWINDER_FRAME_POINTER",
+        required_state=True,  # so CONFIG_FRAME_POINTER can be set
+        warn=False,
+        fix=fix,
+        url=None,
+    )
 
     # required by sys-fs/zfs-kmod-9999
     verify_kernel_config_setting(
@@ -817,6 +827,10 @@ def kcompile(
 
     if not Path("/usr/src/linux/.config").exists():
         sh.make("defconfig")
+        check_kernel_config(
+            path=Path("/usr/src/linux/.config"),
+            fix=True,
+        )
 
     check_kernel_config(
         path=Path("/usr/src/linux/.config"),
