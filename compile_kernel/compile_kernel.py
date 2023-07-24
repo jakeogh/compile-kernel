@@ -54,7 +54,7 @@ def read_content_of_kernel_config(path: Path):
     try:
         content = sh.zcat(path)
     except sh.ErrorReturnCode_1 as e:
-        icp(dir(e))
+        # ic(dir(e))
         if hasattr(e, "stderr"):
             # icp(e.stderr)
             if f"{path.as_posix()}: not in gzip format" in e.stderr.decode("utf8"):
