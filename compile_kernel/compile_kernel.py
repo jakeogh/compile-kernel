@@ -182,6 +182,56 @@ def check_kernel_config(
         fix=fix,
         url="",
     )
+    # legacy old
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_UID16",
+        required_state=False,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # not a paravirt kernel
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_PARAVIRT",
+        required_state=False,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # intel low power support
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_X86_INTEL_LPSS",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # boot VESA
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_BOOT_VESA_SUPPORT",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # power managment debug
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="ONFIG_PM_DEBUG",
+        required_state=False,
+        warn=False,
+        fix=fix,
+        url="",
+    )
 
     verify_kernel_config_setting(
         path=path,
@@ -579,6 +629,98 @@ def check_kernel_config(
         content=content,
         define="CONFIG_NETFILTER_XT_TARGET_HL",
         required_state=True,  # =m
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # old outdated option
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_NO_HZ",
+        required_state=False,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+
+    # speed
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_PREEMPT_NONE",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # speed
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_PREEMPT_VOLUNTARY",
+        required_state=False,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # speed
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_PREEMPT",
+        required_state=False,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # new process accounting
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_BSD_PROCESS_ACCT_V3",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # memory cgrroup
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_MEMCG",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # cgroup debugging
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_CGROUP_DEBUG",
+        required_state=False,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # auto cgroups... might contradict PREEMPT_NONE
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_SCHED_AUTOGROUP",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+
+    # zswap
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_ZSWAP",
+        required_state=True,
         warn=False,
         fix=fix,
         url="",
