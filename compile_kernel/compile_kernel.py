@@ -64,7 +64,13 @@ def read_content_of_kernel_config(path: Path):
     return content
 
 
-def set_kernel_config_option(*, path: Path, define: str, state: bool, module: bool):
+def set_kernel_config_option(
+    *,
+    path: Path,
+    define: str,
+    state: bool,
+    module: bool,
+):
     if not state:
         assert not module
     script_path = Path("/usr/src/linux/scripts/config")
@@ -739,15 +745,8 @@ def kcompile(
             icp(e)
             icp(dir(e))
             unconfigured_kernel = False
-            # ic(dir(e))  # this lists e.stdout
-            # ic(e.stdout)
-            # ic(e.stderr)
-            # assert False
             if hasattr(e, "stdout"):
                 icp(type(e.stdout))
-                # ic('e.stdout', e.stdout)
-                # ic('e.stderr', e.stdout)
-                # ic(type(e.stdout))  # <class 'bytes'>  #hmph. the next line should cause a TypeError (before making the str bytes) ... but didnt
                 if b"Could not find a usable .config" in e.stdout:
                     unconfigured_kernel = True
                 if b"tree at that location has not been built." in e.stdout:
@@ -762,9 +761,6 @@ def kcompile(
                 if b"These sources have not yet been prepared" in e.stdout:
                     unconfigured_kernel = True
 
-            # assert e.stdout
-            # if hasattr(e, 'stdout'):
-            #    ic(e.stdout)
             if not unconfigured_kernel:
                 # ic(unconfigured_kernel)
                 icp("unconfigured_kernel:", unconfigured_kernel)
@@ -792,7 +788,6 @@ def kcompile(
     if configure:
         with chdir(
             "/usr/src/linux",
-            verbose=verbose,
         ):
             os.system("make nconfig")
         check_kernel_config(
@@ -803,9 +798,7 @@ def kcompile(
     if configure_only:
         return
 
-    gcc_check(
-        verbose=verbose,
-    )
+    gcc_check()
 
     os.chdir("/usr/src/linux")
 
@@ -813,24 +806,23 @@ def kcompile(
     icp(
         boot_is_correct(
             linux_version=linux_version,
-            verbose=verbose,
         )
     )
 
     if not configure_only:
         if not force:
-            if kernel_is_already_compiled(
-                verbose=verbose,
-            ):
+            if kernel_is_already_compiled():
                 icp("kernel is already compiled, skipping")
                 return
+
+    if not Path("/usr/src/linux/.config").exists():
+        sh.make("defconfig")
 
     check_kernel_config(
         path=Path("/usr/src/linux/.config"),
         fix=fix,
     )  # must be done after nconfig
     genkernel_command = sh.Command("genkernel")
-    # genkernel_command = ["genkernel"]
     genkernel_command = genkernel_command.bake("all")
     # if configure:
     #    genkernel_command.append('--nconfig')
@@ -864,7 +856,6 @@ def kcompile(
         os.makedirs("/boot_backup", exist_ok=True)
         with chdir(
             "/boot_backup",
-            verbose=verbose,
         ):
             if not Path("/boot_backup/.git").is_dir():
                 sh.git.init()
@@ -946,7 +937,6 @@ def compile(
         fix=fix,
         no_check_boot=no_check_boot,
         symlink_config=symlink_config,
-        verbose=verbose,
     )
     eprint("DONT FORGET TO UMOUNT /boot")
 
