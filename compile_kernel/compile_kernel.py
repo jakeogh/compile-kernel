@@ -216,7 +216,77 @@ def check_kernel_config(
     verify_kernel_config_setting(
         path=path,
         content=content,
+        define="CONFIG_FB",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # boot VESA
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_FB_MODE_HELPERS",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # boot VESA
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_FB_RADEON",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # boot VESA
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_FB_NVIDIA",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # boot VESA
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_FB_INTEL",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # boot VESA
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_SYSFB_SIMPLEFB",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # boot VESA
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
         define="CONFIG_BOOT_VESA_SUPPORT",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # boot VESA
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_DRM_LOAD_EDID_FIRMWARE",
         required_state=True,
         warn=False,
         fix=fix,
@@ -226,8 +296,18 @@ def check_kernel_config(
     verify_kernel_config_setting(
         path=path,
         content=content,
-        define="ONFIG_PM_DEBUG",
+        define="CONFIG_PM_DEBUG",
         required_state=False,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # unknown if necessary
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_MEDIA_USB_SUPPORT:",
+        required_state=True,
         warn=False,
         fix=fix,
         url="",
