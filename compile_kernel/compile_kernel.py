@@ -306,7 +306,7 @@ def check_kernel_config(
     verify_kernel_config_setting(
         path=path,
         content=content,
-        define="CONFIG_MEDIA_USB_SUPPORT:",
+        define="CONFIG_MEDIA_USB_SUPPORT",
         required_state=True,
         warn=False,
         fix=fix,
