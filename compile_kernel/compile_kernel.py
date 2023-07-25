@@ -493,6 +493,44 @@ def check_kernel_config(
         fix=fix,
         url="https://wiki.gentoo.org/wiki/Nouveau",
     )
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_FIRMWARE_EDID",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_FB_VESA",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # usb speakers
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_SND_USB_AUDIO",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # usb otg
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_USB_OTG",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
 
     verify_kernel_config_setting(
         path=path,
@@ -502,6 +540,24 @@ def check_kernel_config(
         warn=False,
         fix=fix,
         url="https://wiki.gentoo.org/wiki/Nouveau",
+    )
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_VT_HW_CONSOLE_BINDING",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_VGA_SWITCHEROO",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
     )
 
     verify_kernel_config_setting(
@@ -838,6 +894,56 @@ def check_kernel_config(
         path=path,
         content=content,
         define="CONFIG_ZSWAP",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # zswap
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_Z3FOLD",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # memory deduplication
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_KSM",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # nvme
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_BLK_DEV_NVME",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # nvme
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_NVME_VERBOSE_ERRORS",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # nvme
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_NVME_HWMON",
         required_state=True,
         warn=False,
         fix=fix,
