@@ -212,6 +212,26 @@ def check_kernel_config(
         fix=fix,
         url="",
     )
+    # kvm
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_KVM",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # pcie
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_HOTPLUG_PCI_PCIE",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
     # intel low power support
     verify_kernel_config_setting(
         path=path,
@@ -227,6 +247,16 @@ def check_kernel_config(
         path=path,
         content=content,
         define="CONFIG_FB",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # boot VESA
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_FRAMEBUFFER_CONSOLE",
         required_state=True,
         warn=False,
         fix=fix,
