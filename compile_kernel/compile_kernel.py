@@ -182,6 +182,16 @@ def check_kernel_config(
         fix=fix,
         url="",
     )
+    # warnings as errors
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_WERROR",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
     # legacy old
     verify_kernel_config_setting(
         path=path,
