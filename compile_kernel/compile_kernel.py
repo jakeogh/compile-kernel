@@ -192,6 +192,67 @@ def check_kernel_config(
         fix=fix,
         url="",
     )
+    # fs
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_EXT2_FS",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # fs
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_EXT3_FS",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # fs
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_EXFAT_FS",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # fs
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_NTFS_FS",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # sec
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_FORTIFY_SOURCE",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # sec
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_HARDENED_USERCOPY",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+
     # legacy old
     verify_kernel_config_setting(
         path=path,
@@ -547,6 +608,76 @@ def check_kernel_config(
         content=content,
         define="CONFIG_SND_USB_AUDIO",
         required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # alsa
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_SND_OSSEMUL",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # alsa
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_SND_MIXER_OSS",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # alsa
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_SND_PCM_OSS",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # alsa
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_SND_AC97_CODEC",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # alsa
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_USB_GADGET",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # alsa
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_SND_USB_AUDIO_USE_MEDIA_CONTROLLER",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # alsa
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_SND_SUPPORT_OLD_API",
+        required_state=False,
         warn=False,
         fix=fix,
         url="",
