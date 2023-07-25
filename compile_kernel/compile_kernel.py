@@ -576,6 +576,15 @@ def check_kernel_config(
     verify_kernel_config_setting(
         path=path,
         content=content,
+        define="CONFIG_SPI",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
         define="CONFIG_KEYBOARD_APPLESPI",
         required_state=True,  # =m
         warn=False,
@@ -687,6 +696,16 @@ def check_kernel_config(
         path=path,
         content=content,
         define="CONFIG_NF_NAT",
+        required_state=True,  # =m
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # sshuttle
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_NETFILTER_ADVANCED",
         required_state=True,  # =m
         warn=False,
         fix=fix,
