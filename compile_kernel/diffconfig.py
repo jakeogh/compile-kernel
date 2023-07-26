@@ -51,7 +51,9 @@ Example usage:
 # returns a dictionary of name/value pairs for config items in the file
 def readconfig(config_file):
     d = {}
-    for line in config_file.split("\n"):
+    for line in config_file.splitlines():
+        if not line:
+            continue
         icp(line)
         if line[0] == "#":
             continue
