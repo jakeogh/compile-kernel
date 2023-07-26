@@ -1562,5 +1562,7 @@ def diff_config(
     with resources.path("compile_kernel", "diffconfig.py") as _diffconfig:
         icp(_diffconfig)
         for config1, config2 in pairwise(dotconfigs):
-            _diffconfig_command = sh.Command(_diffconfig)
+            _diffconfig_command = sh.Command("python3")
+            _diffconfig_command = _diffconfig_command.bake(_diffconfig)
             _diffconfig_command = _diffconfig_command.bake(config1, config2)
+            _diffconfig_command()
