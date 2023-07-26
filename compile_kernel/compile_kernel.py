@@ -275,6 +275,16 @@ def check_kernel_config(
         fix=fix,
         url="",
     )
+    # kvm
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_VIRTIO_BALLOON",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
     # pcie
     verify_kernel_config_setting(
         path=path,
@@ -579,6 +589,24 @@ def check_kernel_config(
     verify_kernel_config_setting(
         path=path,
         content=content,
+        define="CONFIG_DRM_AMDGPU",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_DRM_UDL",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
         define="CONFIG_FIRMWARE_EDID",
         required_state=True,
         warn=False,
@@ -590,6 +618,255 @@ def check_kernel_config(
         content=content,
         define="CONFIG_FB_VESA",
         required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_MTRR_SANITIZER",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # speculative execution
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_SLS",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # ACPI
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_ACPI_FPDT",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # ACPI
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_ACPI_TAD",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # ACPI
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_ACPI_PCI_SLOT",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # ACPI
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_ACPI_SBS",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # ACPI
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_ACPI_HED",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # ACPI
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_ACPI_APEI",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # ACPI
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_ACPI_DPTF",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # ACPI
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_ACPI_CONFIGFS",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # cpu frequency
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_CPU_FREQ_STAT",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # module versioning
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_MODVERSIONS",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # block layer SG
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_BLK_DEV_BSGLIB",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # ECC
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_MEMORY_FAILURE",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # ECC
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_MTD_NAND_ECC_SW_BCH",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # mem
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_PAGE_REPORTING",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # mem
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_TRANSPARENT_HUGEPAGE",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # mem
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_PER_VMA_LOCK",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # pcie
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_PCIEAER",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # pcie
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_PCIE_DPC",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # pcie
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_PCI_IOV",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # old interface
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_UEVENT_HELPER",
+        required_state=False,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # dmi
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_DMI_SYSFS",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # mtd
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_MTD",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # i386
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_IA32_EMULATION",
+        required_state=False,
         warn=False,
         fix=fix,
         url="",
@@ -895,6 +1172,15 @@ def check_kernel_config(
     verify_kernel_config_setting(
         path=path,
         content=content,
+        define="CONFIG_ZRAM_MEMORY_TRACKING",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
         define="CONFIG_BLK_DEV_FD",
         required_state=True,
         warn=False,
@@ -1097,6 +1383,65 @@ def check_kernel_config(
         path=path,
         content=content,
         define="CONFIG_NVME_HWMON",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # nvme
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_NVME_MULTIPATH",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    #
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_X86_CPU_RESCTRL",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    #
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_BCACHE",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    #
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_THERMAL_STATISTICS",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    #
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_SND_SEQUENCER_OSS",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_SND_AC97_CODEC",
         required_state=True,
         warn=False,
         fix=fix,
