@@ -29,6 +29,7 @@ import os
 import sys
 import time
 from importlib import resources
+from itertools import pairwise
 from pathlib import Path
 
 import click
@@ -1560,6 +1561,6 @@ def diff_config(
 
     with resources.path("compile_kernel", "diffconfig.py") as _diffconfig:
         icp(_diffconfig)
-        for config1, config2 in dotconfigs:
-            _diffconfig = sh.Command("/home/user/")
-            _diffconfig = _diffconfig.bake(config1, config2)
+        for config1, config2 in pairwise(dotconfigs):
+            _diffconfig_command = sh.Command(_diffconfig)
+            _diffconfig_command = _diffconfig_command.bake(config1, config2)
