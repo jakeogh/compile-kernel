@@ -24,7 +24,7 @@ config = {
     "install_requires": dependencies,
     "entry_points": {
         "console_scripts": [
-            "compile-kernel=compile_kernel.compile_kernel:cli",
+            "compile-kernel=compile_kernel.cli:cli",
         ],
     },
 }
