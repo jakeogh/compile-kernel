@@ -915,6 +915,36 @@ def check_kernel_config(
     verify_kernel_config_setting(
         path=path,
         content=content,
+        define="CONFIG_SND_INTEL8X0",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # alsa
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_SND_INTEL8X0M",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # alsa
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_SND_HDA_GENERIC",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # alsa
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
         define="CONFIG_SND_AC97_CODEC",
         required_state=True,
         warn=False,
