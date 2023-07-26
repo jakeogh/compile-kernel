@@ -12,6 +12,9 @@
 
 import os
 import sys
+from pathlib import Path
+
+from asserttool import icp
 
 from compile_kernel import read_content_of_kernel_config
 
@@ -49,6 +52,7 @@ Example usage:
 def readconfig(config_file):
     d = {}
     for line in config_file:
+        icp(line)
         if line[0] == "#":
             continue
         line = line[:-1]
@@ -107,8 +111,8 @@ def main():
         configb_filename = sys.argv[2]
 
     try:
-        a = readconfig(read_content_of_kernel_config(configa_filename))
-        b = readconfig(read_content_of_kernel_config(configb_filename))
+        a = readconfig(read_content_of_kernel_config(Path(configa_filename)))
+        b = readconfig(read_content_of_kernel_config(Path(configb_filename)))
     except IOError:
         e = sys.exc_info()[1]
         print("I/O error[%s]: %s\n" % (e.args[0], e.args[1]))
