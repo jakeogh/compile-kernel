@@ -24,6 +24,7 @@
 
 from __future__ import annotations
 
+import gzip
 import logging
 import os
 import sys
@@ -53,15 +54,11 @@ sh.mv = None  # use sh.busybox('mv'), coreutils ignores stdin read errors
 
 def read_content_of_kernel_config(path: Path):
     try:
-        content = sh.zcat(path)
-    except sh.ErrorReturnCode_1 as e:
-        # ic(dir(e))
-        if hasattr(e, "stderr"):
-            # icp(e.stderr)
-            if f"{path.as_posix()}: not in gzip format" in e.stderr.decode("utf8"):
-                content = sh.cat(path)
-            else:
-                raise e
+        with gzip.open(path, mode="rt", encoding="utf8") as _fh:
+            content = _fh.read()
+    except gzip.BadGzipFile:
+        with open(path, mode="rt", encoding="utf8") as _fh:
+            content = _fh.read()
     return content
 
 
