@@ -54,7 +54,7 @@ def readconfig(config_file):
     for line in config_file.splitlines():
         if not line:
             continue
-        icp(line)
+        # icp(line)
         if line[0] == "#":
             continue
         line = line[:-1]
