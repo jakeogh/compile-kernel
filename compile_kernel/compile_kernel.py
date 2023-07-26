@@ -961,16 +961,16 @@ def check_kernel_config(
         fix=fix,
         url="",
     )
-    # alsa
-    verify_kernel_config_setting(
-        path=path,
-        content=content,
-        define="CONFIG_SND_USB_AUDIO_USE_MEDIA_CONTROLLER",
-        required_state=True,
-        warn=False,
-        fix=fix,
-        url="",
-    )
+    ## alsa
+    # verify_kernel_config_setting(
+    #    path=path,
+    #    content=content,
+    #    define="CONFIG_SND_USB_AUDIO_USE_MEDIA_CONTROLLER",
+    #    required_state=True,
+    #    warn=False,
+    #    fix=fix,
+    #    url="",
+    # )
     # alsa
     verify_kernel_config_setting(
         path=path,
