@@ -30,19 +30,13 @@ import os
 import sys
 import time
 from importlib import resources
-from itertools import pairwise
 from pathlib import Path
 
-import click
 import sh
 from asserttool import ic
 from asserttool import icp
 from asserttool import pause
 from asserttool import root_user
-from click_auto_help import AHGroup
-from clicktool import click_add_options
-from clicktool import click_global_options
-from clicktool import tv
 from eprint import eprint
 from globalverbose import gvd
 from pathtool import file_exists_nonzero
@@ -1409,157 +1403,3 @@ def kcompile(
             sh.git.commit("-m", timestamp)
 
     icp("kernel compile and install completed OK")
-
-
-@click.group(no_args_is_help=True, cls=AHGroup)
-@click_add_options(click_global_options)
-@click.pass_context
-def cli(
-    ctx,
-    verbose_inf: bool,
-    dict_output: bool,
-    verbose: bool | int | float = False,
-) -> None:
-    tty, verbose = tv(
-        ctx=ctx,
-        verbose=verbose,
-        verbose_inf=verbose_inf,
-    )
-    if not verbose:
-        ic.disable()
-    else:
-        ic.enable()
-
-    if verbose_inf:
-        gvd.enable()
-
-
-@cli.command()
-@click.option("--configure", "--config", is_flag=True)
-@click.option("--configure-only", "--config-only", is_flag=True)
-@click.option("--force", is_flag=True)
-@click.option("--no-fix", is_flag=True)
-@click.option("--symlink-config", is_flag=True)
-@click.option("--no-check-boot", is_flag=True)
-@click_add_options(click_global_options)
-@click.pass_context
-def compile(
-    ctx,
-    configure: bool,
-    configure_only: bool,
-    no_fix: bool,
-    symlink_config: bool,
-    verbose_inf: bool,
-    dict_output: bool,
-    force: bool,
-    no_check_boot: bool,
-    verbose: bool | int | float = False,
-):
-    tty, verbose = tv(
-        ctx=ctx,
-        verbose=verbose,
-        verbose_inf=verbose_inf,
-    )
-    if not verbose:
-        ic.disable()
-    else:
-        ic.enable()
-    if verbose_inf:
-        gvd.enable()
-
-    fix = not no_fix
-
-    kcompile(
-        configure=configure,
-        configure_only=configure_only,
-        force=force,
-        fix=fix,
-        no_check_boot=no_check_boot,
-        symlink_config=symlink_config,
-    )
-    eprint("DONT FORGET TO UMOUNT /boot")
-
-
-@cli.command()
-@click.argument(
-    "dotconfigs",
-    type=click.Path(
-        exists=True,
-        dir_okay=False,
-        file_okay=True,
-        allow_dash=False,
-        path_type=Path,
-    ),
-    nargs=-1,
-)
-@click.option("--fix", is_flag=True)
-@click_add_options(click_global_options)
-@click.pass_context
-def check_config(
-    ctx,
-    dotconfigs: tuple[Path, ...],
-    fix: bool,
-    verbose_inf: bool,
-    dict_output: bool,
-    verbose: bool | int | float = False,
-):
-    tty, verbose = tv(
-        ctx=ctx,
-        verbose=verbose,
-        verbose_inf=verbose_inf,
-    )
-    if not verbose:
-        ic.disable()
-    else:
-        ic.enable()
-    if verbose_inf:
-        gvd.enable()
-
-    for config in dotconfigs:
-        check_kernel_config(
-            path=config,
-            fix=fix,
-        )  # must be done after nconfig
-        return
-
-
-@cli.command()
-@click.argument(
-    "dotconfigs",
-    type=click.Path(
-        exists=True,
-        dir_okay=False,
-        file_okay=True,
-        allow_dash=False,
-        path_type=Path,
-    ),
-    nargs=-1,
-)
-@click_add_options(click_global_options)
-@click.pass_context
-def diff_config(
-    ctx,
-    dotconfigs: tuple[Path, ...],
-    verbose_inf: bool,
-    dict_output: bool,
-    verbose: bool | int | float = False,
-):
-    tty, verbose = tv(
-        ctx=ctx,
-        verbose=verbose,
-        verbose_inf=verbose_inf,
-    )
-    if not verbose:
-        ic.disable()
-    else:
-        ic.enable()
-    if verbose_inf:
-        gvd.enable()
-
-    with resources.path("compile_kernel", "diffconfig.py") as _diffconfig:
-        icp(_diffconfig)
-        for config1, config2 in pairwise(dotconfigs):
-            _diffconfig_command = sh.Command("python3")
-            _diffconfig_command = _diffconfig_command.bake(_diffconfig)
-            _diffconfig_command = _diffconfig_command.bake(config1, config2)
-            _diffconfig_command()
