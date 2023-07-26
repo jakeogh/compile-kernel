@@ -107,8 +107,8 @@ def main():
         configb_filename = sys.argv[2]
 
     try:
-        a = read_content_of_kernel_config(configa_filename)
-        b = read_content_of_kernel_config(configb_filename)
+        a = readconfig(read_content_of_kernel_config(configa_filename))
+        b = readconfig(read_content_of_kernel_config(configb_filename))
     except IOError:
         e = sys.exc_info()[1]
         print("I/O error[%s]: %s\n" % (e.args[0], e.args[1]))
