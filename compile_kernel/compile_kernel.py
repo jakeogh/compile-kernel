@@ -1523,3 +1523,43 @@ def check_config(
             fix=fix,
         )  # must be done after nconfig
         return
+
+
+@cli.command()
+@click.argument(
+    "dotconfigs",
+    type=click.Path(
+        exists=True,
+        dir_okay=False,
+        file_okay=True,
+        allow_dash=False,
+        path_type=Path,
+    ),
+    nargs=-1,
+)
+@click_add_options(click_global_options)
+@click.pass_context
+def diff_config(
+    ctx,
+    dotconfigs: tuple[Path, ...],
+    verbose_inf: bool,
+    dict_output: bool,
+    verbose: bool | int | float = False,
+):
+    tty, verbose = tv(
+        ctx=ctx,
+        verbose=verbose,
+        verbose_inf=verbose_inf,
+    )
+    if not verbose:
+        ic.disable()
+    else:
+        ic.enable()
+    if verbose_inf:
+        gvd.enable()
+
+    with resources.path("compile_kernel", "diffconfig.py") as _diffconfig:
+        icp(_diffconfig)
+        for config1, config2 in dotconfigs:
+            _diffconfig = sh.Command("/home/user/")
+            _diffconfig = _diffconfig.bake(config1, config2)
