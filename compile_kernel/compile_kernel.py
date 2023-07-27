@@ -721,6 +721,56 @@ def check_kernel_config(
         fix=fix,
         url="",
     )
+    # ACPI
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_ACPI_APEI_GHES",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # ACPI
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_ACPI_APEI_PCIEAER",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # ACPI
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_ACPI_NFIT",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # ACPI
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_ACPI_PROCESSOR_AGGREGATOR",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # ACPI
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_HIBERNATION",
+        required_state=False,
+        warn=False,
+        fix=fix,
+        url="",
+    )
     # cpu frequency
     verify_kernel_config_setting(
         path=path,
@@ -1343,6 +1393,36 @@ def check_kernel_config(
         content=content,
         define="CONFIG_CGROUP_DEBUG",
         required_state=False,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # cgroup
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_CGROUP_FAVOR_DYNMODS",
+        required_state=False,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    #
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_CHECKPOINT_RESTORE",
+        required_state=False,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    #
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_X86_SGX",
+        required_state=True,
         warn=False,
         fix=fix,
         url="",
