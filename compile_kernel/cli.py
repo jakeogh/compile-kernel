@@ -25,6 +25,7 @@
 from __future__ import annotations
 
 import logging
+import sys
 from importlib import resources
 from itertools import pairwise
 from pathlib import Path
@@ -33,15 +34,15 @@ import click
 import sh
 from asserttool import ic
 from asserttool import icp
-from asserttool import pause
-from asserttool import root_user
 from click_auto_help import AHGroup
 from clicktool import click_add_options
 from clicktool import click_global_options
 from clicktool import tv
 from eprint import eprint
 from globalverbose import gvd
-from compile_kernel import kcompile, check_kernel_config
+
+from compile_kernel import check_kernel_config
+from compile_kernel import kcompile
 
 logging.basicConfig(level=logging.INFO)
 sh.mv = None  # use sh.busybox('mv'), coreutils ignores stdin read errors
@@ -198,4 +199,4 @@ def diff_config(
             _diffconfig_command = sh.Command("python3")
             _diffconfig_command = _diffconfig_command.bake(_diffconfig)
             _diffconfig_command = _diffconfig_command.bake(config1, config2)
-            _diffconfig_command()
+            _diffconfig_command(_out=sys.stdout, _err=sys.stderr)
