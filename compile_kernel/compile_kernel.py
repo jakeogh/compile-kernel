@@ -1557,6 +1557,51 @@ def check_kernel_config(
         fix=fix,
         url="",
     )
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_BPF_SYSCALL",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_NET_CLS_BPF",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_NET_ACT_BPF",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_BPF_EVENTS",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_FUNCTION_TRACER",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
 
 
 def _symlink_config(
