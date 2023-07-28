@@ -1602,6 +1602,26 @@ def check_kernel_config(
         fix=fix,
         url="",
     )
+    # kvm
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_KVM_INTEL",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # kvm
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_VHOST_NET",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
 
 
 def _symlink_config(
