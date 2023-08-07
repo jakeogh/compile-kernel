@@ -1624,6 +1624,14 @@ def check_kernel_config(
     )
 
 
+# bpf
+# CONFIG_BPF_SYSCALL:         is not set when it should be.
+# CONFIG_NET_CLS_BPF:         is not set when it should be.
+# CONFIG_NET_ACT_BPF:         is not set when it should be.
+# CONFIG_BPF_EVENTS:  is not set when it should be.
+# CONFIG_FUNCTION_TRACER:     is not set when it should be.
+
+
 def _symlink_config(
     *,
     verbose: bool | int | float = False,
