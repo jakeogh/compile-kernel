@@ -87,8 +87,13 @@ def generate_module_config_dict(path: Path):
                 # icp(_config_name)
                 _modules = line.split("+=")[-1].strip()
                 _modules = _modules.split()
+                _omodules = []
+                for _m in _modules:
+                    if _m.endswith(".o"):
+                        _omodules.append(_m)
                 # icp(_modules)
-                config_dict[_config_name] = _modules
+                if _omodules:
+                    config_dict[_config_name] = _omodules
 
     pprint(config_dict)
     return config_dict
