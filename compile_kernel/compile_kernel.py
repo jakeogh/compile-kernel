@@ -41,6 +41,7 @@ from eprint import eprint
 from getdents import files_pathlib
 from globalverbose import gvd
 from pathtool import file_exists_nonzero
+from rich import print as pprint
 from with_chdir import chdir
 
 logging.basicConfig(level=logging.INFO)
@@ -78,14 +79,19 @@ def generate_module_config_dict(path: Path):
             if "+=" not in line:  # bug, need to properly parse the Makefiles
                 continue
             if prefix in line:
-                icp(line)
+                # eprint(line)
                 assert line.startswith(tuple(_prefixes))
                 _config_name = line.split(prefix)[-1]
-                icp(_config_name)
+                # icp(_config_name)
                 _config_name = _config_name.split(")")[0]
-                icp(_config_name)
-                _modules = line.split("+=")[-1]
-                icp(_modules)
+                # icp(_config_name)
+                _modules = line.split("+=")[-1].strip()
+                _modules = _modules.split()
+                # icp(_modules)
+                config_dict[_config_name] = _modules
+
+    pprint(config_dict)
+    return config_dict
 
 
 def read_content_of_kernel_config(path: Path):
