@@ -52,7 +52,7 @@ def generate_module_config_dict(path: Path):
     icp(_makefiles)
     config_dict = {}
     prefix = "obj-$(CONFIG_"
-    _pprefix = ["mpic-msi-"]
+    _pprefix = ["mpic-msi-", "mpic-msgr-"]
     _prefixes = [prefix]
     for _p in _pprefix:
         _prefixes.append(_p)
