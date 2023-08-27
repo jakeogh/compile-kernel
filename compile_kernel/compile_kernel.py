@@ -75,6 +75,8 @@ def generate_module_config_dict(path: Path):
             line = line.strip()  # some lines have leading whitespace
             if line.startswith("#"):
                 continue
+            if "+=" not in line:  # bug, need to properly parse the Makefiles
+                continue
             if prefix in line:
                 icp(line)
                 assert line.startswith(tuple(_prefixes))
@@ -82,7 +84,6 @@ def generate_module_config_dict(path: Path):
                 icp(_config_name)
                 _config_name = _config_name.split(")")[0]
                 icp(_config_name)
-                assert "+=" in line
                 _modules = line.split("+=")[-1]
                 icp(_modules)
 
