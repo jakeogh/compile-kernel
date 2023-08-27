@@ -113,7 +113,7 @@ def configure(
         allow_dash=False,
         path_type=Path,
     ),
-    nargs=-1,
+    nargs=1,
     default=Path("/usr/src/linux"),
 )
 @click_add_options(click_global_options)
