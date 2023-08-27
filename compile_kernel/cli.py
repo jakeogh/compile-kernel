@@ -116,9 +116,60 @@ def configure(
     nargs=1,
     default=Path("/usr/src/linux"),
 )
+@click.argument(
+    "dotconfig",
+    type=click.Path(
+        exists=True,
+        dir_okay=False,
+        file_okay=True,
+        allow_dash=False,
+        path_type=Path,
+    ),
+    nargs=1,
+)
 @click_add_options(click_global_options)
 @click.pass_context
 def generate_module_to_config_mapping(
+    ctx,
+    kernel_dir: Path,
+    dotconfig: Path,
+    verbose_inf: bool,
+    dict_output: bool,
+    verbose: bool | int | float = False,
+):
+    tty, verbose = tv(
+        ctx=ctx,
+        verbose=verbose,
+        verbose_inf=verbose_inf,
+    )
+    if not verbose:
+        ic.disable()
+    else:
+        ic.enable()
+    if verbose_inf:
+        gvd.enable()
+
+    _m_config_dict = generate_module_config_dict(path=kernel_dir)
+    _loaded_modules = sh.lsmod().split()
+    icp(_loaded_modules)
+
+
+@cli.command()
+@click.argument(
+    "kernel_dir",
+    type=click.Path(
+        exists=True,
+        dir_okay=True,
+        file_okay=False,
+        allow_dash=False,
+        path_type=Path,
+    ),
+    nargs=1,
+    default=Path("/usr/src/linux"),
+)
+@click_add_options(click_global_options)
+@click.pass_context
+def compare_loaded_modules_to_config(
     ctx,
     kernel_dir: Path,
     verbose_inf: bool,

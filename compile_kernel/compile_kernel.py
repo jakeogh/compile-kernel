@@ -109,18 +109,25 @@ def read_content_of_kernel_config(path: Path):
     return content
 
 
-def set_kernel_config_option(
+def get_set_kernel_config_option(
     *,
     path: Path,
     define: str,
     state: bool,
     module: bool,
+    get: bool,
 ):
     if not state:
         assert not module
     script_path = Path("/usr/src/linux/scripts/config")
     config_command = sh.Command(script_path)
     config_command = config_command.bake("--file", path.as_posix())
+
+    if get:
+        config_command = config_command.bake("--state", path.as_posix())
+        _result = config_command()
+        return _result
+
     if not state:
         config_command = config_command.bake("--disable")
     else:
@@ -157,8 +164,12 @@ def verify_kernel_config_setting(
     ic(path, len(content), define, required_state, warn, url)
 
     if fix:
-        content = set_kernel_config_option(
-            path=path, define=define, state=required_state, module=False
+        content = get_set_kernel_config_option(
+            path=path,
+            define=define,
+            state=required_state,
+            module=False,
+            get=False,
         )
 
     state_table = {True: "enabled", False: "disabled"}
