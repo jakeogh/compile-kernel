@@ -55,7 +55,7 @@ def generate_module_config_dict(path: Path):
     _pprefix = ["mpic-msi-"]
     _prefixes = [prefix]
     for _p in _pprefix:
-        _prefixes.append()
+        _prefixes.append(_p)
     for _makefile in _makefiles:
         for line in open(_makefile, "r", encoding="utf8"):
             line = line.strip()  # some lines have leading whitespace
