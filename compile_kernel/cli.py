@@ -208,6 +208,9 @@ def compare_loaded_modules_to_config(
                         module=False,
                     )
                     print(_result)
+                    if _result not in ["y", "m"]:
+                        print(f"{_k} is not enabled!")
+                        input("press enter to continue")
 
 
 @cli.command()
