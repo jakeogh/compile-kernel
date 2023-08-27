@@ -51,10 +51,15 @@ def generate_module_config_dict(path: Path):
     _makefiles = files_pathlib(path, names=["Makefile"])
     icp(_makefiles)
     config_dict = {}
+    prefix = "obj-$(CONFIG_"
     for _makefile in _makefiles:
         for line in open(_makefile, "r", encoding="utf8"):
-            if "obj-$(CONFIG_" in line:
+            line = line.strip()  # some lines have leading whitespace
+            if prefix in line:
                 icp(line)
+                assert line.startswith(prefix)
+                _config_name = line.split(prefix)[0].split(")")[0]
+                icp(_config_name)
 
 
 def read_content_of_kernel_config(path: Path):
