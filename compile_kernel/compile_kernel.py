@@ -76,7 +76,9 @@ def generate_module_config_dict(path: Path):
             if prefix in line:
                 icp(line)
                 assert line.startswith(tuple(_prefixes))
-                _config_name = line.split(prefix)[0].split(")")[0]
+                _config_name = line.split(prefix)[0]
+                icp(_config_name)
+                line = line.split(")")[0]
                 icp(_config_name)
 
 
