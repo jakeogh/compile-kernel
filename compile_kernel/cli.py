@@ -150,8 +150,6 @@ def generate_module_to_config_mapping(
         gvd.enable()
 
     _m_config_dict = generate_module_config_dict(path=kernel_dir)
-    _loaded_modules = sh.lsmod().split()
-    icp(_loaded_modules)
 
 
 @cli.command()
@@ -188,7 +186,9 @@ def compare_loaded_modules_to_config(
     if verbose_inf:
         gvd.enable()
 
-    generate_module_config_dict(path=kernel_dir)
+    _m_config_dict = generate_module_config_dict(path=kernel_dir)
+    _loaded_modules = sh.lsmod().split()
+    icp(_loaded_modules)
 
 
 @cli.command()
