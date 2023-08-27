@@ -38,13 +38,12 @@ from click_auto_help import AHGroup
 from clicktool import click_add_options
 from clicktool import click_global_options
 from clicktool import tv
-from eprint import eprint
-from globalverbose import gvd
-
 from compile_kernel import check_kernel_config
 from compile_kernel import configure_kernel
 from compile_kernel import generate_module_config_dict
 from compile_kernel import kcompile
+from eprint import eprint
+from globalverbose import gvd
 
 logging.basicConfig(level=logging.INFO)
 sh.mv = None  # use sh.busybox('mv'), coreutils ignores stdin read errors
