@@ -52,7 +52,7 @@ def generate_module_config_dict(path: Path):
     icp(_makefiles)
     config_dict = {}
     prefix = "obj-$(CONFIG_"
-    _pprefix = ["mpic-msi-", "mpic-msgr-"]
+    _pprefix = ["mpic-msi-", "mpic-msgr-", "fsl-msi-"]
     _prefixes = [prefix]
     for _p in _pprefix:
         _prefixes.append(_p)
@@ -60,10 +60,11 @@ def generate_module_config_dict(path: Path):
         for line in open(_makefile, "r", encoding="utf8"):
             line = line.strip()  # some lines have leading whitespace
             if prefix in line:
-                icp(line)
-                assert line.startswith(tuple(_prefixes))
+                # icp(line)
+                if not line.startswith(tuple(_prefixes)):
+                    print(line)
                 _config_name = line.split(prefix)[0].split(")")[0]
-                icp(_config_name)
+                # icp(_config_name)
 
 
 def read_content_of_kernel_config(path: Path):
