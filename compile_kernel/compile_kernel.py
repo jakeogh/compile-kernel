@@ -50,7 +50,8 @@ sh.mv = None  # use sh.busybox('mv'), coreutils ignores stdin read errors
 
 def generate_module_config_dict(path: Path):
     _manual_mappings = {}
-    _manual_mappings["USB_XHCI_PCI"] = ["xhci_pci.o"]
+    # _manual_mappings["USB_XHCI_PCI"] = ["xhci_pci.o"]
+    # _manual_mappings["I2C_I801"] = ["i2c_i801.o"]
 
     _makefiles = files_pathlib(path, names=["Makefile"])
     icp(_makefiles)
@@ -94,6 +95,9 @@ def generate_module_config_dict(path: Path):
                 for _m in _modules:
                     if _m.endswith(".o"):
                         _omodules.append(_m)
+                        if "_" in _m:
+                            _omodules.append(_m.replace("_", "-"))
+
                 # icp(_modules)
                 if _omodules:
                     config_dict[_config_name] = _omodules
