@@ -132,6 +132,7 @@ def get_set_kernel_config_option(
 
     if get:
         config_command = config_command.bake("--state", path.as_posix())
+        config_command = config_command.bake(define)
         _result = config_command()
         return _result
 
