@@ -52,12 +52,16 @@ def generate_module_config_dict(path: Path):
     icp(_makefiles)
     config_dict = {}
     prefix = "obj-$(CONFIG_"
+    _pprefix = ["mpic-msi-"]
+    _prefixes = [prefix]
+    for _p in _pprefix:
+        _prefixes.append()
     for _makefile in _makefiles:
         for line in open(_makefile, "r", encoding="utf8"):
             line = line.strip()  # some lines have leading whitespace
             if prefix in line:
                 icp(line)
-                assert line.startswith(prefix)
+                assert line.startswith(tuple(_prefixes))
                 _config_name = line.split(prefix)[0].split(")")[0]
                 icp(_config_name)
 
