@@ -133,7 +133,7 @@ def get_set_kernel_config_option(
     if get:
         config_command = config_command.bake("--state")
         config_command = config_command.bake(define)
-        _result = config_command()
+        _result = config_command().strip()
         return _result
 
     if not state:
@@ -1690,6 +1690,17 @@ def check_kernel_config(
         content=content,
         define="CONFIG_VHOST_NET",
         required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+
+    # mmc
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_MMC_BLOCK",
+        required_state=True,  # m
         warn=False,
         fix=fix,
         url="",
