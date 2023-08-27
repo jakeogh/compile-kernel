@@ -80,8 +80,11 @@ def generate_module_config_dict(path: Path):
                 assert line.startswith(tuple(_prefixes))
                 _config_name = line.split(prefix)[-1]
                 icp(_config_name)
-                line = line.split(")")[0]
+                _config_name = _config_name.split(")")[0]
                 icp(_config_name)
+                assert "+=" in line
+                _modules = line.split("+=")[-1]
+                icp(_modules)
 
 
 def read_content_of_kernel_config(path: Path):
