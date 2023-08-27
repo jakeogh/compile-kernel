@@ -38,12 +38,18 @@ from asserttool import icp
 from asserttool import pause
 from asserttool import root_user
 from eprint import eprint
+from getdents import files_pathlib
 from globalverbose import gvd
 from pathtool import file_exists_nonzero
 from with_chdir import chdir
 
 logging.basicConfig(level=logging.INFO)
 sh.mv = None  # use sh.busybox('mv'), coreutils ignores stdin read errors
+
+
+def generate_module_config_dict(path: Path):
+    _makefiles = files_pathlib(path, name="Makefile")
+    icp(makefiles)
 
 
 def read_content_of_kernel_config(path: Path):
@@ -1747,6 +1753,7 @@ def kernel_is_already_compiled(
             icp(test_path, "exists, skipping kernel compile")
             return True
 
+
 def configure_kernel(fix: bool):
     with chdir(
         "/usr/src/linux",
@@ -1756,6 +1763,7 @@ def configure_kernel(fix: bool):
         path=Path("/usr/src/linux/.config"),
         fix=fix,
     )  # must be done after nconfig
+
 
 def kcompile(
     *,

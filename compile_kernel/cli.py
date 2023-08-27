@@ -43,6 +43,7 @@ from globalverbose import gvd
 
 from compile_kernel import check_kernel_config
 from compile_kernel import configure_kernel
+from compile_kernel import generate_module_config_dict
 from compile_kernel import kcompile
 
 logging.basicConfig(level=logging.INFO)
@@ -100,6 +101,43 @@ def configure(
     configure_kernel(
         fix=fix,
     )
+
+
+@cli.command()
+@click.argument(
+    "kernel_dir",
+    type=click.Path(
+        exists=True,
+        dir_okay=True,
+        file_okay=False,
+        allow_dash=False,
+        path_type=Path,
+    ),
+    nargs=-1,
+    default=Path("/usr/src/linux"),
+)
+@click_add_options(click_global_options)
+@click.pass_context
+def generate_module_to_config_mapping(
+    ctx,
+    kernel_dir: Path,
+    verbose_inf: bool,
+    dict_output: bool,
+    verbose: bool | int | float = False,
+):
+    tty, verbose = tv(
+        ctx=ctx,
+        verbose=verbose,
+        verbose_inf=verbose_inf,
+    )
+    if not verbose:
+        ic.disable()
+    else:
+        ic.enable()
+    if verbose_inf:
+        gvd.enable()
+
+    generate_module_config_dict(path=kernel_dir)
 
 
 @cli.command()
