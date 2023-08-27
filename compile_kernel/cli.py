@@ -193,6 +193,12 @@ def compare_loaded_modules_to_config(
         _m = _l.split()[0]
         _loaded_modules.append(_m)
     icp(_loaded_modules)
+    for _m in _loaded_modules:
+        icp(_m)
+        for _k, _os in _m_config_dict.items():
+            for _o in _os:
+                if _o == _m + ".o":
+                    print(_k, _o, _m)
 
 
 @cli.command()
