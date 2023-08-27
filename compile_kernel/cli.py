@@ -42,6 +42,7 @@ from eprint import eprint
 from globalverbose import gvd
 
 from compile_kernel import check_kernel_config
+from compile_kernel import configure_kernel
 from compile_kernel import kcompile
 
 logging.basicConfig(level=logging.INFO)
@@ -69,6 +70,36 @@ def cli(
 
     if verbose_inf:
         gvd.enable()
+
+
+@cli.command()
+@click.option("--no-fix", is_flag=True)
+@click_add_options(click_global_options)
+@click.pass_context
+def configure(
+    ctx,
+    no_fix: bool,
+    verbose_inf: bool,
+    dict_output: bool,
+    verbose: bool | int | float = False,
+):
+    tty, verbose = tv(
+        ctx=ctx,
+        verbose=verbose,
+        verbose_inf=verbose_inf,
+    )
+    if not verbose:
+        ic.disable()
+    else:
+        ic.enable()
+    if verbose_inf:
+        gvd.enable()
+
+    fix = not no_fix
+
+    configure_kernel(
+        fix=fix,
+    )
 
 
 @cli.command()

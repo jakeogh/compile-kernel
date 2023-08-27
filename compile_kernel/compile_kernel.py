@@ -1747,6 +1747,15 @@ def kernel_is_already_compiled(
             icp(test_path, "exists, skipping kernel compile")
             return True
 
+def configure_kernel(fix: bool):
+    with chdir(
+        "/usr/src/linux",
+    ):
+        os.system("make nconfig")
+    check_kernel_config(
+        path=Path("/usr/src/linux/.config"),
+        fix=fix,
+    )  # must be done after nconfig
 
 def kcompile(
     *,
@@ -1843,14 +1852,7 @@ def kcompile(
     #   eprint(line, end='')
 
     if configure:
-        with chdir(
-            "/usr/src/linux",
-        ):
-            os.system("make nconfig")
-        check_kernel_config(
-            path=Path("/usr/src/linux/.config"),
-            fix=fix,
-        )  # must be done after nconfig
+        configure_kernel()
 
     if configure_only:
         return
