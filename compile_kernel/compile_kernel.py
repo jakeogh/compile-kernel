@@ -48,7 +48,7 @@ sh.mv = None  # use sh.busybox('mv'), coreutils ignores stdin read errors
 
 
 def generate_module_config_dict(path: Path):
-    _makefiles = files_pathlib(path, name="Makefile")
+    _makefiles = files_pathlib(path, names=["Makefile"])
     icp(_makefiles)
     config_dict = {}
     for _makefile in _makefiles:
