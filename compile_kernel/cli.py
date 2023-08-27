@@ -116,23 +116,11 @@ def configure(
     nargs=1,
     default=Path("/usr/src/linux"),
 )
-@click.argument(
-    "dotconfig",
-    type=click.Path(
-        exists=True,
-        dir_okay=False,
-        file_okay=True,
-        allow_dash=False,
-        path_type=Path,
-    ),
-    nargs=1,
-)
 @click_add_options(click_global_options)
 @click.pass_context
 def generate_module_to_config_mapping(
     ctx,
     kernel_dir: Path,
-    dotconfig: Path,
     verbose_inf: bool,
     dict_output: bool,
     verbose: bool | int | float = False,
@@ -165,11 +153,23 @@ def generate_module_to_config_mapping(
     nargs=1,
     default=Path("/usr/src/linux"),
 )
+@click.argument(
+    "dotconfig",
+    type=click.Path(
+        exists=True,
+        dir_okay=False,
+        file_okay=True,
+        allow_dash=False,
+        path_type=Path,
+    ),
+    nargs=1,
+)
 @click_add_options(click_global_options)
 @click.pass_context
 def compare_loaded_modules_to_config(
     ctx,
     kernel_dir: Path,
+    dotconfig: Path,
     verbose_inf: bool,
     dict_output: bool,
     verbose: bool | int | float = False,
