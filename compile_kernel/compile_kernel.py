@@ -73,6 +73,8 @@ def generate_module_config_dict(path: Path):
     for _makefile in _makefiles:
         for line in open(_makefile, "r", encoding="utf8"):
             line = line.strip()  # some lines have leading whitespace
+            if line.startswith("#"):
+                continue
             if prefix in line:
                 icp(line)
                 assert line.startswith(tuple(_prefixes))
