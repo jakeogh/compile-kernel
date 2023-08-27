@@ -187,7 +187,7 @@ def compare_loaded_modules_to_config(
         gvd.enable()
 
     _m_config_dict = generate_module_config_dict(path=kernel_dir)
-    _loaded_modules = sh.lsmod().split()
+    _loaded_modules = sh.lsmod().splitlines()
     icp(_loaded_modules)
 
 
