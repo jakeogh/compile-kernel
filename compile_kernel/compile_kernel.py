@@ -95,8 +95,8 @@ def generate_module_config_dict(path: Path):
                 for _m in _modules:
                     if _m.endswith(".o"):
                         _omodules.append(_m)
-                        if "_" in _m:
-                            _omodules.append(_m.replace("_", "-"))
+                        if "-" in _m:
+                            _omodules.append(_m.replace("-", "_"))
 
                 # icp(_modules)
                 if _omodules:
