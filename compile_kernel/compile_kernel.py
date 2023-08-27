@@ -49,7 +49,12 @@ sh.mv = None  # use sh.busybox('mv'), coreutils ignores stdin read errors
 
 def generate_module_config_dict(path: Path):
     _makefiles = files_pathlib(path, name="Makefile")
-    icp(makefiles)
+    icp(_makefiles)
+    config_dict = {}
+    for _makefile in _makefiles:
+        for line in open(_makefile, "r", encoding="utf8"):
+            if "obj-$(CONFIG_" in line:
+                icp(line)
 
 
 def read_content_of_kernel_config(path: Path):
@@ -1860,7 +1865,7 @@ def kcompile(
     #   eprint(line, end='')
 
     if configure:
-        configure_kernel()
+        configure_kernel(fix=fix)
 
     if configure_only:
         return
