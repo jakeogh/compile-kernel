@@ -207,7 +207,7 @@ def compare_loaded_modules_to_config(
                         state=False,
                         module=False,
                     )
-                    print(_result)
+                    icp(_result)
                     if _result not in ["y", "m"]:
                         print(f"{_k} is not enabled!")
                         input("press enter to continue")
