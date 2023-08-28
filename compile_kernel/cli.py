@@ -195,11 +195,11 @@ def compare_loaded_modules_to_config(
         _loaded_modules.append(_m)
     icp(_loaded_modules)
     for _m in _loaded_modules:
-        icp(_m)
+        ic(_m)
         for _k, _os in _m_config_dict.items():
             for _o in _os:
                 if _o == _m + ".o":
-                    print(_k, _o, _m)
+                    # print(_k, _o, _m)
                     _result = get_set_kernel_config_option(
                         path=dotconfig,
                         get=True,
@@ -207,10 +207,10 @@ def compare_loaded_modules_to_config(
                         state=False,
                         module=False,
                     )
-                    icp(_result)
+                    ic(_result)
                     if _result not in ["y", "m"]:
                         print(f"{_k} is not enabled!")
-                        input("press enter to continue")
+                        # input("press enter to continue")
 
 
 @cli.command()
