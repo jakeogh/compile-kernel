@@ -41,7 +41,7 @@ from eprint import eprint
 from getdents import files_pathlib
 from globalverbose import gvd
 from pathtool import file_exists_nonzero
-from rich import print as pprint
+# from rich import print as pprint
 from with_chdir import chdir
 
 # logging.basicConfig(level=logging.INFO)
@@ -102,7 +102,7 @@ def generate_module_config_dict(path: Path):
                 if _omodules:
                     config_dict[_config_name] = _omodules
 
-    pprint(config_dict)
+    # pprint(config_dict)
     return config_dict | _manual_mappings
 
 
