@@ -1504,7 +1504,7 @@ def check_kernel_config(
         path=path,
         content=content,
         define="CONFIG_CGROUP_FAVOR_DYNMODS",
-        required_state=False,
+        required_state=True,  # was false
         warn=False,
         fix=fix,
         url="",
