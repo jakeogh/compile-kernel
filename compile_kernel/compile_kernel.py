@@ -44,7 +44,7 @@ from pathtool import file_exists_nonzero
 from rich import print as pprint
 from with_chdir import chdir
 
-logging.basicConfig(level=logging.INFO)
+# logging.basicConfig(level=logging.INFO)
 sh.mv = None  # use sh.busybox('mv'), coreutils ignores stdin read errors
 
 
