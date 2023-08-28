@@ -893,6 +893,16 @@ def check_kernel_config(
         fix=fix,
         url="",
     )
+    # ECC
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_RAS_CEC",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
     # mem
     verify_kernel_config_setting(
         path=path,
@@ -918,6 +928,26 @@ def check_kernel_config(
         path=path,
         content=content,
         define="CONFIG_PER_VMA_LOCK",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # chipset
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_LPC_ICH",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # chipset
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_LPC_SCH",
         required_state=True,
         warn=False,
         fix=fix,
@@ -1610,7 +1640,7 @@ def check_kernel_config(
         fix=fix,
         url="",
     )
-    #
+    # audio
     verify_kernel_config_setting(
         path=path,
         content=content,
@@ -1620,11 +1650,42 @@ def check_kernel_config(
         fix=fix,
         url="",
     )
+    # audio
     verify_kernel_config_setting(
         path=path,
         content=content,
         define="CONFIG_SND_AC97_CODEC",
         required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # audio
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_SND_HDA_CODEC_HDMI",
+        required_state=True,  # m
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # audio pc-speaker
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_INPUT_PCSPKR",
+        required_state=True,  # m
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # pcie pc-card reader
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_MISC_RTSX_PCI",
+        required_state=True,  # m
         warn=False,
         fix=fix,
         url="",
@@ -1700,6 +1761,26 @@ def check_kernel_config(
         path=path,
         content=content,
         define="CONFIG_MMC_BLOCK",
+        required_state=True,  # m
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # FUSE
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_FUSE_FS",
+        required_state=True,  # m
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # vlan
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_VLAN_8021Q",
         required_state=True,  # m
         warn=False,
         fix=fix,
