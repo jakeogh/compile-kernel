@@ -44,7 +44,7 @@ from pathtool import file_exists_nonzero
 # from rich import print as pprint
 from with_chdir import chdir
 
-# logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO)
 sh.mv = None  # use sh.busybox('mv'), coreutils ignores stdin read errors
 
 
@@ -1605,6 +1605,16 @@ def check_kernel_config(
         path=path,
         content=content,
         define="CONFIG_NVME_MULTIPATH",
+        required_state=True,
+        warn=False,
+        fix=fix,
+        url="",
+    )
+    # nvme
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_NVME_TARGET",
         required_state=True,
         warn=False,
         fix=fix,
