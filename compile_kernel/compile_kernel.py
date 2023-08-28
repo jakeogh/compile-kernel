@@ -1986,6 +1986,11 @@ def kcompile(
         sh.emerge("genkernel", "-u", _out=sys.stdout, _err=sys.stderr)
 
     if not configure_only:
+        # do this before the long @module-rebuild to catch problems now
+        configure_kernel(
+            fix=fix,
+            warn_only=warn_only,
+        )
         # handle a downgrade from -9999 before genkernel calls @module-rebuild
         icp("attempting to upgrade zfs and zfs-kmod")
         try:
