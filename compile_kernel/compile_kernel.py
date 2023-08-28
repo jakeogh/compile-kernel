@@ -1973,6 +1973,15 @@ def kcompile(
         _symlink_config()
         assert Path("/usr/src/linux/.config").is_symlink()
 
+    if configure:
+        configure_kernel(
+            fix=fix,
+            warn_only=warn_only,
+        )
+
+    if configure_only:
+        return
+
     if not configure_only:
         sh.emerge("genkernel", "-u", _out=sys.stdout, _err=sys.stderr)
 
@@ -2032,12 +2041,6 @@ def kcompile(
     # might fail if gcc was upgraded and the kernel hasnt been recompiled yet
     # for line in sh.emerge('sci-libs/linux-gpib', '-u', _err_to_out=True, _iter=True, _out_bufsize=100):
     #   eprint(line, end='')
-
-    if configure:
-        configure_kernel(fix=fix)
-
-    if configure_only:
-        return
 
     gcc_check()
 
