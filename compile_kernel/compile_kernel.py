@@ -219,7 +219,7 @@ def verify_kernel_config_setting(
     if warn:
         msg = "WARNING: " + msg
         eprint(path.as_posix(), msg)
-        pause("press any key to continue")
+        # pause("press any key to continue")
         return
 
     msg = "ERROR: " + msg
