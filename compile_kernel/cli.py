@@ -24,7 +24,6 @@
 
 from __future__ import annotations
 
-import logging
 import sys
 from importlib import resources
 from itertools import pairwise
@@ -98,9 +97,13 @@ def configure(
         gvd.enable()
 
     fix = not no_fix
+    warn_only = False
+    if not fix:
+        warn_only = True
 
     configure_kernel(
         fix=fix,
+        warn_only=warn_only,
     )
 
 
@@ -247,12 +250,16 @@ def compile(
         gvd.enable()
 
     fix = not no_fix
+    warn_only = False
+    if not fix:
+        warn_only = True
 
     kcompile(
         configure=configure,
         configure_only=configure_only,
         force=force,
         fix=fix,
+        warn_only=warn_only,
         no_check_boot=no_check_boot,
         symlink_config=symlink_config,
     )
@@ -294,10 +301,15 @@ def check_config(
     if verbose_inf:
         gvd.enable()
 
+    warn_only = False
+    if not fix:
+        warn_only = True
+
     for config in dotconfigs:
         check_kernel_config(
             path=config,
             fix=fix,
+            warn_only=warn_only,
         )  # must be done after nconfig
         return
 

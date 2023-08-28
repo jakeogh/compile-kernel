@@ -230,6 +230,7 @@ def check_kernel_config(
     *,
     path: Path,
     fix: bool,
+    warn_only: bool,
     verbose: bool | int | float = False,
 ):
     path = path.resolve()
@@ -242,7 +243,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_EXPERT",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -252,7 +253,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_WERROR",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -262,7 +263,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_EXT2_FS",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -272,7 +273,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_EXT3_FS",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -282,7 +283,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_EXFAT_FS",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -292,7 +293,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_NTFS_FS",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -302,7 +303,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_FORTIFY_SOURCE",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -312,7 +313,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_HARDENED_USERCOPY",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -323,7 +324,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_UID16",
         required_state=False,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -333,7 +334,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_PARAVIRT",
         required_state=False,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -343,7 +344,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_KVM",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -353,7 +354,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_VIRTIO_BALLOON",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -363,7 +364,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_HOTPLUG_PCI_PCIE",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -373,7 +374,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_X86_INTEL_LPSS",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -383,7 +384,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_FB",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -393,7 +394,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_FRAMEBUFFER_CONSOLE",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -403,7 +404,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_FB_MODE_HELPERS",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -413,7 +414,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_FB_RADEON",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -423,7 +424,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_FB_NVIDIA",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -433,7 +434,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_FB_INTEL",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -443,7 +444,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_SYSFB_SIMPLEFB",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -453,7 +454,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_BOOT_VESA_SUPPORT",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -463,7 +464,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_DRM_LOAD_EDID_FIRMWARE",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -473,7 +474,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_PM_DEBUG",
         required_state=False,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -483,7 +484,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_MEDIA_USB_SUPPORT",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -493,7 +494,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_FB_EFI",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -503,7 +504,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_TRIM_UNUSED_KSYMS",
         required_state=False,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -523,7 +524,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_IKCONFIG_PROC",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url=None,
     )
@@ -533,7 +534,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_IKCONFIG",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url=None,
     )
@@ -543,7 +544,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_NFS_FS",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url=None,
     )
@@ -553,7 +554,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_NFSD",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url=None,
     )
@@ -562,7 +563,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_NFSD_V4",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url=None,
     )
@@ -572,7 +573,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_SUNRPC_DEBUG",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url=None,
     )
@@ -583,7 +584,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_DEBUG_INFO_DWARF5",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url=None,
     )
@@ -593,7 +594,7 @@ def check_kernel_config(
     #    content=content,
     #    define="CONFIG_COMPILE_TEST",
     #    required_state=False,
-    #    warn=False,
+    #    warn=warn_only,
     #    fix=fix,
     #    url=None,
     # )
@@ -603,7 +604,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_UNWINDER_ORC",
         required_state=False,  # so CONFIG_FRAME_POINTER can be set
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url=None,
     )
@@ -613,7 +614,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_UNWINDER_FRAME_POINTER",
         required_state=True,  # so CONFIG_FRAME_POINTER can be set
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url=None,
     )
@@ -624,7 +625,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_FRAME_POINTER",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url=None,
     )
@@ -635,7 +636,7 @@ def check_kernel_config(
     #    content=content,
     #    define="CONFIG_CRYPTO_USER",
     #    required_state=True,
-    #    warn=False, fix=fix,
+    #    warn=warn_only, fix=fix,
     #    url=None,
     # )
 
@@ -644,7 +645,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_DRM",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="https://wiki.gentoo.org/wiki/Nouveau",
     )
@@ -654,7 +655,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_DRM_FBDEV_EMULATION",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="https://wiki.gentoo.org/wiki/Nouveau",
     )
@@ -663,7 +664,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_DRM_AMDGPU",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -672,7 +673,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_DRM_UDL",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -681,7 +682,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_FIRMWARE_EDID",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -690,7 +691,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_FB_VESA",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -699,7 +700,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_MTRR_SANITIZER",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -709,7 +710,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_SLS",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -719,7 +720,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_ACPI_FPDT",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -729,7 +730,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_ACPI_TAD",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -739,7 +740,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_ACPI_PCI_SLOT",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -749,7 +750,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_ACPI_SBS",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -759,7 +760,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_ACPI_HED",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -769,7 +770,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_ACPI_APEI",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -779,7 +780,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_ACPI_DPTF",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -789,7 +790,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_ACPI_CONFIGFS",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -799,7 +800,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_ACPI_APEI_GHES",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -809,7 +810,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_ACPI_APEI_PCIEAER",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -819,7 +820,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_ACPI_NFIT",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -829,7 +830,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_ACPI_PROCESSOR_AGGREGATOR",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -839,7 +840,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_HIBERNATION",
         required_state=False,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -849,7 +850,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_CPU_FREQ_STAT",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -859,7 +860,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_MODVERSIONS",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -869,7 +870,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_BLK_DEV_BSGLIB",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -879,7 +880,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_MEMORY_FAILURE",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -889,7 +890,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_MTD_NAND_ECC_SW_BCH",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -899,7 +900,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_RAS_CEC",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -909,7 +910,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_PAGE_REPORTING",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -919,7 +920,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_TRANSPARENT_HUGEPAGE",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -929,7 +930,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_PER_VMA_LOCK",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -939,7 +940,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_LPC_ICH",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -949,7 +950,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_LPC_SCH",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -959,7 +960,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_PCIEAER",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -969,7 +970,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_PCIE_DPC",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -979,7 +980,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_PCI_IOV",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -989,7 +990,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_UEVENT_HELPER",
         required_state=False,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -999,7 +1000,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_DMI_SYSFS",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1009,7 +1010,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_MTD",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1019,7 +1020,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_IA32_EMULATION",
         required_state=False,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1029,7 +1030,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_SND_USB_AUDIO",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1039,7 +1040,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_SND_OSSEMUL",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1049,7 +1050,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_SND_MIXER_OSS",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1059,7 +1060,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_SND_PCM_OSS",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1069,7 +1070,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_SND_INTEL8X0",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1079,7 +1080,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_SND_INTEL8X0M",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1089,7 +1090,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_SND_HDA_GENERIC",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1099,7 +1100,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_SND_AC97_CODEC",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1109,7 +1110,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_USB_GADGET",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1119,7 +1120,7 @@ def check_kernel_config(
     #    content=content,
     #    define="CONFIG_SND_USB_AUDIO_USE_MEDIA_CONTROLLER",
     #    required_state=True,
-    #    warn=False,
+    #    warn=warn_only,
     #    fix=fix,
     #    url="",
     # )
@@ -1129,7 +1130,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_SND_SUPPORT_OLD_API",
         required_state=False,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1139,7 +1140,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_USB_OTG",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1149,7 +1150,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_DRM_NOUVEAU",
         required_state=True,  # =m
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="https://wiki.gentoo.org/wiki/Nouveau",
     )
@@ -1158,7 +1159,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_VT_HW_CONSOLE_BINDING",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1167,7 +1168,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_VGA_SWITCHEROO",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1177,7 +1178,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_DRM_RADEON",
         required_state=True,  # =m
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="https://wiki.gentoo.org/wiki/Nouveau",
     )
@@ -1187,7 +1188,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_BINFMT_MISC",
         required_state=True,  # =m
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="https://pypi.org/project/fchroot",
     )
@@ -1197,7 +1198,7 @@ def check_kernel_config(
         content=content,
         define="HID_WACOM",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="https://github.com/gentoo/gentoo/blob/master/x11-drivers/xf86-input-wacom/xf86-input-wacom-0.40.0.ebuild",
     )
@@ -1207,7 +1208,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_TASK_DELAY_ACCT",
         required_state=True,  # =m
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="http://guichaz.free.fr/iotop/",
     )
@@ -1217,7 +1218,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_NET_CORE",
         required_state=True,  # =y
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1227,7 +1228,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_TUN",
         required_state=True,  # =m
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="https://www.kernel.org/doc/html/latest/networking/tuntap.html",
     )
@@ -1237,7 +1238,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_VIRTIO_NET",
         required_state=True,  # =m
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1247,7 +1248,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_APPLE_PROPERTIES",
         required_state=True,  # =m
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1256,7 +1257,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_SPI",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1265,7 +1266,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_KEYBOARD_APPLESPI",
         required_state=True,  # =m
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1274,7 +1275,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_MOUSE_APPLETOUCH",
         required_state=True,  # =m
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="https://www.kernel.org/doc/html/v6.1-rc4/input/devices/appletouch.html",
     )
@@ -1283,7 +1284,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_BACKLIGHT_APPLE",
         required_state=True,  # =m
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1292,7 +1293,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_HID_APPLE",
         required_state=True,  # =m
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1301,7 +1302,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_HID_APPLEIR",
         required_state=True,  # =m
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1310,7 +1311,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_USB_APPLEDISPLAY",
         required_state=True,  # =m
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1319,7 +1320,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_APPLE_MFI_FASTCHARGE",
         required_state=True,  # =m
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1328,7 +1329,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_APPLE_GMUX",
         required_state=True,  # =m
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1338,7 +1339,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_INPUT_MOUSEDEV",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1347,7 +1348,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_ZRAM",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1356,7 +1357,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_ZRAM_MEMORY_TRACKING",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1365,7 +1366,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_BLK_DEV_FD",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1374,7 +1375,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_EARLY_PRINTK",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1384,7 +1385,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_NF_NAT",
         required_state=True,  # =m
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1394,7 +1395,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_NETFILTER_ADVANCED",
         required_state=True,  # =m
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1404,7 +1405,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_IP_NF_MATCH_TTL",
         required_state=True,  # =m
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1414,7 +1415,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_IP_NF_TARGET_REDIRECT",
         required_state=True,  # =m
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1424,7 +1425,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_NETFILTER_XT_TARGET_HL",
         required_state=True,  # =m
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1434,7 +1435,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_NO_HZ",
         required_state=False,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1445,7 +1446,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_PREEMPT_NONE",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1455,7 +1456,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_PREEMPT_VOLUNTARY",
         required_state=False,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1465,7 +1466,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_PREEMPT",
         required_state=False,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1475,7 +1476,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_BSD_PROCESS_ACCT_V3",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1485,7 +1486,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_MEMCG",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1495,7 +1496,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_CGROUP_DEBUG",
         required_state=False,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1505,7 +1506,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_CGROUP_FAVOR_DYNMODS",
         required_state=True,  # was false
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1515,7 +1516,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_CHECKPOINT_RESTORE",
         required_state=False,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1525,7 +1526,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_X86_SGX",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1535,7 +1536,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_SCHED_AUTOGROUP",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1546,7 +1547,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_ZSWAP",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1556,7 +1557,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_Z3FOLD",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1566,7 +1567,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_KSM",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1576,7 +1577,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_BLK_DEV_NVME",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1586,7 +1587,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_NVME_VERBOSE_ERRORS",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1596,7 +1597,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_NVME_HWMON",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1606,7 +1607,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_NVME_MULTIPATH",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1616,7 +1617,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_NVME_TARGET",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1626,7 +1627,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_X86_CPU_RESCTRL",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1636,7 +1637,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_BCACHE",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1646,7 +1647,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_THERMAL_STATISTICS",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1656,7 +1657,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_SND_SEQUENCER_OSS",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1666,7 +1667,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_SND_AC97_CODEC",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1676,7 +1677,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_SND_HDA_CODEC_HDMI",
         required_state=True,  # m
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1686,7 +1687,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_INPUT_PCSPKR",
         required_state=True,  # m
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1696,7 +1697,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_MISC_RTSX_PCI",
         required_state=True,  # m
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1705,7 +1706,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_BPF_SYSCALL",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1714,7 +1715,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_NET_CLS_BPF",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1723,7 +1724,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_NET_ACT_BPF",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1732,7 +1733,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_BPF_EVENTS",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1741,7 +1742,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_FUNCTION_TRACER",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1751,7 +1752,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_KVM_INTEL",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1761,7 +1762,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_VHOST_NET",
         required_state=True,
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1772,7 +1773,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_MMC_BLOCK",
         required_state=True,  # m
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1782,7 +1783,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_FUSE_FS",
         required_state=True,  # m
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1792,7 +1793,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_VLAN_8021Q",
         required_state=True,  # m
-        warn=False,
+        warn=warn_only,
         fix=fix,
         url="",
     )
@@ -1922,7 +1923,10 @@ def kernel_is_already_compiled(
             return True
 
 
-def configure_kernel(fix: bool):
+def configure_kernel(
+    fix: bool,
+    warn_only: bool,
+):
     with chdir(
         "/usr/src/linux",
     ):
@@ -1930,6 +1934,7 @@ def configure_kernel(fix: bool):
     check_kernel_config(
         path=Path("/usr/src/linux/.config"),
         fix=fix,
+        warn_only=warn_only,
     )  # must be done after nconfig
 
 
@@ -1939,6 +1944,7 @@ def kcompile(
     configure_only: bool,
     force: bool,
     fix: bool,
+    warn_only: bool,
     no_check_boot: bool,
     symlink_config: bool,
     verbose: bool | int | float = False,
@@ -2055,11 +2061,13 @@ def kcompile(
         check_kernel_config(
             path=Path("/usr/src/linux/.config"),
             fix=True,
+            warn_only=warn_only,
         )
 
     check_kernel_config(
         path=Path("/usr/src/linux/.config"),
         fix=fix,
+        warn_only=warn_only,
     )  # must be done after nconfig
     genkernel_command = sh.Command("genkernel")
     genkernel_command = genkernel_command.bake("all")
