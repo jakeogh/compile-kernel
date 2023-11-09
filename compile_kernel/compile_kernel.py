@@ -167,7 +167,7 @@ def verify_kernel_config_setting(
     warn: bool,
     fix: bool,
     url: None | str = None,
-    verbose: bool | int | float = False,
+    verbose: bool = False,
 ):
     ic(path, len(content), define, required_state, warn, url)
 
@@ -231,7 +231,7 @@ def check_kernel_config(
     path: Path,
     fix: bool,
     warn_only: bool,
-    verbose: bool | int | float = False,
+    verbose: bool = False,
 ):
     path = path.resolve()
     content = read_content_of_kernel_config(path)
@@ -1797,6 +1797,26 @@ def check_kernel_config(
         fix=fix,
         url="",
     )
+    ## genkernel
+    # verify_kernel_config_setting(
+    #    path=path,
+    #    content=content,
+    #    define="CONFIG_MICROCODE_AMD",
+    #    required_state=True,  # m
+    #    warn=warn_only,
+    #    fix=fix,
+    #    url="",
+    # )
+    ## genkernel
+    # verify_kernel_config_setting(
+    #    path=path,
+    #    content=content,
+    #    define="CONFIG_MICROCODE_INTEL",
+    #    required_state=True,  # m
+    #    warn=warn_only,
+    #    fix=fix,
+    #    url="",
+    # )
 
 
 # bpf
@@ -1809,7 +1829,7 @@ def check_kernel_config(
 
 def _symlink_config(
     *,
-    verbose: bool | int | float = False,
+    verbose: bool = False,
 ):
     dot_config = Path("/usr/src/linux/.config")
     if dot_config.exists():
@@ -1829,7 +1849,7 @@ def _symlink_config(
 
 def check_config_enviroment(
     *,
-    verbose: bool | int | float = False,
+    verbose: bool = False,
 ):
     # https://www.mail-archive.com/lede-dev@lists.infradead.org/msg07290.html
     if not (os.getenv("KCONFIG_OVERWRITECONFIG") == "1"):
@@ -1850,7 +1870,7 @@ def get_kernel_version_from_symlink():
 def boot_is_correct(
     *,
     linux_version: str,
-    verbose: bool | int | float = False,
+    verbose: bool = False,
 ):
     assets = ["System.map", "initramfs", "vmlinux"]
     for asset in assets:
@@ -1862,7 +1882,7 @@ def boot_is_correct(
 
 def gcc_check(
     *,
-    verbose: bool | int | float = False,
+    verbose: bool = False,
 ):
     test_path = Path("/usr/src/linux/init/.init_task.o.cmd")
     if test_path.exists():
@@ -1901,7 +1921,7 @@ def gcc_check(
 
 
 def kernel_is_already_compiled(
-    verbose: bool | int | float = False,
+    verbose: bool = False,
 ):
     kernel_version = get_kernel_version_from_symlink()
     icp(kernel_version)
@@ -1947,7 +1967,7 @@ def kcompile(
     warn_only: bool,
     no_check_boot: bool,
     symlink_config: bool,
-    verbose: bool | int | float = False,
+    verbose: bool = False,
 ):
     icp()
     if configure_only:
