@@ -423,7 +423,7 @@ def check_kernel_config(
         path=path,
         content=content,
         define="CONFIG_FB_NVIDIA",
-        required_state=True,
+        required_state=False,  # boot seems to hang here
         warn=warn_only,
         fix=fix,
         url="",
@@ -1823,6 +1823,26 @@ def check_kernel_config(
         warn=warn_only,
         fix=fix,
         url="",
+    )
+    # NUMA
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_NUMA",
+        required_state=True,  # m
+        warn=warn_only,
+        fix=fix,
+        url="",
+    )
+    # udev
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_DEVTMPFS",
+        required_state=True,  # m
+        warn=warn_only,
+        fix=fix,
+        url="https://wiki.gentoo.org/wiki/Udev",
     )
     ## genkernel
     # verify_kernel_config_setting(
