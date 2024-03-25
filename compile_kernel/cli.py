@@ -44,8 +44,8 @@ from compile_kernel import check_kernel_config
 from compile_kernel import configure_kernel
 from compile_kernel import generate_module_config_dict
 from compile_kernel import get_set_kernel_config_option
+from compile_kernel import install_kernel
 from compile_kernel import kcompile
-from compile_kernel import make_install
 
 # logging.basicConfig(level=logging.INFO)
 sh.mv = None  # use sh.busybox('mv'), coreutils ignores stdin read errors
@@ -273,9 +273,8 @@ def compile(
 @cli.command()
 @click_add_options(click_global_options)
 @click.pass_context
-def make_install(
+def _install_kernel(
     ctx,
-    dotconfigs: tuple[Path, ...],
     fix: bool,
     verbose_inf: bool,
     dict_output: bool,
@@ -295,11 +294,7 @@ def make_install(
     if verbose_inf:
         gvd.enable()
 
-    warn_only = False
-    if not fix:
-        warn_only = True
-
-    make_install()
+    install_kernel()
 
 
 @cli.command()
