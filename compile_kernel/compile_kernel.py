@@ -1997,7 +1997,7 @@ def install_kernel():
         os.system("make install")
 
     genkernel_command = sh.Command("genkernel")
-    genkernel_command = genkernel_command.bake("all")
+    genkernel_command = genkernel_command.bake("initramfs")
     genkernel_command = genkernel_command.bake("--no-clean")
     genkernel_command = genkernel_command.bake("--no-mrproper")
     icp(genkernel_command)
