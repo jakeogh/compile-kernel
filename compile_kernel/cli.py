@@ -36,7 +36,7 @@ from asserttool import icp
 from click_auto_help import AHGroup
 from clicktool import click_add_options
 from clicktool import click_global_options
-from clicktool import tv
+from clicktool import tvicgvd
 from eprint import eprint
 from globalverbose import gvd
 
@@ -45,6 +45,7 @@ from compile_kernel import configure_kernel
 from compile_kernel import generate_module_config_dict
 from compile_kernel import get_set_kernel_config_option
 from compile_kernel import kcompile
+from compile_kernel import make_install
 
 # logging.basicConfig(level=logging.INFO)
 sh.mv = None  # use sh.busybox('mv'), coreutils ignores stdin read errors
@@ -57,20 +58,15 @@ def cli(
     ctx,
     verbose_inf: bool,
     dict_output: bool,
-    verbose: bool | int | float = False,
+    verbose: bool = False,
 ) -> None:
-    tty, verbose = tv(
+    tty, verbose = tvicgvd(
         ctx=ctx,
         verbose=verbose,
         verbose_inf=verbose_inf,
+        ic=ic,
+        gvd=gvd,
     )
-    if not verbose:
-        ic.disable()
-    else:
-        ic.enable()
-
-    if verbose_inf:
-        gvd.enable()
 
 
 @cli.command()
@@ -82,12 +78,14 @@ def configure(
     no_fix: bool,
     verbose_inf: bool,
     dict_output: bool,
-    verbose: bool | int | float = False,
+    verbose: bool = False,
 ):
-    tty, verbose = tv(
+    tty, verbose = tvicgvd(
         ctx=ctx,
         verbose=verbose,
         verbose_inf=verbose_inf,
+        ic=ic,
+        gvd=gvd,
     )
     if not verbose:
         ic.disable()
@@ -127,12 +125,14 @@ def generate_module_to_config_mapping(
     kernel_dir: Path,
     verbose_inf: bool,
     dict_output: bool,
-    verbose: bool | int | float = False,
+    verbose: bool = False,
 ):
-    tty, verbose = tv(
+    tty, verbose = tvicgvd(
         ctx=ctx,
         verbose=verbose,
         verbose_inf=verbose_inf,
+        ic=ic,
+        gvd=gvd,
     )
     if not verbose:
         ic.disable()
@@ -176,12 +176,14 @@ def compare_loaded_modules_to_config(
     dotconfig: Path,
     verbose_inf: bool,
     dict_output: bool,
-    verbose: bool | int | float = False,
+    verbose: bool = False,
 ):
-    tty, verbose = tv(
+    tty, verbose = tvicgvd(
         ctx=ctx,
         verbose=verbose,
         verbose_inf=verbose_inf,
+        ic=ic,
+        gvd=gvd,
     )
     if not verbose:
         ic.disable()
@@ -235,12 +237,14 @@ def compile(
     dict_output: bool,
     force: bool,
     no_check_boot: bool,
-    verbose: bool | int | float = False,
+    verbose: bool = False,
 ):
-    tty, verbose = tv(
+    tty, verbose = tvicgvd(
         ctx=ctx,
         verbose=verbose,
         verbose_inf=verbose_inf,
+        ic=ic,
+        gvd=gvd,
     )
     if not verbose:
         ic.disable()
@@ -267,6 +271,38 @@ def compile(
 
 
 @cli.command()
+@click_add_options(click_global_options)
+@click.pass_context
+def make_install(
+    ctx,
+    dotconfigs: tuple[Path, ...],
+    fix: bool,
+    verbose_inf: bool,
+    dict_output: bool,
+    verbose: bool = False,
+):
+    tty, verbose = tvicgvd(
+        ctx=ctx,
+        verbose=verbose,
+        verbose_inf=verbose_inf,
+        ic=ic,
+        gvd=gvd,
+    )
+    if not verbose:
+        ic.disable()
+    else:
+        ic.enable()
+    if verbose_inf:
+        gvd.enable()
+
+    warn_only = False
+    if not fix:
+        warn_only = True
+
+    make_install()
+
+
+@cli.command()
 @click.argument(
     "dotconfigs",
     type=click.Path(
@@ -287,12 +323,14 @@ def check_config(
     fix: bool,
     verbose_inf: bool,
     dict_output: bool,
-    verbose: bool | int | float = False,
+    verbose: bool = False,
 ):
-    tty, verbose = tv(
+    tty, verbose = tvicgvd(
         ctx=ctx,
         verbose=verbose,
         verbose_inf=verbose_inf,
+        ic=ic,
+        gvd=gvd,
     )
     if not verbose:
         ic.disable()
@@ -333,12 +371,14 @@ def diff_config(
     dotconfigs: tuple[Path, ...],
     verbose_inf: bool,
     dict_output: bool,
-    verbose: bool | int | float = False,
+    verbose: bool = False,
 ):
-    tty, verbose = tv(
+    tty, verbose = tvicgvd(
         ctx=ctx,
         verbose=verbose,
         verbose_inf=verbose_inf,
+        ic=ic,
+        gvd=gvd,
     )
     if not verbose:
         ic.disable()
