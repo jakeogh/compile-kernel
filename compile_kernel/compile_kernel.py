@@ -1990,6 +1990,20 @@ def kernel_is_already_compiled(
             return True
 
 
+def install_kernel():
+    with chdir(
+        "/usr/src/linux",
+    ):
+        os.system("make install")
+
+    genkernel_command = sh.Command("genkernel")
+    genkernel_command = genkernel_command.bake("all")
+    genkernel_command = genkernel_command.bake("--no-clean")
+    genkernel_command = genkernel_command.bake("--no-mrproper")
+    icp(genkernel_command)
+    genkernel_command(_fg=True)
+
+
 def configure_kernel(
     fix: bool,
     warn_only: bool,
@@ -2149,6 +2163,7 @@ def kcompile(
     # if configure:
     #    genkernel_command.append('--nconfig')
     genkernel_command = genkernel_command.bake("--no-clean")
+    genkernel_command = genkernel_command.bake("--no-mrproper")
     genkernel_command = genkernel_command.bake("--symlink")
     genkernel_command = genkernel_command.bake("--luks")
     genkernel_command = genkernel_command.bake("--module-rebuild")
