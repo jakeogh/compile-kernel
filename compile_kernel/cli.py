@@ -275,7 +275,6 @@ def compile(
 @click.pass_context
 def _install_kernel(
     ctx,
-    fix: bool,
     verbose_inf: bool,
     dict_output: bool,
     verbose: bool = False,
