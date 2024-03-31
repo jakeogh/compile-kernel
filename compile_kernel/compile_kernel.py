@@ -2003,6 +2003,9 @@ def install_kernel():
     icp(genkernel_command)
     genkernel_command(_fg=True)
 
+    assert Path("/boot/grub").is_dir()
+    sh.grub_mkconfig("-o", "/boot/grub/grub.cfg")
+
 
 def configure_kernel(
     fix: bool,
