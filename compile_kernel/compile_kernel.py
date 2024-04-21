@@ -166,7 +166,6 @@ def verify_kernel_config_setting(
     warn: bool,
     fix: bool,
     url: None | str = None,
-    verbose: bool = False,
 ):
     ic(path, len(content), define, required_state, warn, url)
 
@@ -230,7 +229,6 @@ def check_kernel_config(
     path: Path,
     fix: bool,
     warn_only: bool,
-    verbose: bool = False,
 ):
     path = path.resolve()
     content = read_content_of_kernel_config(path)
@@ -1883,10 +1881,7 @@ def check_kernel_config(
 # CONFIG_FUNCTION_TRACER:     is not set when it should be.
 
 
-def _symlink_config(
-    *,
-    verbose: bool = False,
-):
+def _symlink_config():
     dot_config = Path("/usr/src/linux/.config")
     if dot_config.exists():
         if not dot_config.is_symlink():
@@ -1903,10 +1898,7 @@ def _symlink_config(
             sh.ln("-s", _kernel_config, dot_config)
 
 
-def check_config_enviroment(
-    *,
-    verbose: bool = False,
-):
+def check_config_enviroment():
     # https://www.mail-archive.com/lede-dev@lists.infradead.org/msg07290.html
     if not (os.getenv("KCONFIG_OVERWRITECONFIG") == "1"):
         icp("KCONFIG_OVERWRITECONFIG=1 needs to be set to 1")
@@ -1926,7 +1918,6 @@ def get_kernel_version_from_symlink():
 def boot_is_correct(
     *,
     linux_version: str,
-    verbose: bool = False,
 ):
     assets = ["System.map", "initramfs", "vmlinux"]
     for asset in assets:
@@ -1936,10 +1927,7 @@ def boot_is_correct(
     return True
 
 
-def gcc_check(
-    *,
-    verbose: bool = False,
-):
+def gcc_check():
     test_path = Path("/usr/src/linux/init/.init_task.o.cmd")
     if test_path.exists():
         icp(
@@ -1976,9 +1964,7 @@ def gcc_check(
             sh.make("clean")
 
 
-def kernel_is_already_compiled(
-    verbose: bool = False,
-):
+def kernel_is_already_compiled():
     kernel_version = get_kernel_version_from_symlink()
     icp(kernel_version)
     test_path = Path("/usr/src/linux/init/.init_task.o.cmd")
@@ -2009,6 +1995,7 @@ def install_kernel():
     genkernel_command = genkernel_command.bake("initramfs")
     genkernel_command = genkernel_command.bake("--no-clean")
     genkernel_command = genkernel_command.bake("--no-mrproper")
+    genkernel_command = genkernel_command.bake("--no-busybox")
     icp(genkernel_command)
     genkernel_command(_fg=True)
 
@@ -2040,7 +2027,6 @@ def kcompile(
     warn_only: bool,
     no_check_boot: bool,
     symlink_config: bool,
-    verbose: bool = False,
 ):
     icp()
     if configure_only:
@@ -2184,6 +2170,7 @@ def kcompile(
     genkernel_command = genkernel_command.bake("--microcode=all")
     genkernel_command = genkernel_command.bake("--microcode-initramfs")
     genkernel_command = genkernel_command.bake('--makeopts="-j12"')
+    genkernel_command = genkernel_command.bake("--no-busybox")
     genkernel_command = genkernel_command.bake(
         "--callback=/usr/bin/emerge zfs zfs-kmod @module-rebuild"
     )
