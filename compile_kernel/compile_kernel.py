@@ -2007,11 +2007,13 @@ def install_kernel():
 def configure_kernel(
     fix: bool,
     warn_only: bool,
+    interactive: bool,
 ):
-    with chdir(
-        "/usr/src/linux",
-    ):
-        os.system("make nconfig")
+    if interactive:
+        with chdir(
+            "/usr/src/linux",
+        ):
+            os.system("make nconfig")
     check_kernel_config(
         path=Path("/usr/src/linux/.config"),
         fix=fix,
@@ -2022,7 +2024,6 @@ def configure_kernel(
 def kcompile(
     *,
     configure: bool,
-    configure_only: bool,
     force: bool,
     fix: bool,
     warn_only: bool,
@@ -2030,8 +2031,6 @@ def kcompile(
     symlink_config: bool,
 ):
     icp()
-    if configure_only:
-        configure = True
     if not root_user():
         raise ValueError("you must be root")
 
@@ -2057,71 +2056,65 @@ def kcompile(
         configure_kernel(
             fix=fix,
             warn_only=warn_only,
+            interactive=True,
         )
 
-    if configure_only:
-        return
+    sh.emerge("genkernel", "-u", _out=sys.stdout, _err=sys.stderr)
 
-    if not configure_only:
-        sh.emerge("genkernel", "-u", _out=sys.stdout, _err=sys.stderr)
-
-    if not configure_only:
-        # do this before the long @module-rebuild to catch problems now
-        configure_kernel(
-            fix=fix,
-            warn_only=warn_only,
+    # do this before the long @module-rebuild to catch problems now
+    configure_kernel(
+        fix=fix,
+        warn_only=warn_only,
+        interactive=False,
+    )
+    # handle a downgrade from -9999 before genkernel calls @module-rebuild
+    icp("attempting to upgrade zfs and zfs-kmod")
+    try:
+        sh.emerge(
+            "sys-fs/zfs",
+            "sys-fs/zfs-kmod",
+            "-u",
+            # _out=sys.stdout,
+            # _err=sys.stderr,
+            _tee=True,
+            _tty_out=False,
         )
-        # handle a downgrade from -9999 before genkernel calls @module-rebuild
-        icp("attempting to upgrade zfs and zfs-kmod")
-        try:
-            sh.emerge(
-                "sys-fs/zfs",
-                "sys-fs/zfs-kmod",
-                "-u",
-                # _out=sys.stdout,
-                # _err=sys.stderr,
-                _tee=True,
-                _tty_out=False,
-            )
-        except sh.ErrorReturnCode_1 as e:
-            icp(e)
-            icp(dir(e))
-            unconfigured_kernel = False
-            if hasattr(e, "stdout"):
-                icp(type(e.stdout))
-                if b"Could not find a usable .config" in e.stdout:
-                    unconfigured_kernel = True
-                if b"tree at that location has not been built." in e.stdout:
-                    unconfigured_kernel = True
-                if b"Kernel sources need compiling first" in e.stdout:
-                    unconfigured_kernel = True
-                if (
-                    b"Could not find a Makefile in the kernel source directory"
-                    in e.stdout
-                ):
-                    unconfigured_kernel = True
-                if b"These sources have not yet been prepared" in e.stdout:
-                    unconfigured_kernel = True
-
-            if not unconfigured_kernel:
-                # ic(unconfigured_kernel)
-                icp("unconfigured_kernel:", unconfigured_kernel)
-                raise e
-            icp(
-                "NOTE: kernel is unconfigured, skipping `emerge sys-fs/zfs sys-fs/zfs-kmod` before kernel compile"
-            )
+    except sh.ErrorReturnCode_1 as e:
+        icp(e)
+        icp(dir(e))
+        unconfigured_kernel = False
+        if hasattr(e, "stdout"):
+            icp(type(e.stdout))
+            if b"Could not find a usable .config" in e.stdout:
+                unconfigured_kernel = True
+            if b"tree at that location has not been built." in e.stdout:
+                unconfigured_kernel = True
+            if b"Kernel sources need compiling first" in e.stdout:
+                unconfigured_kernel = True
+            if b"Could not find a Makefile in the kernel source directory" in e.stdout:
+                unconfigured_kernel = True
+            if b"These sources have not yet been prepared" in e.stdout:
+                unconfigured_kernel = True
 
         if not unconfigured_kernel:
-            icp("attempting emerge @module-rebuild")
-            try:
-                sh.emerge("@module-rebuild", _out=sys.stdout, _err=sys.stderr)
-            except sh.ErrorReturnCode_1 as e:
-                unconfigured_kernel = True  # todo, get conditions from above
-                if not unconfigured_kernel:
-                    raise e
-                icp(
-                    "NOTE: kernel is unconfigured, skipping `emerge @module-rebuild` before kernel compile"
-                )
+            # ic(unconfigured_kernel)
+            icp("unconfigured_kernel:", unconfigured_kernel)
+            raise e
+        icp(
+            "NOTE: kernel is unconfigured, skipping `emerge sys-fs/zfs sys-fs/zfs-kmod` before kernel compile"
+        )
+
+    if not unconfigured_kernel:
+        icp("attempting emerge @module-rebuild")
+        try:
+            sh.emerge("@module-rebuild", _out=sys.stdout, _err=sys.stderr)
+        except sh.ErrorReturnCode_1 as e:
+            unconfigured_kernel = True  # todo, get conditions from above
+            if not unconfigured_kernel:
+                raise e
+            icp(
+                "NOTE: kernel is unconfigured, skipping `emerge @module-rebuild` before kernel compile"
+            )
 
     # might fail if gcc was upgraded and the kernel hasnt been recompiled yet
     # for line in sh.emerge('sci-libs/linux-gpib', '-u', _err_to_out=True, _iter=True, _out_bufsize=100):
@@ -2138,11 +2131,10 @@ def kcompile(
         )
     )
 
-    if not configure_only:
-        if not force:
-            if kernel_is_already_compiled():
-                icp("kernel is already compiled, skipping")
-                return
+    if not force:
+        if kernel_is_already_compiled():
+            icp("kernel is already compiled, skipping")
+            return
 
     if not Path("/usr/src/linux/.config").exists():
         sh.make("defconfig")
@@ -2164,7 +2156,7 @@ def kcompile(
     genkernel_command = genkernel_command.bake("--no-clean")
     genkernel_command = genkernel_command.bake("--no-mrproper")
     genkernel_command = genkernel_command.bake("--symlink")
-    genkernel_command = genkernel_command.bake("--luks")
+    # genkernel_command = genkernel_command.bake("--luks")
     genkernel_command = genkernel_command.bake("--module-rebuild")
     genkernel_command = genkernel_command.bake("--all-ramdisk-modules")
     genkernel_command = genkernel_command.bake("--firmware")
