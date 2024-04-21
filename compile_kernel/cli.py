@@ -102,6 +102,7 @@ def configure(
     configure_kernel(
         fix=fix,
         warn_only=warn_only,
+        interactive=True,
     )
 
 
@@ -220,7 +221,6 @@ def compare_loaded_modules_to_config(
 
 @cli.command()
 @click.option("--configure", "--config", is_flag=True)
-@click.option("--configure-only", "--config-only", is_flag=True)
 @click.option("--force", is_flag=True)
 @click.option("--no-fix", is_flag=True)
 @click.option("--symlink-config", is_flag=True)
@@ -230,7 +230,6 @@ def compare_loaded_modules_to_config(
 def compile(
     ctx,
     configure: bool,
-    configure_only: bool,
     no_fix: bool,
     symlink_config: bool,
     verbose_inf: bool,
@@ -260,7 +259,6 @@ def compile(
 
     kcompile(
         configure=configure,
-        configure_only=configure_only,
         force=force,
         fix=fix,
         warn_only=warn_only,
