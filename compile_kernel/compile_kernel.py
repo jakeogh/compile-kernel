@@ -35,7 +35,6 @@ from pathlib import Path
 import sh
 from asserttool import ic
 from asserttool import icp
-from asserttool import pause
 from asserttool import root_user
 from eprint import eprint
 from getdents import files_pathlib
@@ -1843,6 +1842,16 @@ def check_kernel_config(
         warn=warn_only,
         fix=fix,
         url="https://wiki.gentoo.org/wiki/Udev",
+    )
+    # wireguard
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_WIREGUARD",
+        required_state=True,  # m
+        warn=warn_only,
+        fix=fix,
+        url="https://wiki.gentoo.org/wiki/WireGuard",
     )
     ## genkernel
     # verify_kernel_config_setting(
