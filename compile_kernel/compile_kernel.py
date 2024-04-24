@@ -1995,8 +1995,8 @@ def install_kernel():
     genkernel_command = genkernel_command.bake("initramfs")
     genkernel_command = genkernel_command.bake("--no-clean")
     genkernel_command = genkernel_command.bake("--no-mrproper")
-    genkernel_command = genkernel_command.bake("--no-busybox")
-    genkernel_command = genkernel_command.bake("--no-keymap")
+    # genkernel_command = genkernel_command.bake("--no-busybox")
+    # genkernel_command = genkernel_command.bake("--no-keymap")
     icp(genkernel_command)
     genkernel_command(_fg=True)
 
@@ -2163,8 +2163,8 @@ def kcompile(
     genkernel_command = genkernel_command.bake("--microcode=all")
     genkernel_command = genkernel_command.bake("--microcode-initramfs")
     genkernel_command = genkernel_command.bake('--makeopts="-j12"')
-    genkernel_command = genkernel_command.bake("--no-busybox")
-    genkernel_command = genkernel_command.bake("--no-keymap")
+    # genkernel_command = genkernel_command.bake("--no-busybox")
+    # genkernel_command = genkernel_command.bake("--no-keymap")
     genkernel_command = genkernel_command.bake(
         "--callback=/usr/bin/emerge zfs zfs-kmod @module-rebuild"
     )
