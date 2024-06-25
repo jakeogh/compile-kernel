@@ -44,7 +44,7 @@ from compile_kernel import check_kernel_config
 from compile_kernel import configure_kernel
 from compile_kernel import generate_module_config_dict
 from compile_kernel import get_set_kernel_config_option
-from compile_kernel import install_kernel
+from compile_kernel import install_compiled_kernel
 from compile_kernel import kcompile
 
 # logging.basicConfig(level=logging.INFO)
@@ -291,7 +291,7 @@ def _install_kernel(
     if verbose_inf:
         gvd.enable()
 
-    install_kernel()
+    install_compiled_kernel()
 
 
 @cli.command()

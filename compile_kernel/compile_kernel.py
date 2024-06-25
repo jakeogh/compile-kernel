@@ -1985,7 +1985,7 @@ def kernel_is_already_compiled():
             return True
 
 
-def install_kernel():
+def install_compiled_kernel():
     with chdir(
         "/usr/src/linux",
     ):
