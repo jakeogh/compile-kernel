@@ -1851,6 +1851,34 @@ def check_kernel_config(
         fix=fix,
         url="https://wiki.gentoo.org/wiki/WireGuard",
     )
+    # serial console debugging
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_USB_SERIAL_CONSOLE",
+        required_state=True,  # m
+        warn=warn_only,
+        fix=fix,
+        url="",
+    )
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_USB_SERIAL",
+        required_state=True,  # m
+        warn=warn_only,
+        fix=fix,
+        url="",
+    )
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_USB_SERIAL_PL2303",
+        required_state=True,  # m
+        warn=warn_only,
+        fix=fix,
+        url="",
+    )
     ## genkernel
     # verify_kernel_config_setting(
     #    path=path,
