@@ -40,9 +40,9 @@ from eprint import eprint
 from getdents import files_pathlib
 from globalverbose import gvd
 from pathtool import file_exists_nonzero
-# from rich import print as pprint
 from with_chdir import chdir
 
+# from rich import print as pprint
 logging.basicConfig(level=logging.INFO)
 sh.mv = None  # use sh.busybox('mv'), coreutils ignores stdin read errors
 
