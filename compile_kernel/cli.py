@@ -227,7 +227,7 @@ def compare_loaded_modules_to_config(
 @click.option("--no-check-boot", is_flag=True)
 @click_add_options(click_global_options)
 @click.pass_context
-def compile(
+def compile_and_install(
     ctx,
     configure: bool,
     no_fix: bool,
