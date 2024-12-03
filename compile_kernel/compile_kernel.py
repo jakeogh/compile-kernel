@@ -2049,7 +2049,7 @@ def configure_kernel(
     )  # must be done after nconfig
 
 
-def kcompile(
+def compile_and_install_kernel(
     *,
     configure: bool,
     force: bool,
