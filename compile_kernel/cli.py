@@ -41,11 +41,11 @@ from eprint import eprint
 from globalverbose import gvd
 
 from compile_kernel import check_kernel_config
+from compile_kernel import compile_and_install_kernel
 from compile_kernel import configure_kernel
 from compile_kernel import generate_module_config_dict
 from compile_kernel import get_set_kernel_config_option
 from compile_kernel import install_compiled_kernel
-from compile_kernel import kcompile
 
 # logging.basicConfig(level=logging.INFO)
 sh.mv = None  # use sh.busybox('mv'), coreutils ignores stdin read errors
@@ -257,7 +257,7 @@ def compile(
     if not fix:
         warn_only = True
 
-    kcompile(
+    compile_and_install_kernel(
         configure=configure,
         force=force,
         fix=fix,
