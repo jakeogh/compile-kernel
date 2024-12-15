@@ -1906,6 +1906,15 @@ def check_kernel_config(
         fix=fix,
         url="",
     )
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_BRIDGE",
+        required_state=True,  # m
+        warn=warn_only,
+        fix=fix,
+        url="",
+    )
     ## genkernel
     # verify_kernel_config_setting(
     #    path=path,
