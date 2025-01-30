@@ -1891,6 +1891,15 @@ def check_kernel_config(
     verify_kernel_config_setting(
         path=path,
         content=content,
+        define="CONFIG_USB_SERIAL_FTDI_SIO",
+        required_state=True,  # m
+        warn=warn_only,
+        fix=fix,
+        url="",
+    )
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
         define="CONFIG_USB_PEGASUS",
         required_state=True,  # m
         warn=warn_only,
