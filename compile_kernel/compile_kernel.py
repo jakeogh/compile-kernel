@@ -1918,6 +1918,24 @@ def check_kernel_config(
     verify_kernel_config_setting(
         path=path,
         content=content,
+        define="CONFIG_USB_SERIAL_CYPRESS_M8",
+        required_state=True,  # m
+        warn=warn_only,
+        fix=fix,
+        url="",
+    )
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_USB_ACM",
+        required_state=True,  # m
+        warn=warn_only,
+        fix=fix,
+        url="",
+    )
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
         define="CONFIG_NET_DROP_MONITOR",
         required_state=True,  # m
         warn=warn_only,
