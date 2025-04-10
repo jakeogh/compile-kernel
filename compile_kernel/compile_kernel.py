@@ -441,7 +441,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_FB_NVIDIA",
         required_state=False,  # boot seems to hang here
-        module=True,
+        module=False,
         warn=warn_only,
         fix=fix,
         url="",
