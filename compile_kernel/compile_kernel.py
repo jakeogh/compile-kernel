@@ -123,6 +123,7 @@ def get_set_kernel_config_option(
     module: bool,
     get: bool,
 ):
+    icp(path, define, state, module, get)
     if not state:
         assert not module
     script_path = Path("/usr/src/linux/scripts/config")
