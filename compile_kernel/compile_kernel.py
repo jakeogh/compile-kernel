@@ -236,6 +236,26 @@ def check_kernel_config(
     content = read_content_of_kernel_config(path)
     icp(path)
 
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_FUNCTION_TRACER",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        fix=fix,
+        url="",
+    )
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_HAVE_FENTRY",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        fix=fix,
+        url="",
+    )
     # to see options like CONFIG_TRIM_UNUSED_KSYMS
     verify_kernel_config_setting(
         path=path,
