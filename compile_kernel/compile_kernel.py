@@ -2168,6 +2168,17 @@ def check_kernel_config(
         fix=fix,
         url="",
     )
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_IA32_EMULATION",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        fix=fix,
+        url="",
+    )
+
     ## genkernel
     # verify_kernel_config_setting(
     #    path=path,
