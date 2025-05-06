@@ -233,6 +233,7 @@ def check_kernel_config(
     warn_only: bool,
 ):
     path = path.resolve()
+    assert insure_config_exists()
     content = read_content_of_kernel_config(path)
     icp(path)
 
@@ -2224,8 +2225,11 @@ def _symlink_config():
     if not dot_config.exists():
         with resources.path("compile_kernel", ".config") as _kernel_config:
             icp(_kernel_config)
-
             sh.ln("-s", _kernel_config, dot_config)
+
+
+def insure_config_exists():
+    _symlink_config()
 
 
 def check_config_enviroment():
