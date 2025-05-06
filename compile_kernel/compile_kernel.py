@@ -2223,9 +2223,22 @@ def _symlink_config():
             )
 
     if not dot_config.exists():
-        with resources.path("compile_kernel", ".config") as _kernel_config:
-            icp(_kernel_config)
-            sh.ln("-s", _kernel_config, dot_config)
+        extract_kernel_config()
+        # with resources.path("compile_kernel", ".config") as _kernel_config:
+        #    icp(_kernel_config)
+        #    sh.ln("-s", _kernel_config, dot_config)
+
+
+def extract_kernel_config():
+    input_path = "/proc/config.gz"
+    output_path = "/usr/src/linux/.config"
+
+    if os.path.exists(output_path):
+        raise FileExistsError(f"File {output_path} already exists")
+    with gzip.open(input_path, "rb") as f_in:
+        config_data = f_in.read()
+    with open(output_path, "wb") as f_out:
+        f_out.write(config_data)
 
 
 def insure_config_exists():
