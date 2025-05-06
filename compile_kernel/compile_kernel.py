@@ -2223,10 +2223,9 @@ def _symlink_config():
             )
 
     if not dot_config.exists():
-        extract_kernel_config()
-        # with resources.path("compile_kernel", ".config") as _kernel_config:
-        #    icp(_kernel_config)
-        #    sh.ln("-s", _kernel_config, dot_config)
+        with resources.path("compile_kernel", ".config") as _kernel_config:
+            icp(_kernel_config)
+            sh.ln("-s", _kernel_config, dot_config)
 
 
 def extract_kernel_config():
@@ -2242,7 +2241,13 @@ def extract_kernel_config():
 
 
 def insure_config_exists():
-    _symlink_config()
+    dot_config = Path("/usr/src/linux/.config")
+    if not dot_config.exists():
+        # if _symlink_config():
+        #    return True
+        extract_kernel_config()
+        assert dot_config.exists()
+    return True
 
 
 def check_config_enviroment():
