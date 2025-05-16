@@ -1145,12 +1145,13 @@ def check_kernel_config(
         url="",
     )
     # i386
+    # I forget why... maybe virtualbox?
     verify_kernel_config_setting(
         path=path,
         content=content,
         define="CONFIG_IA32_EMULATION",
-        required_state=False,
-        module=False,
+        required_state=True,
+        module=True,
         warn=warn_only,
         fix=fix,
         url="",
@@ -2165,16 +2166,6 @@ def check_kernel_config(
         path=path,
         content=content,
         define="CONFIG_USB4",
-        required_state=True,
-        module=False,
-        warn=warn_only,
-        fix=fix,
-        url="",
-    )
-    verify_kernel_config_setting(
-        path=path,
-        content=content,
-        define="CONFIG_IA32_EMULATION",
         required_state=True,
         module=False,
         warn=warn_only,
