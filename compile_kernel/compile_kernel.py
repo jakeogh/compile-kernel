@@ -46,6 +46,8 @@ from with_chdir import chdir
 logging.basicConfig(level=logging.INFO)
 sh.mv = None  # use sh.busybox('mv'), coreutils ignores stdin read errors
 
+USED_SYMBOL_SET = set()
+
 
 def generate_module_config_dict(path: Path):
     _manual_mappings = {}
@@ -125,6 +127,9 @@ def get_set_kernel_config_option(
     module: bool,
     get: bool,
 ):
+    global USED_SYMBOL_SET
+    assert define not in USED_SYMBOL_SET
+    USED_SYMBOL_SET.add(define)
     icp(path, define, state, module, get)
     if not state:
         assert not module
