@@ -74,32 +74,34 @@ def generate_module_config_dict(path: Path):
     _prefixes = [prefix]
     for _p in _pprefix:
         _prefixes.append(_p)
-    for _makefile in _makefiles:
-        for line in open(_makefile, "r", encoding="utf8"):
-            line = line.strip()  # some lines have leading whitespace
-            if line.startswith("#"):
-                continue
-            if "+=" not in line:  # bug, need to properly parse the Makefiles
-                continue
-            if prefix in line:
-                # eprint(line)
-                assert line.startswith(tuple(_prefixes))
-                _config_name = line.split(prefix)[-1]
-                # icp(_config_name)
-                _config_name = _config_name.split(")")[0]
-                # icp(_config_name)
-                _modules = line.split("+=")[-1].strip()
-                _modules = _modules.split()
-                _omodules = []
-                for _m in _modules:
-                    if _m.endswith(".o"):
-                        _omodules.append(_m)
-                        if "-" in _m:
-                            _omodules.append(_m.replace("-", "_"))
 
-                # icp(_modules)
-                if _omodules:
-                    config_dict[_config_name] = _omodules
+    for _makefile in _makefiles:
+        with open(_makefile, "r", encoding="utf8") as f:
+            for line in f:
+                line = line.strip()  # some lines have leading whitespace
+                if line.startswith("#"):
+                    continue
+                if "+=" not in line:  # bug, need to properly parse the Makefiles
+                    continue
+                if prefix in line:
+                    # eprint(line)
+                    assert line.startswith(tuple(_prefixes))
+                    _config_name = line.split(prefix)[-1]
+                    # icp(_config_name)
+                    _config_name = _config_name.split(")")[0]
+                    # icp(_config_name)
+                    _modules = line.split("+=")[-1].strip()
+                    _modules = _modules.split()
+                    _omodules = []
+                    for _m in _modules:
+                        if _m.endswith(".o"):
+                            _omodules.append(_m)
+                            if "-" in _m:
+                                _omodules.append(_m.replace("-", "_"))
+
+                    # icp(_modules)
+                    if _omodules:
+                        config_dict[_config_name] = _omodules
 
     # pprint(config_dict)
     return config_dict | _manual_mappings
@@ -1871,7 +1873,7 @@ def check_kernel_config(
         path=path,
         content=content,
         define="CONFIG_SND_HDA_CODEC_HDMI",
-        required_state=True,  # m
+        required_state=True,
         module=True,
         warn=warn_only,
         fix=fix,
@@ -1882,7 +1884,7 @@ def check_kernel_config(
         path=path,
         content=content,
         define="CONFIG_INPUT_PCSPKR",
-        required_state=True,  # m
+        required_state=True,
         module=True,
         warn=warn_only,
         fix=fix,
@@ -1893,7 +1895,7 @@ def check_kernel_config(
         path=path,
         content=content,
         define="CONFIG_MISC_RTSX_PCI",
-        required_state=True,  # m
+        required_state=True,
         module=True,
         warn=warn_only,
         fix=fix,
@@ -1977,7 +1979,7 @@ def check_kernel_config(
         path=path,
         content=content,
         define="CONFIG_MMC_BLOCK",
-        required_state=True,  # m
+        required_state=True,
         module=True,
         warn=warn_only,
         fix=fix,
@@ -1988,7 +1990,7 @@ def check_kernel_config(
         path=path,
         content=content,
         define="CONFIG_FUSE_FS",
-        required_state=True,  # m
+        required_state=True,
         module=True,
         warn=warn_only,
         fix=fix,
@@ -1999,7 +2001,7 @@ def check_kernel_config(
         path=path,
         content=content,
         define="CONFIG_VLAN_8021Q",
-        required_state=True,  # m
+        required_state=True,
         module=True,
         warn=warn_only,
         fix=fix,
@@ -2010,7 +2012,7 @@ def check_kernel_config(
         path=path,
         content=content,
         define="CONFIG_NUMA",
-        required_state=True,  # m
+        required_state=True,
         module=True,
         warn=warn_only,
         fix=fix,
@@ -2021,7 +2023,7 @@ def check_kernel_config(
         path=path,
         content=content,
         define="CONFIG_DEVTMPFS",
-        required_state=True,  # m
+        required_state=True,
         module=True,
         warn=warn_only,
         fix=fix,
@@ -2032,7 +2034,7 @@ def check_kernel_config(
         path=path,
         content=content,
         define="CONFIG_WIREGUARD",
-        required_state=True,  # m
+        required_state=True,
         module=True,
         warn=warn_only,
         fix=fix,
@@ -2043,7 +2045,7 @@ def check_kernel_config(
         path=path,
         content=content,
         define="CONFIG_USB_SERIAL_CONSOLE",
-        required_state=True,  # m
+        required_state=True,
         module=True,
         warn=warn_only,
         fix=fix,
@@ -2053,7 +2055,7 @@ def check_kernel_config(
         path=path,
         content=content,
         define="CONFIG_USB_SERIAL",
-        required_state=True,  # m
+        required_state=True,
         module=True,
         warn=warn_only,
         fix=fix,
@@ -2063,7 +2065,7 @@ def check_kernel_config(
         path=path,
         content=content,
         define="CONFIG_USB_SERIAL_PL2303",
-        required_state=True,  # m
+        required_state=True,
         module=True,
         warn=warn_only,
         fix=fix,
@@ -2073,7 +2075,7 @@ def check_kernel_config(
         path=path,
         content=content,
         define="CONFIG_USB_SERIAL_CH341",
-        required_state=True,  # m
+        required_state=True,
         module=True,
         warn=warn_only,
         fix=fix,
@@ -2083,7 +2085,7 @@ def check_kernel_config(
         path=path,
         content=content,
         define="CONFIG_USB_SERIAL_FTDI_SIO",
-        required_state=True,  # m
+        required_state=True,
         module=True,
         warn=warn_only,
         fix=fix,
@@ -2093,7 +2095,7 @@ def check_kernel_config(
         path=path,
         content=content,
         define="CONFIG_USB_PEGASUS",
-        required_state=True,  # m
+        required_state=True,
         module=True,
         warn=warn_only,
         fix=fix,
@@ -2103,7 +2105,7 @@ def check_kernel_config(
         path=path,
         content=content,
         define="CONFIG_USB_USBNET",
-        required_state=True,  # m
+        required_state=True,
         module=True,
         warn=warn_only,
         fix=fix,
@@ -2113,7 +2115,7 @@ def check_kernel_config(
         path=path,
         content=content,
         define="CONFIG_USB_SERIAL_CYPRESS_M8",
-        required_state=True,  # m
+        required_state=True,
         module=True,
         warn=warn_only,
         fix=fix,
@@ -2123,7 +2125,7 @@ def check_kernel_config(
         path=path,
         content=content,
         define="CONFIG_USB_ACM",
-        required_state=True,  # m
+        required_state=True,
         module=True,
         warn=warn_only,
         fix=fix,
@@ -2133,7 +2135,7 @@ def check_kernel_config(
         path=path,
         content=content,
         define="CONFIG_NET_DROP_MONITOR",
-        required_state=True,  # m
+        required_state=True,
         module=True,
         warn=warn_only,
         fix=fix,
@@ -2143,7 +2145,7 @@ def check_kernel_config(
         path=path,
         content=content,
         define="CONFIG_BRIDGE",
-        required_state=True,  # m
+        required_state=True,
         module=True,
         warn=warn_only,
         fix=fix,
@@ -2153,7 +2155,7 @@ def check_kernel_config(
         path=path,
         content=content,
         define="CONFIG_BLK_DEV_NBD",
-        required_state=True,  # m
+        required_state=True,
         module=True,
         warn=warn_only,
         fix=fix,
@@ -2163,7 +2165,7 @@ def check_kernel_config(
         path=path,
         content=content,
         define="CONFIG_USB4",
-        required_state=True,  # m
+        required_state=True,
         module=False,
         warn=warn_only,
         fix=fix,
@@ -2185,7 +2187,7 @@ def check_kernel_config(
     #    path=path,
     #    content=content,
     #    define="CONFIG_MICROCODE_AMD",
-    #    required_state=True,  # m
+    #    required_state=True,
     #    module=True,
     #    warn=warn_only,
     #    fix=fix,
@@ -2196,7 +2198,7 @@ def check_kernel_config(
     #    path=path,
     #    content=content,
     #    define="CONFIG_MICROCODE_INTEL",
-    #    required_state=True,  # m
+    #    required_state=True,
     #    module=True,
     #    warn=warn_only,
     #    fix=fix,
