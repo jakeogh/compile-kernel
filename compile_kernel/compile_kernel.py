@@ -244,6 +244,7 @@ def check_kernel_config(
     content = read_content_of_kernel_config(path)
     icp(path, warn_only)
 
+    # BPF
     verify_kernel_config_setting(
         path=path,
         content=content,
@@ -1936,16 +1937,6 @@ def check_kernel_config(
         fix=fix,
         url="",
     )
-    verify_kernel_config_setting(
-        path=path,
-        content=content,
-        define="CONFIG_FUNCTION_TRACER",
-        required_state=True,
-        module=True,
-        warn=warn_only,
-        fix=fix,
-        url="",
-    )
     # kvm
     verify_kernel_config_setting(
         path=path,
@@ -2196,7 +2187,6 @@ def check_kernel_config(
 # CONFIG_NET_CLS_BPF:         is not set when it should be.
 # CONFIG_NET_ACT_BPF:         is not set when it should be.
 # CONFIG_BPF_EVENTS:  is not set when it should be.
-# CONFIG_FUNCTION_TRACER:     is not set when it should be.
 
 
 def _symlink_config():
