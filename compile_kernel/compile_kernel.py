@@ -237,7 +237,7 @@ def check_kernel_config(
     path = path.resolve()
     assert insure_config_exists()
     content = read_content_of_kernel_config(path)
-    icp(path)
+    icp(path, warn_only)
 
     verify_kernel_config_setting(
         path=path,
