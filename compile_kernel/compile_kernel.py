@@ -127,10 +127,10 @@ def get_set_kernel_config_option(
     module: bool,
     get: bool,
 ):
+    icp(path, define, state, module, get)
     global USED_SYMBOL_SET
     assert define not in USED_SYMBOL_SET
     USED_SYMBOL_SET.add(define)
-    icp(path, define, state, module, get)
     if not state:
         assert not module
     script_path = Path("/usr/src/linux/scripts/config")
@@ -1238,7 +1238,7 @@ def check_kernel_config(
         fix=fix,
         url="",
     )
-    # alsa
+    # alsa audio
     verify_kernel_config_setting(
         path=path,
         content=content,
@@ -1857,17 +1857,6 @@ def check_kernel_config(
         path=path,
         content=content,
         define="CONFIG_SND_SEQUENCER_OSS",
-        required_state=True,
-        module=True,
-        warn=warn_only,
-        fix=fix,
-        url="",
-    )
-    # audio
-    verify_kernel_config_setting(
-        path=path,
-        content=content,
-        define="CONFIG_SND_AC97_CODEC",
         required_state=True,
         module=True,
         warn=warn_only,
