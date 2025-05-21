@@ -239,6 +239,9 @@ def check_kernel_config(
     fix: bool,
     warn_only: bool,
 ):
+    global USED_SYMBOL_SET
+    USED_SYMBOL_SET = set()
+
     path = path.resolve()
     assert insure_config_exists()
     content = read_content_of_kernel_config(path)
