@@ -858,7 +858,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_MITIGATION_SLS",
         required_state=True,
-        module=True,
+        module=False,
         warn=warn_only,
         fix=fix,
         url="",
