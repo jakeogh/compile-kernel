@@ -1286,6 +1286,17 @@ def check_kernel_config(
         fix=fix,
         url="",
     )
+    # alsa
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_SOUNDWIRE",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        fix=fix,
+        url="",
+    )
     # usb otg
     verify_kernel_config_setting(
         path=path,
