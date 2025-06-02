@@ -2171,17 +2171,18 @@ def check_kernel_config(
         fix=fix,
         url="",
     )
-    # performance
-    verify_kernel_config_setting(
-        path=path,
-        content=content,
-        define="CONFIG_DEBUG_INFO_DWARF5",
-        required_state=False,
-        module=False,
-        warn=warn_only,
-        fix=fix,
-        url="",
-    )
+    ## performance
+    ## nope, zfs-kmode REQUIRES this
+    # verify_kernel_config_setting(
+    #    path=path,
+    #    content=content,
+    #    define="CONFIG_DEBUG_INFO_DWARF5",
+    #    required_state=False,
+    #    module=False,
+    #    warn=warn_only,
+    #    fix=fix,
+    #    url="",
+    # )
     # performance
     verify_kernel_config_setting(
         path=path,
