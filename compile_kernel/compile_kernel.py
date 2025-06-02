@@ -1775,6 +1775,18 @@ def check_kernel_config(
         fix=fix,
         url="",
     )
+
+    # required for CONFIG_X86_SGX below
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_X86_X2APIC",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        fix=fix,
+        url="",
+    )
     #
     verify_kernel_config_setting(
         path=path,
@@ -1786,6 +1798,7 @@ def check_kernel_config(
         fix=fix,
         url="",
     )
+
     # auto cgroups... might contradict PREEMPT_NONE
     verify_kernel_config_setting(
         path=path,
