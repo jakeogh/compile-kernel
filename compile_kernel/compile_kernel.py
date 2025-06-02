@@ -178,7 +178,6 @@ def verify_kernel_config_setting(
     fix: bool,
     url: None | str = None,
 ):
-    ic(path, len(content), define, required_state, warn, fix, url)
 
     _current_state = get_set_kernel_config_option(
         path=path,
@@ -187,10 +186,10 @@ def verify_kernel_config_setting(
         module=module,
         get=True,
     )
-    ic(_current_state)
+    ic(path, len(content), define, required_state, module, _current_state, warn, fix, url)
     if _current_state == 'y' and required_state and not module:
         return
-    if _current_state == 'm' and required_state and module:
+    if _current_state == 'm' and (required_state and module):
         return
     if _current_state == 'n' and not required_state and not module:
         return
