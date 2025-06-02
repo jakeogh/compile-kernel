@@ -256,6 +256,7 @@ def check_kernel_config(
     fix: bool,
     warn_only: bool,
 ):
+    icp(path, fix, warn_only)
     global USED_SYMBOL_SET
     USED_SYMBOL_SET = set()
 
