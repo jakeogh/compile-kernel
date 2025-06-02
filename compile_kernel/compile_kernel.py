@@ -2452,17 +2452,17 @@ def check_kernel_config(
         fix=fix,
         url="",
     )
-    # performance
-    verify_kernel_config_setting(
-        path=path,
-        content=content,
-        define="CONFIG_DEFAULT_SECURITY_SELINUX",
-        required_state=False,
-        module=False,
-        warn=warn_only,
-        fix=fix,
-        url="",
-    )
+    ## performance
+    #verify_kernel_config_setting(
+    #    path=path,
+    #    content=content,
+    #    define="CONFIG_DEFAULT_SECURITY_SELINUX",
+    #    required_state=False,
+    #    module=False,
+    #    warn=warn_only,
+    #    fix=fix,
+    #    url="",
+    #)
     ## performance
     # verify_kernel_config_setting(
     #    path=path,
