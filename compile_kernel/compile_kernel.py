@@ -130,8 +130,9 @@ def get_set_kernel_config_option(
 ):
     icp(path, define, state, module, get)
     global USED_SYMBOL_SET
-    assert define not in USED_SYMBOL_SET
-    USED_SYMBOL_SET.add(define)
+    if not get:
+        assert define not in USED_SYMBOL_SET
+        USED_SYMBOL_SET.add(define)
     if not state:
         assert not module
     script_path = Path("/usr/src/linux/scripts/config")
