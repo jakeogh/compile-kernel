@@ -2352,28 +2352,28 @@ def check_kernel_config(
         fix=fix,
         url="",
     )
-    # performance
-    verify_kernel_config_setting(
-        path=path,
-        content=content,
-        define="CONFIG_TASK_XACCT",
-        required_state=False,
-        module=False,
-        warn=warn_only,
-        fix=fix,
-        url="",
-    )
-    # performance
-    verify_kernel_config_setting(
-        path=path,
-        content=content,
-        define="CONFIG_TASK_IO_ACCOUNTING",
-        required_state=False,
-        module=False,
-        warn=warn_only,
-        fix=fix,
-        url="",
-    )
+    ## performance
+    #verify_kernel_config_setting(
+    #    path=path,
+    #    content=content,
+    #    define="CONFIG_TASK_XACCT",
+    #    required_state=False,
+    #    module=False,
+    #    warn=warn_only,
+    #    fix=fix,
+    #    url="",
+    #)
+    ## performance
+    #verify_kernel_config_setting(
+    #    path=path,
+    #    content=content,
+    #    define="CONFIG_TASK_IO_ACCOUNTING",
+    #    required_state=False,
+    #    module=False,
+    #    warn=warn_only,
+    #    fix=fix,
+    #    url="",
+    #)
     # performance
     # enable THP only for applications that explicitly request it (via madvise), MADV_DONTNEED
     verify_kernel_config_setting(
