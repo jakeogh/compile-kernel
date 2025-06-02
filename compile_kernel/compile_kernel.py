@@ -187,9 +187,10 @@ def verify_kernel_config_setting(
         get=True,
     )
     ic(path, len(content), define, required_state, module, _current_state, warn, fix, url)
+
     if _current_state == 'y' and required_state and not module:
         return
-    if _current_state == 'm' and (required_state and module):
+    if (_current_state == 'm') and (required_state and module):
         ic(_current_state, required_state, module)
         return
     if _current_state == 'n' and not required_state and not module:
@@ -216,6 +217,7 @@ def verify_kernel_config_setting(
 
     if (define + " " not in content) and (define + "=" not in content):
         current_state = False
+        assert _current_state not in ['y', 'm']
     elif define + " is not set" not in content:
         # the define could be enabled
         if define + "=y" in content:
