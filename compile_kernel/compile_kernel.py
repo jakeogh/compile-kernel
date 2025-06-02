@@ -913,7 +913,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_ACPI_HED",
         required_state=True,
-        module=True,
+        module=False,
         warn=warn_only,
         fix=fix,
         url="",
