@@ -2694,8 +2694,24 @@ def boot_is_correct(
             return False
     return True
 
-
 def gcc_check():
+    _current_gcc_major_version = os.system('gcc --version | head -n1 | grep -oP "\d+\.\d+(\.\d+)?" | head -n1 | cut -d. -f1')
+    icp(_current_gcc_major_version)
+    assert _current_gcc_major_version == '14'
+    _config_gcc_version = os.system('grep CONFIG_GCC_VERSION /usr/src/linux/.config | cut -d "=" -f 2 | cut -c 1-2')
+    icp(_config_gcc_version)
+    if _config_gcc_version == _current_gcc_major_version:
+        icp(
+            _config_gcc_version,
+            "was used to compile kernel previously, not running `make clean`",
+        )
+        return
+    else:
+        icp("old gcc version detected, calling 'make clean'")
+        os.chdir("/usr/src/linux")
+        sh.make("clean")
+
+def gcc_check_old():
     test_path = Path("/usr/src/linux/init/.init_task.o.cmd")
     if test_path.exists():
         icp(
