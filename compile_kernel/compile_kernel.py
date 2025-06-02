@@ -2210,16 +2210,16 @@ def check_kernel_config(
         fix=fix,
         url="",
     )
-    verify_kernel_config_setting(
-        path=path,
-        content=content,
-        define="CONFIG_NET_DROP_MONITOR",
-        required_state=True,
-        module=True,
-        warn=warn_only,
-        fix=fix,
-        url="",
-    )
+    #verify_kernel_config_setting(
+    #    path=path,
+    #    content=content,
+    #    define="CONFIG_NET_DROP_MONITOR",
+    #    required_state=True,
+    #    module=True,
+    #    warn=warn_only,
+    #    fix=fix,
+    #    url="",
+    #)
     verify_kernel_config_setting(
         path=path,
         content=content,
@@ -2308,28 +2308,28 @@ def check_kernel_config(
     #    fix=fix,
     #    url="",
     #)
-    # performance
-    verify_kernel_config_setting(
-        path=path,
-        content=content,
-        define="CONFIG_FUNCTION_GRAPH_TRACER",
-        required_state=False,
-        module=False,
-        warn=warn_only,
-        fix=fix,
-        url="",
-    )
-    # performance
-    verify_kernel_config_setting(
-        path=path,
-        content=content,
-        define="CONFIG_DYNAMIC_FTRACE",
-        required_state=False,
-        module=False,
-        warn=warn_only,
-        fix=fix,
-        url="",
-    )
+    ## performance
+    #verify_kernel_config_setting(
+    #    path=path,
+    #    content=content,
+    #    define="CONFIG_FUNCTION_GRAPH_TRACER",
+    #    required_state=False,
+    #    module=False,
+    #    warn=warn_only,
+    #    fix=fix,
+    #    url="",
+    #)
+    ## performance
+    #verify_kernel_config_setting(
+    #    path=path,
+    #    content=content,
+    #    define="CONFIG_DYNAMIC_FTRACE",
+    #    required_state=False,
+    #    module=False,
+    #    warn=warn_only,
+    #    fix=fix,
+    #    url="",
+    #)
     # performance
     verify_kernel_config_setting(
         path=path,
