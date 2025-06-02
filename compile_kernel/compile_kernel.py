@@ -2041,6 +2041,18 @@ def check_kernel_config(
     )
 
     # mmc
+    # required for CONFIG_MMC_BLOCK below
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_MMC",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        fix=fix,
+        url="",
+    )
+    # mmc
     verify_kernel_config_setting(
         path=path,
         content=content,
@@ -2051,6 +2063,7 @@ def check_kernel_config(
         fix=fix,
         url="",
     )
+
     # FUSE
     verify_kernel_config_setting(
         path=path,
