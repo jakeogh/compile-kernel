@@ -856,7 +856,7 @@ def check_kernel_config(
     verify_kernel_config_setting(
         path=path,
         content=content,
-        define="CONFIG_SLS",
+        define="CONFIG_MITIGATION_SLS",
         required_state=True,
         module=True,
         warn=warn_only,
