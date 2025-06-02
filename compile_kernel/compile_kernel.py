@@ -178,25 +178,24 @@ def verify_kernel_config_setting(
     fix: bool,
     url: None | str = None,
 ):
-    ic(path, len(content), define, required_state, warn, url)
+    ic(path, len(content), define, required_state, warn, fix, url)
+
+    _current_state = get_set_kernel_config_option(
+        path=path,
+        define=define,
+        state=required_state,
+        module=module,
+        get=True,
+    )
+    ic(_current_state)
+    if _current_state == 'y' and required_state and not module:
+        return
+    if _current_state == 'm' and required_state and module:
+        return
+    if _current_state == 'n' and not required_state and not module:
+        return
 
     if fix:
-        _current_state = get_set_kernel_config_option(
-            path=path,
-            define=define,
-            state=required_state,
-            module=module,
-            get=True,
-        )
-        ic(_current_state)
-        if _current_state == 'y' and required_state and not module:
-            return
-        if _current_state == 'm' and required_state and module:
-            return
-        if _current_state == 'n' and not required_state and not module:
-            return
-
-
         content = get_set_kernel_config_option(
             path=path,
             define=define,
