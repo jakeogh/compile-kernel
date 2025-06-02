@@ -186,14 +186,24 @@ def verify_kernel_config_setting(
         module=module,
         get=True,
     )
-    ic(path, len(content), define, required_state, module, _current_state, warn, fix, url)
+    ic(
+        path,
+        len(content),
+        define,
+        required_state,
+        module,
+        _current_state,
+        warn,
+        fix,
+        url,
+    )
 
-    if _current_state == 'y' and required_state and not module:
+    if _current_state == "y" and required_state and not module:
         return
-    if (_current_state == 'm') and (required_state and module):
+    if (_current_state == "m") and (required_state and module):
         ic(_current_state, required_state, module)
         return
-    if _current_state == 'n' and not required_state and not module:
+    if _current_state == "n" and not required_state and not module:
         return
 
     if fix:
@@ -211,24 +221,24 @@ def verify_kernel_config_setting(
     assert not define.endswith(":")
 
     enabled_state = False
-    if _current_state in ['y', 'm']:
+    if _current_state in ["y", "m"]:
         enabled_state = True
 
     module_state = False
-    if _current_state == 'm':
+    if _current_state == "m":
         module_state = True
 
     msg = ""
     if url:
         msg += f" See: {url}"
 
-    if _current_state == 'y':
+    if _current_state == "y":
         if required_state and not module:
             return  # all is well
-    if _current_state == 'm':
+    if _current_state == "m":
         if required_state and module:
             return  # all is well
-    if _current_state == 'n':
+    if _current_state == "n":
         if not required_state and not module:
             return  # all is well
 
@@ -236,7 +246,10 @@ def verify_kernel_config_setting(
     if gvd:
         ic(define, _current_state, enabled_state, module_state)
 
-    msg = f"{define} is {state_table[enabled_state]} and {module_table[module_state]}!" + msg
+    msg = (
+        f"{define} is {state_table[enabled_state]} and {module_table[module_state]}!"
+        + msg
+    )
     if warn:
         msg = "WARNING: " + msg
         eprint(path.as_posix(), msg)
@@ -507,7 +520,7 @@ def check_kernel_config(
     )
     ## boot VESA
     # seems to have been removed, oldconfig removes it
-    #verify_kernel_config_setting(
+    # verify_kernel_config_setting(
     #    path=path,
     #    content=content,
     #    define="CONFIG_FB_INTEL",
@@ -516,7 +529,7 @@ def check_kernel_config(
     #    warn=warn_only,
     #    fix=fix,
     #    url="",
-    #)
+    # )
     # boot VESA
     verify_kernel_config_setting(
         path=path,
@@ -1216,6 +1229,39 @@ def check_kernel_config(
         fix=fix,
         url="",
     )
+    # alsa required for the rest
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_SND",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        fix=fix,
+        url="",
+    )
+    # alsa required for the rest
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_SND_SOC",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        fix=fix,
+        url="",
+    )
+    # alsa
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_SND_SOC_AMD_ACP",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        fix=fix,
+        url="",
+    )
     # alsa
     verify_kernel_config_setting(
         path=path,
@@ -1415,7 +1461,7 @@ def check_kernel_config(
 
     ## performance
     ## required to enable CONFIG_TASK_DELAY_ACCT below, but disabled for now
-    #verify_kernel_config_setting(
+    # verify_kernel_config_setting(
     #    path=path,
     #    content=content,
     #    define="CONFIG_TASKSTATS",
@@ -1424,8 +1470,8 @@ def check_kernel_config(
     #    warn=warn_only,
     #    fix=fix,
     #    url="",
-    #)
-    #verify_kernel_config_setting(
+    # )
+    # verify_kernel_config_setting(
     #    path=path,
     #    content=content,
     #    define="CONFIG_TASK_DELAY_ACCT",
@@ -1434,7 +1480,7 @@ def check_kernel_config(
     #    warn=warn_only,
     #    fix=fix,
     #    url="http://guichaz.free.fr/iotop/",
-    #)
+    # )
 
     verify_kernel_config_setting(
         path=path,
@@ -1824,7 +1870,7 @@ def check_kernel_config(
     )
     ## zswap
     ## depreciated
-    #verify_kernel_config_setting(
+    # verify_kernel_config_setting(
     #    path=path,
     #    content=content,
     #    define="CONFIG_Z3FOLD",
@@ -1833,7 +1879,7 @@ def check_kernel_config(
     #    warn=warn_only,
     #    fix=fix,
     #    url="",
-    #)
+    # )
     # memory deduplication
     verify_kernel_config_setting(
         path=path,
@@ -2120,7 +2166,7 @@ def check_kernel_config(
         url="https://wiki.gentoo.org/wiki/WireGuard",
     )
     ## serial console debugging
-    #verify_kernel_config_setting(
+    # verify_kernel_config_setting(
     #    path=path,
     #    content=content,
     #    define="CONFIG_USB_SERIAL_CONSOLE",
@@ -2129,7 +2175,7 @@ def check_kernel_config(
     #    warn=warn_only,
     #    fix=fix,
     #    url="",
-    #)
+    # )
     verify_kernel_config_setting(
         path=path,
         content=content,
@@ -2210,7 +2256,7 @@ def check_kernel_config(
         fix=fix,
         url="",
     )
-    #verify_kernel_config_setting(
+    # verify_kernel_config_setting(
     #    path=path,
     #    content=content,
     #    define="CONFIG_NET_DROP_MONITOR",
@@ -2219,7 +2265,7 @@ def check_kernel_config(
     #    warn=warn_only,
     #    fix=fix,
     #    url="",
-    #)
+    # )
     verify_kernel_config_setting(
         path=path,
         content=content,
@@ -2298,7 +2344,7 @@ def check_kernel_config(
     )
     ## performance
     ## BPF requires this
-    #verify_kernel_config_setting(
+    # verify_kernel_config_setting(
     #    path=path,
     #    content=content,
     #    define="CONFIG_FUNCTION_TRACER",
@@ -2307,9 +2353,9 @@ def check_kernel_config(
     #    warn=warn_only,
     #    fix=fix,
     #    url="",
-    #)
+    # )
     ## performance
-    #verify_kernel_config_setting(
+    # verify_kernel_config_setting(
     #    path=path,
     #    content=content,
     #    define="CONFIG_FUNCTION_GRAPH_TRACER",
@@ -2318,9 +2364,9 @@ def check_kernel_config(
     #    warn=warn_only,
     #    fix=fix,
     #    url="",
-    #)
+    # )
     ## performance
-    #verify_kernel_config_setting(
+    # verify_kernel_config_setting(
     #    path=path,
     #    content=content,
     #    define="CONFIG_DYNAMIC_FTRACE",
@@ -2329,7 +2375,7 @@ def check_kernel_config(
     #    warn=warn_only,
     #    fix=fix,
     #    url="",
-    #)
+    # )
     # performance
     verify_kernel_config_setting(
         path=path,
@@ -2353,7 +2399,7 @@ def check_kernel_config(
         url="",
     )
     ## performance
-    #verify_kernel_config_setting(
+    # verify_kernel_config_setting(
     #    path=path,
     #    content=content,
     #    define="CONFIG_TASK_XACCT",
@@ -2362,9 +2408,9 @@ def check_kernel_config(
     #    warn=warn_only,
     #    fix=fix,
     #    url="",
-    #)
+    # )
     ## performance
-    #verify_kernel_config_setting(
+    # verify_kernel_config_setting(
     #    path=path,
     #    content=content,
     #    define="CONFIG_TASK_IO_ACCOUNTING",
@@ -2373,7 +2419,7 @@ def check_kernel_config(
     #    warn=warn_only,
     #    fix=fix,
     #    url="",
-    #)
+    # )
     # performance
     # enable THP only for applications that explicitly request it (via madvise), MADV_DONTNEED
     verify_kernel_config_setting(
@@ -2453,7 +2499,7 @@ def check_kernel_config(
         url="",
     )
     ## performance
-    #verify_kernel_config_setting(
+    # verify_kernel_config_setting(
     #    path=path,
     #    content=content,
     #    define="CONFIG_DEFAULT_SECURITY_SELINUX",
@@ -2462,7 +2508,7 @@ def check_kernel_config(
     #    warn=warn_only,
     #    fix=fix,
     #    url="",
-    #)
+    # )
     ## performance
     # verify_kernel_config_setting(
     #    path=path,
