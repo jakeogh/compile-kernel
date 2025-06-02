@@ -206,42 +206,37 @@ def verify_kernel_config_setting(
         )
 
     state_table = {True: "enabled", False: "disabled"}
+    module_table = {True: "module", False: "non-module"}
     assert isinstance(required_state, bool)
     assert not define.endswith(":")
 
-    current_state = None
+    enabled_state = False
+    if _current_state in ['y', 'm']:
+        enabled_state = True
+
+    module_state = False
+    if _current_state == 'm':
+        module_state = True
 
     msg = ""
     if url:
         msg += f" See: {url}"
 
-    if (define + " " not in content) and (define + "=" not in content):
-        current_state = False
-        assert _current_state not in ['y', 'm']
-    elif define + " is not set" not in content:
-        # the define could be enabled
-        if define + "=y" in content:
-            # found_define = True
-            current_state = True
-        if define + "=m" in content:
-            # found_define = True
-            current_state = True
-    else:
-        # the define is disabled
-        # found_define = False
-        current_state = False
-
-    if current_state == required_state:
-        return  # all is well
-
-    ic("a", current_state)
+    if _current_state == 'y':
+        if required_state and not module:
+            return  # all is well
+    if _current_state == 'm':
+        if required_state and module:
+            return  # all is well
+    if _current_state == 'n':
+        if not required_state and not module:
+            return  # all is well
 
     # mypy: Invalid index type "None | bool" for "Dict[bool, str]"; expected type "bool"  [index] (E)
     if gvd:
-        ic(define, current_state, state_table)
+        ic(define, _current_state, enabled_state, module_state)
 
-    assert current_state is not None
-    msg = f"{define} is {state_table[current_state]}!" + msg
+    msg = f"{define} is {state_table[enabled_state]} and {module_table[module_state]}!" + msg
     if warn:
         msg = "WARNING: " + msg
         eprint(path.as_posix(), msg)
