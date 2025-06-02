@@ -1413,11 +1413,23 @@ def check_kernel_config(
         url="https://github.com/gentoo/gentoo/blob/master/x11-drivers/xf86-input-wacom/xf86-input-wacom-0.40.0.ebuild",
     )
 
+    # performance
+    # required to enable CONFIG_TASK_DELAY_ACCT below, but disabled for now
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_TASKSTATS",
+        required_state=False,
+        module=False,
+        warn=warn_only,
+        fix=fix,
+        url="",
+    )
     verify_kernel_config_setting(
         path=path,
         content=content,
         define="CONFIG_TASK_DELAY_ACCT",
-        required_state=True,
+        required_state=False,
         module=False,
         warn=warn_only,
         fix=fix,
@@ -2307,17 +2319,6 @@ def check_kernel_config(
         path=path,
         content=content,
         define="CONFIG_SCHEDSTATS",
-        required_state=False,
-        module=False,
-        warn=warn_only,
-        fix=fix,
-        url="",
-    )
-    # performance
-    verify_kernel_config_setting(
-        path=path,
-        content=content,
-        define="CONFIG_TASKSTATS",
         required_state=False,
         module=False,
         warn=warn_only,
