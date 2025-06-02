@@ -1822,17 +1822,18 @@ def check_kernel_config(
         fix=fix,
         url="",
     )
-    # zswap
-    verify_kernel_config_setting(
-        path=path,
-        content=content,
-        define="CONFIG_Z3FOLD",
-        required_state=True,
-        module=True,
-        warn=warn_only,
-        fix=fix,
-        url="",
-    )
+    ## zswap
+    ## depreciated
+    #verify_kernel_config_setting(
+    #    path=path,
+    #    content=content,
+    #    define="CONFIG_Z3FOLD",
+    #    required_state=True,
+    #    module=True,
+    #    warn=warn_only,
+    #    fix=fix,
+    #    url="",
+    #)
     # memory deduplication
     verify_kernel_config_setting(
         path=path,
