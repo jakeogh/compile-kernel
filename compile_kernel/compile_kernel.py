@@ -262,6 +262,17 @@ def check_kernel_config(
     content = read_content_of_kernel_config(path)
     icp(path, warn_only)
 
+    # BPF, required for CONFIG_FUNCTION_TRACER
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_FTRACE",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        fix=fix,
+        url="",
+    )
     # BPF
     verify_kernel_config_setting(
         path=path,
@@ -273,6 +284,7 @@ def check_kernel_config(
         fix=fix,
         url="",
     )
+
     verify_kernel_config_setting(
         path=path,
         content=content,
@@ -2226,17 +2238,6 @@ def check_kernel_config(
         path=path,
         content=content,
         define="CONFIG_DEBUG_MEMORY_INIT",
-        required_state=False,
-        module=False,
-        warn=warn_only,
-        fix=fix,
-        url="",
-    )
-    # performance
-    verify_kernel_config_setting(
-        path=path,
-        content=content,
-        define="CONFIG_FTRACE",
         required_state=False,
         module=False,
         warn=warn_only,
