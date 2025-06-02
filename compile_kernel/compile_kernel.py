@@ -188,6 +188,7 @@ def verify_kernel_config_setting(
             module=module,
             get=True,
         )
+        ic(_current_state)
         if _current_state == 'y' and required_state and not module:
             return
         if _current_state == 'm' and required_state and module:
