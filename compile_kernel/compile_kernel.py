@@ -505,17 +505,18 @@ def check_kernel_config(
         fix=fix,
         url="",
     )
-    # boot VESA
-    verify_kernel_config_setting(
-        path=path,
-        content=content,
-        define="CONFIG_FB_INTEL",
-        required_state=True,
-        module=True,
-        warn=warn_only,
-        fix=fix,
-        url="",
-    )
+    ## boot VESA
+    # seems to have been removed, oldconfig removes it
+    #verify_kernel_config_setting(
+    #    path=path,
+    #    content=content,
+    #    define="CONFIG_FB_INTEL",
+    #    required_state=True,
+    #    module=True,
+    #    warn=warn_only,
+    #    fix=fix,
+    #    url="",
+    #)
     # boot VESA
     verify_kernel_config_setting(
         path=path,
