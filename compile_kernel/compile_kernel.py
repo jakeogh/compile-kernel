@@ -2171,7 +2171,327 @@ def check_kernel_config(
         fix=fix,
         url="",
     )
+    # performance
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_DEBUG_INFO_DWARF5",
+        required_state=False,
+        module=False,
+        warn=warn_only,
+        fix=fix,
+        url="",
+    )
+    # performance
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_DEBUG_STACK_USAGE",
+        required_state=False,
+        module=False,
+        warn=warn_only,
+        fix=fix,
+        url="",
+    )
+    # performance
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_DEBUG_WX",
+        required_state=False,
+        module=False,
+        warn=warn_only,
+        fix=fix,
+        url="",
+    )
 
+    # performance
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_DEBUG_MEMORY_INIT",
+        required_state=False,
+        module=False,
+        warn=warn_only,
+        fix=fix,
+        url="",
+    )
+    # performance
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_FTRACE",
+        required_state=False,
+        module=False,
+        warn=warn_only,
+        fix=fix,
+        url="",
+    )
+    # performance
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_FUNCTION_TRACER",
+        required_state=False,
+        module=False,
+        warn=warn_only,
+        fix=fix,
+        url="",
+    )
+    # performance
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_FUNCTION_GRAPH_TRACER",
+        required_state=False,
+        module=False,
+        warn=warn_only,
+        fix=fix,
+        url="",
+    )
+    # performance
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_DYNAMIC_FTRACE",
+        required_state=False,
+        module=False,
+        warn=warn_only,
+        fix=fix,
+        url="",
+    )
+    # performance
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_RCU_TRACE",
+        required_state=False,
+        module=False,
+        warn=warn_only,
+        fix=fix,
+        url="",
+    )
+    # performance
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_SCHEDSTATS",
+        required_state=False,
+        module=False,
+        warn=warn_only,
+        fix=fix,
+        url="",
+    )
+    # performance
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_TASKSTATS",
+        required_state=False,
+        module=False,
+        warn=warn_only,
+        fix=fix,
+        url="",
+    )
+    # performance
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_TASK_XACCT",
+        required_state=False,
+        module=False,
+        warn=warn_only,
+        fix=fix,
+        url="",
+    )
+    # performance
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_TASK_IO_ACCOUNTING",
+        required_state=False,
+        module=False,
+        warn=warn_only,
+        fix=fix,
+        url="",
+    )
+    # performance
+    # enable THP only for applications that explicitly request it (via madvise), MADV_DONTNEED
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_TRANSPARENT_HUGEPAGE_MADVISE",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        fix=fix,
+        url="",
+    )
+    # performance
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_SLUB_DEBUG",
+        required_state=False,
+        module=False,
+        warn=warn_only,
+        fix=fix,
+        url="",
+    )
+    # performance
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_CPU_FREQ_DEFAULT_GOV_USERSPACE",
+        required_state=False,
+        module=False,
+        warn=warn_only,
+        fix=fix,
+        url="",
+    )
+    # performance
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_CPU_FREQ_DEFAULT_GOV_PERFORMANCE",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        fix=fix,
+        url="",
+    )
+    # performance
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_X86_INTEL_PSTATE",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        fix=fix,
+        url="",
+    )
+    # performance
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_X86_AMD_PSTATE",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        fix=fix,
+        url="",
+    )
+    # performance
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_SECURITY_SELINUX",
+        required_state=False,
+        module=False,
+        warn=warn_only,
+        fix=fix,
+        url="",
+    )
+    # performance
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_DEFAULT_SECURITY_SELINUX",
+        required_state=False,
+        module=False,
+        warn=warn_only,
+        fix=fix,
+        url="",
+    )
+    ## performance
+    # verify_kernel_config_setting(
+    #    path=path,
+    #    content=content,
+    #    define="",
+    #    required_state=,
+    #    module=,
+    #    warn=warn_only,
+    #    fix=fix,
+    #    url="",
+    # )
+    ## performance
+    # verify_kernel_config_setting(
+    #    path=path,
+    #    content=content,
+    #    define="",
+    #    required_state=,
+    #    module=,
+    #    warn=warn_only,
+    #    fix=fix,
+    #    url="",
+    # )
+    ## performance
+    # verify_kernel_config_setting(
+    #    path=path,
+    #    content=content,
+    #    define="",
+    #    required_state=,
+    #    module=,
+    #    warn=warn_only,
+    #    fix=fix,
+    #    url="",
+    # )
+    ## performance
+    # verify_kernel_config_setting(
+    #    path=path,
+    #    content=content,
+    #    define="",
+    #    required_state=,
+    #    module=,
+    #    warn=warn_only,
+    #    fix=fix,
+    #    url="",
+    # )
+    ## performance
+    # verify_kernel_config_setting(
+    #    path=path,
+    #    content=content,
+    #    define="",
+    #    required_state=,
+    #    module=,
+    #    warn=warn_only,
+    #    fix=fix,
+    #    url="",
+    # )
+    ## performance
+    # verify_kernel_config_setting(
+    #    path=path,
+    #    content=content,
+    #    define="",
+    #    required_state=,
+    #    module=,
+    #    warn=warn_only,
+    #    fix=fix,
+    #    url="",
+    # )
+    ## performance
+    # verify_kernel_config_setting(
+    #    path=path,
+    #    content=content,
+    #    define="",
+    #    required_state=,
+    #    module=,
+    #    warn=warn_only,
+    #    fix=fix,
+    #    url="",
+    # )
+    ## performance
+    # verify_kernel_config_setting(
+    #    path=path,
+    #    content=content,
+    #    define="",
+    #    required_state=,
+    #    module=,
+    #    warn=warn_only,
+    #    fix=fix,
+    #    url="",
+    # )
     ## genkernel
     # verify_kernel_config_setting(
     #    path=path,
