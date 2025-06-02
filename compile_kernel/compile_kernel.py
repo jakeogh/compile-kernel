@@ -561,6 +561,18 @@ def check_kernel_config(
         fix=fix,
         url="",
     )
+
+    # required for CONFIG_MEDIA_USB_SUPPORT below
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_MEDIA_SUPPORT",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        fix=fix,
+        url="",
+    )
     # unknown if necessary
     verify_kernel_config_setting(
         path=path,
