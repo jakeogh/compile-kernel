@@ -190,6 +190,7 @@ def verify_kernel_config_setting(
     if _current_state == 'y' and required_state and not module:
         return
     if _current_state == 'm' and (required_state and module):
+        ic(_current_state, required_state, module)
         return
     if _current_state == 'n' and not required_state and not module:
         return
