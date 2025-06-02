@@ -51,6 +51,7 @@ USED_SYMBOL_SET = set()
 
 def generate_module_config_dict(path: Path):
     _manual_mappings = {}
+
     # _manual_mappings["USB_XHCI_PCI"] = ["xhci_pci.o"]
     # _manual_mappings["I2C_I801"] = ["i2c_i801.o"]
 
