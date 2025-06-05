@@ -434,6 +434,17 @@ def check_kernel_config(
     verify_kernel_config_setting(
         path=path,
         content=content,
+        define="CONFIG_KVM_AMD",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        fix=fix,
+        url="",
+    )
+    # kvm
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
         define="CONFIG_VIRTIO_BALLOON",
         required_state=True,
         module=True,
