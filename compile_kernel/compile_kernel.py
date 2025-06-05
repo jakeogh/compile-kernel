@@ -2696,13 +2696,15 @@ def boot_is_correct(
 
 
 def gcc_check():
-    _current_gcc_major_version = os.system(
-        'gcc --version | head -n1 | grep -oP "\d+\.\d+(\.\d+)?" | head -n1 | cut -d. -f1'
-    )
+    #'gcc --version | head -n1 | grep -oP "\d+\.\d+(\.\d+)?" | head -n1 | cut -d. -f1'
+    _current_gcc_major_version = sh.gcc("--version").splitlines()[0].split(" ")[-2][:2]
     icp(_current_gcc_major_version)
     assert _current_gcc_major_version == "14"
-    _config_gcc_version = os.system(
-        'grep CONFIG_GCC_VERSION /usr/src/linux/.config | cut -d "=" -f 2 | cut -c 1-2'
+    #'grep CONFIG_GCC_VERSION /usr/src/linux/.config | cut -d "=" -f 2 | cut -c 1-2'
+    _config_gcc_version = (
+        sh.grep(["CONFIG_GCC_VERSION", "/usr/src/linux/.config"])
+        .strip()
+        .split("=")[-1][:2]
     )
     icp(_config_gcc_version)
     if _config_gcc_version == _current_gcc_major_version:
