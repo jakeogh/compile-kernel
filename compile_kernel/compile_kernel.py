@@ -799,7 +799,7 @@ def check_kernel_config(
         content=content,
         define="CONFIG_DRM",
         required_state=True,
-        module=True,
+        module=False,  # technically, it can be a module, but that breaks stuff
         warn=warn_only,
         fix=fix,
         url="https://wiki.gentoo.org/wiki/Nouveau",
@@ -2694,11 +2694,16 @@ def boot_is_correct(
             return False
     return True
 
+
 def gcc_check():
-    _current_gcc_major_version = os.system('gcc --version | head -n1 | grep -oP "\d+\.\d+(\.\d+)?" | head -n1 | cut -d. -f1')
+    _current_gcc_major_version = os.system(
+        'gcc --version | head -n1 | grep -oP "\d+\.\d+(\.\d+)?" | head -n1 | cut -d. -f1'
+    )
     icp(_current_gcc_major_version)
-    assert _current_gcc_major_version == '14'
-    _config_gcc_version = os.system('grep CONFIG_GCC_VERSION /usr/src/linux/.config | cut -d "=" -f 2 | cut -c 1-2')
+    assert _current_gcc_major_version == "14"
+    _config_gcc_version = os.system(
+        'grep CONFIG_GCC_VERSION /usr/src/linux/.config | cut -d "=" -f 2 | cut -c 1-2'
+    )
     icp(_config_gcc_version)
     if _config_gcc_version == _current_gcc_major_version:
         icp(
@@ -2710,6 +2715,7 @@ def gcc_check():
         icp("old gcc version detected, calling 'make clean'")
         os.chdir("/usr/src/linux")
         sh.make("clean")
+
 
 def gcc_check_old():
     test_path = Path("/usr/src/linux/init/.init_task.o.cmd")
