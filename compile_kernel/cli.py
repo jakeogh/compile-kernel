@@ -257,8 +257,6 @@ def compile_and_install(
     if not fix:
         warn_only = True
 
-    assert fix
-
     compile_and_install_kernel(
         configure=configure,
         force=force,
