@@ -2934,10 +2934,10 @@ def compile_and_install_kernel(
         )
     )
 
-    if not force:
-        if kernel_is_already_compiled():
-            icp("kernel is already compiled, skipping")
-            return
+    # if not force:
+    #    if kernel_is_already_compiled():
+    #        icp("kernel is already compiled, skipping")
+    #        return
 
     if not Path("/usr/src/linux/.config").exists():
         sh.make("defconfig")
