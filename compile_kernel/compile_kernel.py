@@ -260,6 +260,76 @@ def verify_kernel_config_setting(
     raise ValueError(path.as_posix(), msg)
 
 
+def check_kernel_config_nfs(
+    *,
+    path: Path,
+    fix: bool,
+    warn_only: bool,
+    content: bytes,
+):
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_NFS_FS",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        fix=fix,
+        url=None,
+    )
+
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_NFSD",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        fix=fix,
+        url=None,
+    )
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_NFSD_V4",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        fix=fix,
+        url=None,
+    )
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_NFS_V4",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        fix=fix,
+        url=None,
+    )
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_NFS_V4_1",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        fix=fix,
+        url=None,
+    )
+    verify_kernel_config_setting(
+        path=path,
+        content=content,
+        define="CONFIG_NFS_V4_2",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        fix=fix,
+        url=None,
+    )
+
+
 def check_kernel_config(
     *,
     path: Path,
@@ -274,6 +344,10 @@ def check_kernel_config(
     assert insure_config_exists()
     content = read_content_of_kernel_config(path)
     icp(path, warn_only)
+
+    check_kernel_config_nfs(path=path, fix=fix, warn_only=warn_only, content=content)
+
+    return
 
     # BPF, required for CONFIG_FUNCTION_TRACER
     verify_kernel_config_setting(
@@ -657,68 +731,6 @@ def check_kernel_config(
         path=path,
         content=content,
         define="CONFIG_IKCONFIG",
-        required_state=True,
-        module=False,
-        warn=warn_only,
-        fix=fix,
-        url=None,
-    )
-
-    verify_kernel_config_setting(
-        path=path,
-        content=content,
-        define="CONFIG_NFS_FS",
-        required_state=True,
-        module=True,
-        warn=warn_only,
-        fix=fix,
-        url=None,
-    )
-
-    verify_kernel_config_setting(
-        path=path,
-        content=content,
-        define="CONFIG_NFSD",
-        required_state=True,
-        module=True,
-        warn=warn_only,
-        fix=fix,
-        url=None,
-    )
-    verify_kernel_config_setting(
-        path=path,
-        content=content,
-        define="CONFIG_NFSD_V4",
-        required_state=True,
-        module=False,
-        warn=warn_only,
-        fix=fix,
-        url=None,
-    )
-    verify_kernel_config_setting(
-        path=path,
-        content=content,
-        define="CONFIG_NFS_V4",
-        required_state=True,
-        module=True,
-        warn=warn_only,
-        fix=fix,
-        url=None,
-    )
-    verify_kernel_config_setting(
-        path=path,
-        content=content,
-        define="CONFIG_NFS_V4_1",
-        required_state=True,
-        module=False,
-        warn=warn_only,
-        fix=fix,
-        url=None,
-    )
-    verify_kernel_config_setting(
-        path=path,
-        content=content,
-        define="CONFIG_NFS_V4_2",
         required_state=True,
         module=False,
         warn=warn_only,
