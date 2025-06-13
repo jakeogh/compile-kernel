@@ -347,8 +347,6 @@ def check_kernel_config(
 
     check_kernel_config_nfs(path=path, fix=fix, warn_only=warn_only, content=content)
 
-    return
-
     # BPF, required for CONFIG_FUNCTION_TRACER
     verify_kernel_config_setting(
         path=path,
