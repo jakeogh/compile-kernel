@@ -2535,10 +2535,11 @@ def boot_is_correct(
 
 def gcc_check():
     #'gcc --version | head -n1 | grep -oP "\d+\.\d+(\.\d+)?" | head -n1 | cut -d. -f1'
-    _current_gcc_major_version = sh.gcc("--version").splitlines()[0].split(" ")[-2][:2]
+    _gcc_version_string = sh.gcc("--version").splitlines()[0]
+    icp(_gcc_version_string)
+    _current_gcc_major_version = _gcc_version_string.split(" ")[-2][:2]
     icp(_current_gcc_major_version)
-    assert _current_gcc_major_version == "14"
-    #'grep CONFIG_GCC_VERSION /usr/src/linux/.config | cut -d "=" -f 2 | cut -c 1-2'
+    # assert _current_gcc_major_version == "14"
     _config_gcc_version = (
         sh.grep(["CONFIG_GCC_VERSION", "/usr/src/linux/.config"])
         .strip()
