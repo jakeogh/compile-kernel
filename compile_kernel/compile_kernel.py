@@ -163,8 +163,8 @@ def get_set_kernel_config_option(
         _result = config_command()
         icp(_result)
 
-    content = read_content_of_kernel_config(path)
-    return content
+    # content = read_content_of_kernel_config(path)
+    # return content
 
 
 def verify_kernel_config_setting(
@@ -211,6 +211,13 @@ def verify_kernel_config_setting(
             state=required_state,
             module=module,
             get=False,
+        )
+        _current_state = get_set_kernel_config_option(
+            path=path,
+            define=define,
+            state=required_state,
+            module=module,
+            get=True,
         )
 
     state_table = {True: "enabled", False: "disabled"}
