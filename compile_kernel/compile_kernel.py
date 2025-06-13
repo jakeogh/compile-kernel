@@ -170,7 +170,6 @@ def get_set_kernel_config_option(
 def verify_kernel_config_setting(
     *,
     path: Path,
-    content: str,
     define: str,
     required_state: bool,
     module: bool,
@@ -188,7 +187,6 @@ def verify_kernel_config_setting(
     )
     ic(
         path,
-        len(content),
         define,
         required_state,
         module,
@@ -207,7 +205,7 @@ def verify_kernel_config_setting(
         return
 
     if fix:
-        content = get_set_kernel_config_option(
+        get_set_kernel_config_option(
             path=path,
             define=define,
             state=required_state,
@@ -221,7 +219,7 @@ def verify_kernel_config_setting(
     assert not define.endswith(":")
 
     enabled_state = False
-    if _current_state in ["y", "m"]:
+    if _current_state in {"y", "m"}:
         enabled_state = True
 
     module_state = False
@@ -265,11 +263,9 @@ def check_kernel_config_nfs(
     path: Path,
     fix: bool,
     warn_only: bool,
-    content: bytes,
 ):
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_NFS_FS",
         required_state=True,
         module=True,
@@ -280,7 +276,6 @@ def check_kernel_config_nfs(
 
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_NFSD",
         required_state=True,
         module=True,
@@ -290,7 +285,6 @@ def check_kernel_config_nfs(
     )
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_NFSD_V4",
         required_state=True,
         module=False,
@@ -300,7 +294,6 @@ def check_kernel_config_nfs(
     )
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_NFS_V4",
         required_state=True,
         module=True,
@@ -310,7 +303,6 @@ def check_kernel_config_nfs(
     )
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_NFS_V4_1",
         required_state=True,
         module=False,
@@ -320,7 +312,6 @@ def check_kernel_config_nfs(
     )
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_NFS_V4_2",
         required_state=True,
         module=False,
@@ -342,15 +333,17 @@ def check_kernel_config(
 
     path = path.resolve()
     assert insure_config_exists()
-    content = read_content_of_kernel_config(path)
     icp(path, warn_only)
 
-    check_kernel_config_nfs(path=path, fix=fix, warn_only=warn_only, content=content)
+    check_kernel_config_nfs(
+        path=path,
+        fix=fix,
+        warn_only=warn_only,
+    )
 
     # BPF, required for CONFIG_FUNCTION_TRACER
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_FTRACE",
         required_state=True,
         module=False,
@@ -361,7 +354,6 @@ def check_kernel_config(
     # BPF
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_FUNCTION_TRACER",
         required_state=True,
         module=False,
@@ -372,7 +364,6 @@ def check_kernel_config(
 
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_HAVE_FENTRY",
         required_state=True,
         module=False,
@@ -383,7 +374,6 @@ def check_kernel_config(
     # to see options like CONFIG_TRIM_UNUSED_KSYMS
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_EXPERT",
         required_state=True,
         module=False,
@@ -394,7 +384,6 @@ def check_kernel_config(
     # warnings as errors
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_WERROR",
         required_state=True,
         module=False,
@@ -405,7 +394,6 @@ def check_kernel_config(
     # fs
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_EXT2_FS",
         required_state=True,
         module=False,
@@ -416,7 +404,6 @@ def check_kernel_config(
     # fs
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_EXT3_FS",
         required_state=True,
         module=False,
@@ -427,7 +414,6 @@ def check_kernel_config(
     # fs
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_EXFAT_FS",
         required_state=True,
         module=True,
@@ -438,7 +424,6 @@ def check_kernel_config(
     # fs
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_NTFS_FS",
         required_state=True,
         module=True,
@@ -449,7 +434,6 @@ def check_kernel_config(
     # sec
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_FORTIFY_SOURCE",
         required_state=True,
         module=False,
@@ -460,7 +444,6 @@ def check_kernel_config(
     # sec
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_HARDENED_USERCOPY",
         required_state=True,
         module=False,
@@ -472,7 +455,6 @@ def check_kernel_config(
     # legacy old
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_UID16",
         required_state=False,
         module=False,
@@ -483,7 +465,6 @@ def check_kernel_config(
     # not a paravirt kernel
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_PARAVIRT",
         required_state=False,
         module=False,
@@ -494,7 +475,6 @@ def check_kernel_config(
     # kvm
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_KVM",
         required_state=True,
         module=True,
@@ -505,7 +485,6 @@ def check_kernel_config(
     # kvm
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_KVM_AMD",
         required_state=True,
         module=True,
@@ -516,7 +495,6 @@ def check_kernel_config(
     # kvm
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_VIRTIO_BALLOON",
         required_state=True,
         module=True,
@@ -527,7 +505,6 @@ def check_kernel_config(
     # pcie
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_HOTPLUG_PCI_PCIE",
         required_state=True,
         module=False,
@@ -538,7 +515,6 @@ def check_kernel_config(
     # intel low power support
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_X86_INTEL_LPSS",
         required_state=True,
         module=False,
@@ -549,7 +525,6 @@ def check_kernel_config(
     # boot VESA
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_FB",
         required_state=True,
         module=False,
@@ -560,7 +535,6 @@ def check_kernel_config(
     # boot VESA
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_FRAMEBUFFER_CONSOLE",
         required_state=True,
         module=False,
@@ -571,7 +545,6 @@ def check_kernel_config(
     # boot VESA
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_FB_MODE_HELPERS",
         required_state=True,
         module=False,
@@ -582,7 +555,6 @@ def check_kernel_config(
     # boot VESA
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_FB_RADEON",
         required_state=True,
         module=True,
@@ -593,7 +565,6 @@ def check_kernel_config(
     # boot VESA
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_FB_NVIDIA",
         required_state=False,  # boot seems to hang here
         module=False,
@@ -616,7 +587,6 @@ def check_kernel_config(
     # boot VESA
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_SYSFB_SIMPLEFB",
         required_state=True,
         module=False,
@@ -627,7 +597,6 @@ def check_kernel_config(
     # boot VESA
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_BOOT_VESA_SUPPORT",
         required_state=True,
         module=False,
@@ -638,7 +607,6 @@ def check_kernel_config(
     # boot VESA
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_DRM_LOAD_EDID_FIRMWARE",
         required_state=True,
         module=False,
@@ -649,7 +617,6 @@ def check_kernel_config(
     # power managment debug
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_PM_DEBUG",
         required_state=False,
         module=False,
@@ -661,7 +628,6 @@ def check_kernel_config(
     # required for CONFIG_MEDIA_USB_SUPPORT below
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_MEDIA_SUPPORT",
         required_state=True,
         module=False,
@@ -672,7 +638,6 @@ def check_kernel_config(
     # unknown if necessary
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_MEDIA_USB_SUPPORT",
         required_state=True,
         module=False,
@@ -683,7 +648,6 @@ def check_kernel_config(
 
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_FB_EFI",
         required_state=True,
         module=False,
@@ -694,7 +658,6 @@ def check_kernel_config(
 
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_TRIM_UNUSED_KSYMS",
         required_state=False,
         module=False,
@@ -705,7 +668,6 @@ def check_kernel_config(
 
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_INTEL_IOMMU_DEFAULT_ON",
         required_state=False,
         module=False,
@@ -716,7 +678,6 @@ def check_kernel_config(
 
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_IKCONFIG_PROC",
         required_state=True,
         module=False,
@@ -727,7 +688,6 @@ def check_kernel_config(
 
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_IKCONFIG",
         required_state=True,
         module=False,
@@ -738,7 +698,6 @@ def check_kernel_config(
 
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_SUNRPC_DEBUG",
         required_state=True,
         module=False,
@@ -750,7 +709,6 @@ def check_kernel_config(
     # required by sys-fs/zfs-kmod-9999
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_DEBUG_INFO_DWARF5",
         required_state=True,
         module=False,
@@ -772,7 +730,6 @@ def check_kernel_config(
     # required by sys-fs/zfs-kmod-9999
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_UNWINDER_ORC",
         required_state=False,  # so CONFIG_FRAME_POINTER can be set
         module=False,
@@ -783,7 +740,6 @@ def check_kernel_config(
     # required by sys-fs/zfs-kmod-9999
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_UNWINDER_FRAME_POINTER",
         required_state=True,  # so CONFIG_FRAME_POINTER can be set
         module=False,
@@ -795,7 +751,6 @@ def check_kernel_config(
     # required by sys-fs/zfs-kmod-9999
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_FRAME_POINTER",
         required_state=True,
         module=False,
@@ -817,7 +772,6 @@ def check_kernel_config(
 
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_DRM",
         required_state=True,
         module=False,  # technically, it can be a module, but that breaks stuff
@@ -828,7 +782,6 @@ def check_kernel_config(
 
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_DRM_FBDEV_EMULATION",
         required_state=True,
         module=False,
@@ -838,7 +791,6 @@ def check_kernel_config(
     )
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_DRM_AMDGPU",
         required_state=True,
         module=True,
@@ -848,7 +800,6 @@ def check_kernel_config(
     )
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_DRM_UDL",
         required_state=True,
         module=True,
@@ -858,7 +809,6 @@ def check_kernel_config(
     )
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_FIRMWARE_EDID",
         required_state=True,
         module=False,
@@ -868,7 +818,6 @@ def check_kernel_config(
     )
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_FB_VESA",
         required_state=True,
         module=False,
@@ -878,7 +827,6 @@ def check_kernel_config(
     )
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_MTRR_SANITIZER",
         required_state=True,
         module=False,
@@ -889,7 +837,6 @@ def check_kernel_config(
     # speculative execution
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_MITIGATION_SLS",
         required_state=True,
         module=False,
@@ -900,7 +847,6 @@ def check_kernel_config(
     # ACPI
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_ACPI_FPDT",
         required_state=True,
         module=False,
@@ -911,7 +857,6 @@ def check_kernel_config(
     # ACPI
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_ACPI_TAD",
         required_state=True,
         module=True,
@@ -922,7 +867,6 @@ def check_kernel_config(
     # ACPI
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_ACPI_PCI_SLOT",
         required_state=True,
         module=False,
@@ -933,7 +877,6 @@ def check_kernel_config(
     # ACPI
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_ACPI_SBS",
         required_state=True,
         module=True,
@@ -944,7 +887,6 @@ def check_kernel_config(
     # ACPI
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_ACPI_HED",
         required_state=True,
         module=False,
@@ -955,7 +897,6 @@ def check_kernel_config(
     # ACPI
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_ACPI_APEI",
         required_state=True,
         module=False,
@@ -966,7 +907,6 @@ def check_kernel_config(
     # ACPI
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_ACPI_DPTF",
         required_state=True,
         module=False,
@@ -977,7 +917,6 @@ def check_kernel_config(
     # ACPI
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_ACPI_CONFIGFS",
         required_state=True,
         module=True,
@@ -988,7 +927,6 @@ def check_kernel_config(
     # ACPI
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_ACPI_APEI_GHES",
         required_state=True,
         module=False,
@@ -999,7 +937,6 @@ def check_kernel_config(
     # ACPI
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_ACPI_APEI_PCIEAER",
         required_state=True,
         module=False,
@@ -1010,7 +947,6 @@ def check_kernel_config(
     # ACPI
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_ACPI_NFIT",
         required_state=True,
         module=True,
@@ -1021,7 +957,6 @@ def check_kernel_config(
     # ACPI
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_ACPI_PROCESSOR_AGGREGATOR",
         required_state=True,
         module=True,
@@ -1032,7 +967,6 @@ def check_kernel_config(
     # ACPI
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_HIBERNATION",
         required_state=False,
         module=False,
@@ -1043,7 +977,6 @@ def check_kernel_config(
     # cpu frequency
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_CPU_FREQ_STAT",
         required_state=True,
         module=False,
@@ -1054,7 +987,6 @@ def check_kernel_config(
     # module versioning
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_MODVERSIONS",
         required_state=True,
         module=False,
@@ -1065,7 +997,6 @@ def check_kernel_config(
     # block layer SG
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_BLK_DEV_BSGLIB",
         required_state=True,
         module=False,
@@ -1076,7 +1007,6 @@ def check_kernel_config(
     # ECC
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_MEMORY_FAILURE",
         required_state=True,
         module=False,
@@ -1087,7 +1017,6 @@ def check_kernel_config(
     # ECC
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_MTD_NAND_ECC_SW_BCH",
         required_state=True,
         module=False,
@@ -1098,7 +1027,6 @@ def check_kernel_config(
     # ECC
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_RAS_CEC",
         required_state=True,
         module=False,
@@ -1109,7 +1037,6 @@ def check_kernel_config(
     # mem
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_PAGE_REPORTING",
         required_state=True,
         module=False,
@@ -1120,7 +1047,6 @@ def check_kernel_config(
     # mem
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_TRANSPARENT_HUGEPAGE",
         required_state=True,
         module=False,
@@ -1131,7 +1057,6 @@ def check_kernel_config(
     # mem
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_PER_VMA_LOCK",
         required_state=True,
         module=False,
@@ -1142,7 +1067,6 @@ def check_kernel_config(
     # chipset
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_LPC_ICH",
         required_state=True,
         module=False,
@@ -1153,7 +1077,6 @@ def check_kernel_config(
     # chipset
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_LPC_SCH",
         required_state=True,
         module=True,
@@ -1164,7 +1087,6 @@ def check_kernel_config(
     # pcie
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_PCIEAER",
         required_state=True,
         module=False,
@@ -1175,7 +1097,6 @@ def check_kernel_config(
     # pcie
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_PCIE_DPC",
         required_state=True,
         module=False,
@@ -1186,7 +1107,6 @@ def check_kernel_config(
     # pcie
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_PCI_IOV",
         required_state=True,
         module=False,
@@ -1197,7 +1117,6 @@ def check_kernel_config(
     # old interface
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_UEVENT_HELPER",
         required_state=False,
         module=False,
@@ -1208,7 +1127,6 @@ def check_kernel_config(
     # dmi
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_DMI_SYSFS",
         required_state=True,
         module=True,
@@ -1219,7 +1137,6 @@ def check_kernel_config(
     # mtd
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_MTD",
         required_state=True,
         module=True,
@@ -1231,7 +1148,6 @@ def check_kernel_config(
     # I forget why... maybe virtualbox?
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_IA32_EMULATION",
         required_state=True,
         module=False,
@@ -1242,7 +1158,6 @@ def check_kernel_config(
     # usb speakers
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_SND_USB_AUDIO",
         required_state=True,
         module=True,
@@ -1253,7 +1168,6 @@ def check_kernel_config(
     # alsa required for the rest
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_SND",
         required_state=True,
         module=True,
@@ -1264,7 +1178,6 @@ def check_kernel_config(
     # alsa required for the rest
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_SND_SOC",
         required_state=True,
         module=True,
@@ -1275,7 +1188,6 @@ def check_kernel_config(
     # alsa
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_SND_SOC_AMD_ACP",
         required_state=True,
         module=True,
@@ -1286,7 +1198,6 @@ def check_kernel_config(
     # alsa
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_SND_OSSEMUL",
         required_state=True,
         module=False,
@@ -1297,7 +1208,6 @@ def check_kernel_config(
     # alsa
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_SND_MIXER_OSS",
         required_state=True,
         module=True,
@@ -1308,7 +1218,6 @@ def check_kernel_config(
     # alsa
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_SND_PCM_OSS",
         required_state=True,
         module=True,
@@ -1319,7 +1228,6 @@ def check_kernel_config(
     # alsa
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_SND_INTEL8X0",
         required_state=True,
         module=True,
@@ -1330,7 +1238,6 @@ def check_kernel_config(
     # alsa
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_SND_INTEL8X0M",
         required_state=True,
         module=True,
@@ -1341,7 +1248,6 @@ def check_kernel_config(
     # alsa
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_SND_HDA_GENERIC",
         required_state=True,
         module=True,
@@ -1352,7 +1258,6 @@ def check_kernel_config(
     # alsa audio
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_SND_AC97_CODEC",
         required_state=True,
         module=True,
@@ -1363,7 +1268,6 @@ def check_kernel_config(
     # alsa
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_USB_GADGET",
         required_state=True,
         module=True,
@@ -1385,7 +1289,6 @@ def check_kernel_config(
     # alsa
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_SND_SUPPORT_OLD_API",
         required_state=False,
         module=False,
@@ -1396,7 +1299,6 @@ def check_kernel_config(
     # alsa
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_SOUNDWIRE",
         required_state=True,
         module=True,
@@ -1407,7 +1309,6 @@ def check_kernel_config(
     # usb otg
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_USB_OTG",
         required_state=True,
         module=False,
@@ -1418,7 +1319,6 @@ def check_kernel_config(
 
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_DRM_NOUVEAU",
         required_state=True,  # =m
         module=True,
@@ -1428,7 +1328,6 @@ def check_kernel_config(
     )
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_VT_HW_CONSOLE_BINDING",
         required_state=True,
         module=False,
@@ -1438,7 +1337,6 @@ def check_kernel_config(
     )
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_VGA_SWITCHEROO",
         required_state=True,
         module=False,
@@ -1449,7 +1347,6 @@ def check_kernel_config(
 
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_DRM_RADEON",
         required_state=True,  # =m
         module=True,
@@ -1460,7 +1357,6 @@ def check_kernel_config(
 
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_BINFMT_MISC",
         required_state=True,  # =m
         module=True,
@@ -1471,7 +1367,6 @@ def check_kernel_config(
 
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="HID_WACOM",
         required_state=True,
         module=True,
@@ -1505,7 +1400,6 @@ def check_kernel_config(
 
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_NET_CORE",
         required_state=True,  # =y
         module=False,
@@ -1516,7 +1410,6 @@ def check_kernel_config(
 
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_TUN",
         required_state=True,  # =m
         module=True,
@@ -1527,7 +1420,6 @@ def check_kernel_config(
 
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_VIRTIO_NET",
         required_state=True,  # =m
         module=True,
@@ -1538,7 +1430,6 @@ def check_kernel_config(
 
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_APPLE_PROPERTIES",
         required_state=True,
         module=False,
@@ -1548,7 +1439,6 @@ def check_kernel_config(
     )
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_SPI",
         required_state=True,
         module=False,
@@ -1558,7 +1448,6 @@ def check_kernel_config(
     )
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_KEYBOARD_APPLESPI",
         required_state=True,  # =m
         module=True,
@@ -1568,7 +1457,6 @@ def check_kernel_config(
     )
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_MOUSE_APPLETOUCH",
         required_state=True,  # =m
         module=True,
@@ -1578,7 +1466,6 @@ def check_kernel_config(
     )
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_BACKLIGHT_APPLE",
         required_state=True,  # =m
         module=True,
@@ -1588,7 +1475,6 @@ def check_kernel_config(
     )
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_HID_APPLE",
         required_state=True,  # =m
         module=True,
@@ -1598,7 +1484,6 @@ def check_kernel_config(
     )
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_HID_APPLEIR",
         required_state=True,  # =m
         module=True,
@@ -1608,7 +1493,6 @@ def check_kernel_config(
     )
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_USB_APPLEDISPLAY",
         required_state=True,  # =m
         module=True,
@@ -1618,7 +1502,6 @@ def check_kernel_config(
     )
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_APPLE_MFI_FASTCHARGE",
         required_state=True,  # =m
         module=True,
@@ -1628,7 +1511,6 @@ def check_kernel_config(
     )
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_APPLE_GMUX",
         required_state=True,  # =m
         module=True,
@@ -1639,7 +1521,6 @@ def check_kernel_config(
     # for GPM
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_INPUT_MOUSEDEV",
         required_state=True,
         module=True,
@@ -1649,7 +1530,6 @@ def check_kernel_config(
     )
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_ZRAM",
         required_state=True,
         module=True,
@@ -1659,7 +1539,6 @@ def check_kernel_config(
     )
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_ZRAM_MEMORY_TRACKING",
         required_state=True,
         module=False,
@@ -1669,7 +1548,6 @@ def check_kernel_config(
     )
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_BLK_DEV_FD",
         required_state=True,
         module=True,
@@ -1679,7 +1557,6 @@ def check_kernel_config(
     )
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_EARLY_PRINTK",
         required_state=True,
         module=False,
@@ -1690,7 +1567,6 @@ def check_kernel_config(
     # sshuttle
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_NF_NAT",
         required_state=True,  # =m
         module=True,
@@ -1701,7 +1577,6 @@ def check_kernel_config(
     # sshuttle
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_NETFILTER_ADVANCED",
         required_state=True,
         module=False,
@@ -1712,7 +1587,6 @@ def check_kernel_config(
     # sshuttle
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_IP_NF_MATCH_TTL",
         required_state=True,  # =m
         module=True,
@@ -1723,7 +1597,6 @@ def check_kernel_config(
     # sshuttle
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_IP_NF_TARGET_REDIRECT",
         required_state=True,  # =m
         module=True,
@@ -1734,7 +1607,6 @@ def check_kernel_config(
     # sshuttle
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_NETFILTER_XT_TARGET_HL",
         required_state=True,  # =m
         module=True,
@@ -1745,7 +1617,6 @@ def check_kernel_config(
     # old outdated option
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_NO_HZ",
         required_state=False,
         module=False,
@@ -1757,7 +1628,6 @@ def check_kernel_config(
     # speed
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_PREEMPT_NONE",
         required_state=True,
         module=False,
@@ -1768,7 +1638,6 @@ def check_kernel_config(
     # speed
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_PREEMPT_VOLUNTARY",
         required_state=False,
         module=False,
@@ -1779,7 +1648,6 @@ def check_kernel_config(
     # speed
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_PREEMPT",
         required_state=False,
         module=False,
@@ -1790,7 +1658,6 @@ def check_kernel_config(
     # new process accounting
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_BSD_PROCESS_ACCT_V3",
         required_state=True,
         module=False,
@@ -1801,7 +1668,6 @@ def check_kernel_config(
     # memory cgrroup
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_MEMCG",
         required_state=True,
         module=False,
@@ -1812,7 +1678,6 @@ def check_kernel_config(
     # cgroup debugging
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_CGROUP_DEBUG",
         required_state=False,
         module=False,
@@ -1823,7 +1688,6 @@ def check_kernel_config(
     # cgroup
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_CGROUP_FAVOR_DYNMODS",
         required_state=True,  # was false
         module=False,
@@ -1834,7 +1698,6 @@ def check_kernel_config(
     #
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_CHECKPOINT_RESTORE",
         required_state=False,
         module=False,
@@ -1846,7 +1709,6 @@ def check_kernel_config(
     # required for CONFIG_X86_SGX below
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_X86_X2APIC",
         required_state=True,
         module=False,
@@ -1857,7 +1719,6 @@ def check_kernel_config(
     #
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_X86_SGX",
         required_state=True,
         module=False,
@@ -1869,7 +1730,6 @@ def check_kernel_config(
     # auto cgroups... might contradict PREEMPT_NONE
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_SCHED_AUTOGROUP",
         required_state=True,
         module=False,
@@ -1881,7 +1741,6 @@ def check_kernel_config(
     # zswap
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_ZSWAP",
         required_state=True,
         module=False,
@@ -1904,7 +1763,6 @@ def check_kernel_config(
     # memory deduplication
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_KSM",
         required_state=True,
         module=False,
@@ -1915,7 +1773,6 @@ def check_kernel_config(
     # nvme
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_BLK_DEV_NVME",
         required_state=True,
         module=False,
@@ -1926,7 +1783,6 @@ def check_kernel_config(
     # nvme
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_NVME_VERBOSE_ERRORS",
         required_state=True,
         module=False,
@@ -1937,7 +1793,6 @@ def check_kernel_config(
     # nvme
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_NVME_HWMON",
         required_state=True,
         module=False,
@@ -1948,7 +1803,6 @@ def check_kernel_config(
     # nvme
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_NVME_MULTIPATH",
         required_state=True,
         module=False,
@@ -1959,7 +1813,6 @@ def check_kernel_config(
     # nvme
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_NVME_TARGET",
         required_state=True,
         module=False,
@@ -1970,7 +1823,6 @@ def check_kernel_config(
     #
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_X86_CPU_RESCTRL",
         required_state=True,
         module=False,
@@ -1981,7 +1833,6 @@ def check_kernel_config(
     #
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_BCACHE",
         required_state=True,
         module=True,
@@ -1992,7 +1843,6 @@ def check_kernel_config(
     #
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_THERMAL_STATISTICS",
         required_state=True,
         module=False,
@@ -2003,7 +1853,6 @@ def check_kernel_config(
     # audio
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_SND_SEQUENCER_OSS",
         required_state=True,
         module=True,
@@ -2014,7 +1863,6 @@ def check_kernel_config(
     # audio
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_SND_HDA_CODEC_HDMI",
         required_state=True,
         module=True,
@@ -2025,7 +1873,6 @@ def check_kernel_config(
     # audio pc-speaker
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_INPUT_PCSPKR",
         required_state=True,
         module=True,
@@ -2036,7 +1883,6 @@ def check_kernel_config(
     # pcie pc-card reader
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_MISC_RTSX_PCI",
         required_state=True,
         module=True,
@@ -2046,7 +1892,6 @@ def check_kernel_config(
     )
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_BPF_SYSCALL",
         required_state=True,
         module=False,
@@ -2056,7 +1901,6 @@ def check_kernel_config(
     )
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_NET_CLS_BPF",
         required_state=True,
         module=True,
@@ -2066,7 +1910,6 @@ def check_kernel_config(
     )
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_NET_ACT_BPF",
         required_state=True,
         module=True,
@@ -2076,7 +1919,6 @@ def check_kernel_config(
     )
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_BPF_EVENTS",
         required_state=True,
         module=False,
@@ -2087,7 +1929,6 @@ def check_kernel_config(
     # kvm
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_KVM_INTEL",
         required_state=True,
         module=True,
@@ -2098,7 +1939,6 @@ def check_kernel_config(
     # kvm
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_VHOST_NET",
         required_state=True,
         module=True,
@@ -2111,7 +1951,6 @@ def check_kernel_config(
     # required for CONFIG_MMC_BLOCK below
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_MMC",
         required_state=True,
         module=True,
@@ -2122,7 +1961,6 @@ def check_kernel_config(
     # mmc
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_MMC_BLOCK",
         required_state=True,
         module=True,
@@ -2134,7 +1972,6 @@ def check_kernel_config(
     # FUSE
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_FUSE_FS",
         required_state=True,
         module=True,
@@ -2145,7 +1982,6 @@ def check_kernel_config(
     # vlan
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_VLAN_8021Q",
         required_state=True,
         module=True,
@@ -2156,7 +1992,6 @@ def check_kernel_config(
     # NUMA
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_NUMA",
         required_state=True,
         module=False,
@@ -2167,7 +2002,6 @@ def check_kernel_config(
     # udev
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_DEVTMPFS",
         required_state=True,
         module=False,
@@ -2178,7 +2012,6 @@ def check_kernel_config(
     # wireguard
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_WIREGUARD",
         required_state=True,
         module=True,
@@ -2199,7 +2032,6 @@ def check_kernel_config(
     # )
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_USB_SERIAL",
         required_state=True,
         module=True,
@@ -2209,7 +2041,6 @@ def check_kernel_config(
     )
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_USB_SERIAL_PL2303",
         required_state=True,
         module=True,
@@ -2219,7 +2050,6 @@ def check_kernel_config(
     )
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_USB_SERIAL_CH341",
         required_state=True,
         module=True,
@@ -2229,7 +2059,6 @@ def check_kernel_config(
     )
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_USB_SERIAL_FTDI_SIO",
         required_state=True,
         module=True,
@@ -2239,7 +2068,6 @@ def check_kernel_config(
     )
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_USB_PEGASUS",
         required_state=True,
         module=True,
@@ -2249,7 +2077,6 @@ def check_kernel_config(
     )
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_USB_USBNET",
         required_state=True,
         module=True,
@@ -2259,7 +2086,6 @@ def check_kernel_config(
     )
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_USB_SERIAL_CYPRESS_M8",
         required_state=True,
         module=True,
@@ -2269,7 +2095,6 @@ def check_kernel_config(
     )
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_USB_ACM",
         required_state=True,
         module=True,
@@ -2289,7 +2114,6 @@ def check_kernel_config(
     # )
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_BRIDGE",
         required_state=True,
         module=True,
@@ -2299,7 +2123,6 @@ def check_kernel_config(
     )
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_BLK_DEV_NBD",
         required_state=True,
         module=True,
@@ -2309,7 +2132,6 @@ def check_kernel_config(
     )
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_USB4",
         required_state=True,
         module=False,
@@ -2332,7 +2154,6 @@ def check_kernel_config(
     # performance
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_DEBUG_STACK_USAGE",
         required_state=False,
         module=False,
@@ -2343,7 +2164,6 @@ def check_kernel_config(
     # performance
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_DEBUG_WX",
         required_state=False,
         module=False,
@@ -2355,7 +2175,6 @@ def check_kernel_config(
     # performance
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_DEBUG_MEMORY_INIT",
         required_state=False,
         module=False,
@@ -2400,7 +2219,6 @@ def check_kernel_config(
     # performance
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_RCU_TRACE",
         required_state=False,
         module=False,
@@ -2411,7 +2229,6 @@ def check_kernel_config(
     # performance
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_SCHEDSTATS",
         required_state=False,
         module=False,
@@ -2445,7 +2262,6 @@ def check_kernel_config(
     # enable THP only for applications that explicitly request it (via madvise), MADV_DONTNEED
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_TRANSPARENT_HUGEPAGE_MADVISE",
         required_state=True,
         module=False,
@@ -2456,7 +2272,6 @@ def check_kernel_config(
     # performance
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_SLUB_DEBUG",
         required_state=False,
         module=False,
@@ -2467,7 +2282,6 @@ def check_kernel_config(
     # performance
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_CPU_FREQ_DEFAULT_GOV_USERSPACE",
         required_state=False,
         module=False,
@@ -2478,7 +2292,6 @@ def check_kernel_config(
     # performance
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_CPU_FREQ_DEFAULT_GOV_PERFORMANCE",
         required_state=True,
         module=False,
@@ -2489,7 +2302,6 @@ def check_kernel_config(
     # performance
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_X86_INTEL_PSTATE",
         required_state=True,
         module=False,
@@ -2500,7 +2312,6 @@ def check_kernel_config(
     # performance
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_X86_AMD_PSTATE",
         required_state=True,
         module=False,
@@ -2511,7 +2322,6 @@ def check_kernel_config(
     # performance
     verify_kernel_config_setting(
         path=path,
-        content=content,
         define="CONFIG_SECURITY_SELINUX",
         required_state=False,
         module=False,
