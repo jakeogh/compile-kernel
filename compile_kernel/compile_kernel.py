@@ -2442,6 +2442,16 @@ def check_kernel_config(
         fix=fix,
         url="",
     )
+    # security, like pledge
+    verify_kernel_config_setting(
+        path=path,
+        define="CONFIG_SECURITY_LANDLOCK",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        fix=fix,
+        url="",
+    )
 
 
 # bpf
