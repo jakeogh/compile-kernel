@@ -583,7 +583,6 @@ def check_kernel_config(
     # seems to have been removed, oldconfig removes it
     # verify_kernel_config_setting(
     #    path=path,
-    #    content=content,
     #    define="CONFIG_FB_INTEL",
     #    required_state=True,
     #    module=True,
@@ -726,7 +725,6 @@ def check_kernel_config(
 
     # verify_kernel_config_setting(
     #    path=path,
-    #    content=content,
     #    define="CONFIG_COMPILE_TEST",
     #    required_state=False,
     #    module=False,
@@ -769,7 +767,6 @@ def check_kernel_config(
     ## not sure what this was for
     # verify_kernel_config_setting(
     #    path=path,
-    #    content=content,
     #    define="CONFIG_CRYPTO_USER",
     #    required_state=True,
     #    module=True,
@@ -1285,7 +1282,6 @@ def check_kernel_config(
     ## alsa
     # verify_kernel_config_setting(
     #    path=path,
-    #    content=content,
     #    define="CONFIG_SND_USB_AUDIO_USE_MEDIA_CONTROLLER",
     #    required_state=True,
     #    module=True,
@@ -1386,7 +1382,6 @@ def check_kernel_config(
     ## required to enable CONFIG_TASK_DELAY_ACCT below, but disabled for now
     # verify_kernel_config_setting(
     #    path=path,
-    #    content=content,
     #    define="CONFIG_TASKSTATS",
     #    required_state=False,
     #    module=False,
@@ -1396,7 +1391,6 @@ def check_kernel_config(
     # )
     # verify_kernel_config_setting(
     #    path=path,
-    #    content=content,
     #    define="CONFIG_TASK_DELAY_ACCT",
     #    required_state=False,
     #    module=False,
@@ -1759,7 +1753,6 @@ def check_kernel_config(
     ## depreciated
     # verify_kernel_config_setting(
     #    path=path,
-    #    content=content,
     #    define="CONFIG_Z3FOLD",
     #    required_state=True,
     #    module=True,
@@ -2029,7 +2022,6 @@ def check_kernel_config(
     ## serial console debugging
     # verify_kernel_config_setting(
     #    path=path,
-    #    content=content,
     #    define="CONFIG_USB_SERIAL_CONSOLE",
     #    required_state=True,
     #    module=False,
@@ -2111,7 +2103,6 @@ def check_kernel_config(
     )
     # verify_kernel_config_setting(
     #    path=path,
-    #    content=content,
     #    define="CONFIG_NET_DROP_MONITOR",
     #    required_state=True,
     #    module=True,
@@ -2150,7 +2141,6 @@ def check_kernel_config(
     ## nope, zfs-kmode REQUIRES this
     # verify_kernel_config_setting(
     #    path=path,
-    #    content=content,
     #    define="CONFIG_DEBUG_INFO_DWARF5",
     #    required_state=False,
     #    module=False,
@@ -2193,7 +2183,6 @@ def check_kernel_config(
     ## BPF requires this
     # verify_kernel_config_setting(
     #    path=path,
-    #    content=content,
     #    define="CONFIG_FUNCTION_TRACER",
     #    required_state=False,
     #    module=False,
@@ -2204,7 +2193,6 @@ def check_kernel_config(
     ## performance
     # verify_kernel_config_setting(
     #    path=path,
-    #    content=content,
     #    define="CONFIG_FUNCTION_GRAPH_TRACER",
     #    required_state=False,
     #    module=False,
@@ -2215,7 +2203,6 @@ def check_kernel_config(
     ## performance
     # verify_kernel_config_setting(
     #    path=path,
-    #    content=content,
     #    define="CONFIG_DYNAMIC_FTRACE",
     #    required_state=False,
     #    module=False,
@@ -2246,7 +2233,6 @@ def check_kernel_config(
     ## performance
     # verify_kernel_config_setting(
     #    path=path,
-    #    content=content,
     #    define="CONFIG_TASK_XACCT",
     #    required_state=False,
     #    module=False,
@@ -2257,7 +2243,6 @@ def check_kernel_config(
     ## performance
     # verify_kernel_config_setting(
     #    path=path,
-    #    content=content,
     #    define="CONFIG_TASK_IO_ACCOUNTING",
     #    required_state=False,
     #    module=False,
@@ -2339,7 +2324,6 @@ def check_kernel_config(
     ## performance
     # verify_kernel_config_setting(
     #    path=path,
-    #    content=content,
     #    define="CONFIG_DEFAULT_SECURITY_SELINUX",
     #    required_state=False,
     #    module=False,
@@ -2350,7 +2334,6 @@ def check_kernel_config(
     ## performance
     # verify_kernel_config_setting(
     #    path=path,
-    #    content=content,
     #    define="",
     #    required_state=,
     #    module=,
@@ -2361,7 +2344,6 @@ def check_kernel_config(
     ## performance
     # verify_kernel_config_setting(
     #    path=path,
-    #    content=content,
     #    define="",
     #    required_state=,
     #    module=,
@@ -2372,7 +2354,6 @@ def check_kernel_config(
     ## performance
     # verify_kernel_config_setting(
     #    path=path,
-    #    content=content,
     #    define="",
     #    required_state=,
     #    module=,
@@ -2383,7 +2364,6 @@ def check_kernel_config(
     ## performance
     # verify_kernel_config_setting(
     #    path=path,
-    #    content=content,
     #    define="",
     #    required_state=,
     #    module=,
@@ -2394,7 +2374,6 @@ def check_kernel_config(
     ## performance
     # verify_kernel_config_setting(
     #    path=path,
-    #    content=content,
     #    define="",
     #    required_state=,
     #    module=,
@@ -2405,7 +2384,6 @@ def check_kernel_config(
     ## performance
     # verify_kernel_config_setting(
     #    path=path,
-    #    content=content,
     #    define="",
     #    required_state=,
     #    module=,
@@ -2416,7 +2394,6 @@ def check_kernel_config(
     ## performance
     # verify_kernel_config_setting(
     #    path=path,
-    #    content=content,
     #    define="",
     #    required_state=,
     #    module=,
@@ -2427,7 +2404,6 @@ def check_kernel_config(
     ## performance
     # verify_kernel_config_setting(
     #    path=path,
-    #    content=content,
     #    define="",
     #    required_state=,
     #    module=,
@@ -2438,7 +2414,6 @@ def check_kernel_config(
     ## genkernel
     # verify_kernel_config_setting(
     #    path=path,
-    #    content=content,
     #    define="CONFIG_MICROCODE_AMD",
     #    required_state=True,
     #    module=True,
@@ -2449,7 +2424,6 @@ def check_kernel_config(
     ## genkernel
     # verify_kernel_config_setting(
     #    path=path,
-    #    content=content,
     #    define="CONFIG_MICROCODE_INTEL",
     #    required_state=True,
     #    module=True,
@@ -2457,6 +2431,17 @@ def check_kernel_config(
     #    fix=fix,
     #    url="",
     # )
+
+    # zfs LSI
+    verify_kernel_config_setting(
+        path=path,
+        define="CONFIG_SCSI_MPT3SAS",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        fix=fix,
+        url="",
+    )
 
 
 # bpf
