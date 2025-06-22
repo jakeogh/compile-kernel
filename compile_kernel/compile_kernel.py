@@ -2452,6 +2452,26 @@ def check_kernel_config(
         fix=fix,
         url="",
     )
+    # 10G Ethernet
+    verify_kernel_config_setting(
+        path=path,
+        define="CONFIG_NET_VENDOR_AQUANTIA",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        fix=fix,
+        url="",
+    )
+    # 10G Ethernet
+    verify_kernel_config_setting(
+        path=path,
+        define="CONFIG_AQTION",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        fix=fix,
+        url="",
+    )
 
 
 # bpf
