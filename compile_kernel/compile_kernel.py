@@ -2472,6 +2472,16 @@ def check_kernel_config(
         fix=fix,
         url="",
     )
+    # zbook g5 sd card reader
+    verify_kernel_config_setting(
+        path=path,
+        define="CONFIG_MMC_REALTEK_PCI",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        fix=fix,
+        url="",
+    )
 
 
 # bpf
