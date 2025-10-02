@@ -128,7 +128,13 @@ def get_set_kernel_config_option(
     module: bool,
     get: bool,
 ):
-    icp(path, define, state, module, get)
+    icp(
+        path,
+        define,
+        state,
+        module,
+        get,
+    )
     global USED_SYMBOL_SET
     if not get:
         assert define not in USED_SYMBOL_SET
@@ -249,7 +255,12 @@ def verify_kernel_config_setting(
 
     # mypy: Invalid index type "None | bool" for "Dict[bool, str]"; expected type "bool"  [index] (E)
     if gvd:
-        ic(define, _current_state, enabled_state, module_state)
+        ic(
+            define,
+            _current_state,
+            enabled_state,
+            module_state,
+        )
 
     msg = (
         f"{define} is {state_table[enabled_state]} and {module_table[module_state]}!"
@@ -2715,7 +2726,12 @@ def compile_and_install_kernel(
             interactive=True,
         )
 
-    sh.emerge("genkernel", "-u", _out=sys.stdout, _err=sys.stderr)
+    sh.emerge(
+        "genkernel",
+        "-u",
+        _out=sys.stdout,
+        _err=sys.stderr,
+    )
 
     # do this before the long @module-rebuild to catch problems now
     configure_kernel(
