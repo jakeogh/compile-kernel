@@ -2675,7 +2675,7 @@ def install_compiled_kernel():
     genkernel_command(_fg=True)
 
     assert Path("/boot/grub").is_dir()
-    sh.grub_mkconfig("-o", "/boot/grub/grub.cfg")
+    hs.Command("grub-mkconfig)("-o", "/boot/grub/grub.cfg")
 
 
 def configure_kernel(
@@ -2733,7 +2733,7 @@ def compile_and_install_kernel(
             interactive=True,
         )
 
-    sh.emerge(
+    hs.Command("emerge")(
         "genkernel",
         "-u",
         _out=sys.stdout,
@@ -2749,7 +2749,7 @@ def compile_and_install_kernel(
     # handle a downgrade from -9999 before genkernel calls @module-rebuild
     icp("attempting to upgrade zfs and zfs-kmod")
     try:
-        sh.emerge(
+        hs.Command("emerge")(
             "sys-fs/zfs",
             "sys-fs/zfs-kmod",
             "-u",
@@ -2758,45 +2758,51 @@ def compile_and_install_kernel(
             _tee=True,
             _tty_out=False,
         )
-    except sh.ErrorReturnCode_1 as e:
-        icp(e)
-        icp(dir(e))
-        unconfigured_kernel = False
-        if hasattr(e, "stdout"):
-            icp(type(e.stdout))
-            if b"Could not find a usable .config" in e.stdout:
-                unconfigured_kernel = True
-            if b"tree at that location has not been built." in e.stdout:
-                unconfigured_kernel = True
-            if b"Kernel sources need compiling first" in e.stdout:
-                unconfigured_kernel = True
-            if b"Could not find a Makefile in the kernel source directory" in e.stdout:
-                unconfigured_kernel = True
-            if b"These sources have not yet been prepared" in e.stdout:
-                unconfigured_kernel = True
+    except hs.ErrorReturnCode as e:
+        if e.return_code == 1:
+            icp(e)
+            icp(dir(e))
+            unconfigured_kernel = False
+            if hasattr(e, "stdout"):
+                icp(type(e.stdout))
+                if b"Could not find a usable .config" in e.stdout:
+                    unconfigured_kernel = True
+                if b"tree at that location has not been built." in e.stdout:
+                    unconfigured_kernel = True
+                if b"Kernel sources need compiling first" in e.stdout:
+                    unconfigured_kernel = True
+                if b"Could not find a Makefile in the kernel source directory" in e.stdout:
+                    unconfigured_kernel = True
+                if b"These sources have not yet been prepared" in e.stdout:
+                    unconfigured_kernel = True
 
-        if not unconfigured_kernel:
-            # ic(unconfigured_kernel)
-            icp("unconfigured_kernel:", unconfigured_kernel)
-            raise e
-        icp(
-            "NOTE: kernel is unconfigured, skipping `emerge sys-fs/zfs sys-fs/zfs-kmod` before kernel compile"
-        )
+            if not unconfigured_kernel:
+                # ic(unconfigured_kernel)
+                icp("unconfigured_kernel:", unconfigured_kernel)
+                raise e
+            icp(
+                "NOTE: kernel is unconfigured, skipping `emerge sys-fs/zfs sys-fs/zfs-kmod` before kernel compile"
+            )
+        else:
+            raise
 
     if not unconfigured_kernel:
         icp("attempting emerge @module-rebuild")
         try:
-            sh.emerge("@module-rebuild", _out=sys.stdout, _err=sys.stderr)
-        except sh.ErrorReturnCode_1 as e:
-            unconfigured_kernel = True  # todo, get conditions from above
-            if not unconfigured_kernel:
-                raise e
-            icp(
-                "NOTE: kernel is unconfigured, skipping `emerge @module-rebuild` before kernel compile"
-            )
+            hs.Command("emerge")("@module-rebuild", _out=sys.stdout, _err=sys.stderr)
+        except hs.ErrorReturnCode as e:
+            if e.return_code == 1:
+                unconfigured_kernel = True  # todo, get conditions from above
+                if not unconfigured_kernel:
+                    raise e
+                icp(
+                    "NOTE: kernel is unconfigured, skipping `emerge @module-rebuild` before kernel compile"
+                )
+            else:
+                raise
 
     # might fail if gcc was upgraded and the kernel hasnt been recompiled yet
-    # for line in sh.emerge('sci-libs/linux-gpib', '-u', _err_to_out=True, _iter=True, _out_bufsize=100):
+    # for line in hs.Command("emerge")('sci-libs/linux-gpib', '-u', _err_to_out=True, _iter=True, _out_bufsize=100):
     #   eprint(line, end='')
 
     gcc_check()
@@ -2816,7 +2822,7 @@ def compile_and_install_kernel(
     #        return
 
     if not Path("/usr/src/linux/.config").exists():
-        sh.make("defconfig")
+        hs.Command("make")("defconfig")
         check_kernel_config(
             path=Path("/usr/src/linux/.config"),
             fix=True,
@@ -2855,9 +2861,9 @@ def compile_and_install_kernel(
     hs.Command("rc-update")("add", "zfs-zed", "default")
 
     if Path("/boot/grub").is_dir():
-        sh.Command("grub-mkconfig")("-o", "/boot/grub/grub.cfg")
+        hs.Command("grub-mkconfig")("-o", "/boot/grub/grub.cfg")
 
-    sh.Command("emerge")("sys-kernel/linux-firmware", _out=sys.stdout, _err=sys.stderr)
+    hs.Command("emerge")("sys-kernel/linux-firmware", _out=sys.stdout, _err=sys.stderr)
 
     if Path("/boot/grub").is_dir():
         os.makedirs("/boot_backup", exist_ok=True)
