@@ -66,7 +66,12 @@ def readconfig(config_file):
     return d
 
 
-def print_config(op, config, value, new_value):
+def print_config(
+    op,
+    config,
+    value,
+    new_value,
+):
     global merge_style
 
     if merge_style:
@@ -127,7 +132,12 @@ def main():
             old.append(config)
     old.sort()
     for config in old:
-        print_config("-", config, a[config], None)
+        print_config(
+            "-",
+            config,
+            a[config],
+            None,
+        )
         del a[config]
 
     # print items that changed (accumulate, sort, and print)
@@ -139,14 +149,24 @@ def main():
             del b[config]
     changed.sort()
     for config in changed:
-        print_config("->", config, a[config], b[config])
+        print_config(
+            "->",
+            config,
+            a[config],
+            b[config],
+        )
         del b[config]
 
     # now print items in b but not in a
     # (items from b that were in a were removed above)
     new = sorted(b.keys())
     for config in new:
-        print_config("+", config, None, b[config])
+        print_config(
+            "+",
+            config,
+            None,
+            b[config],
+        )
 
 
 main()

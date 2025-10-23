@@ -12,7 +12,7 @@ import time
 from importlib import resources
 from pathlib import Path
 
-import sh
+import hs
 from asserttool import ic
 from asserttool import icp
 from asserttool import root_user
@@ -24,7 +24,6 @@ from with_chdir import chdir
 
 # from rich import print as pprint
 logging.basicConfig(level=logging.INFO)
-sh.mv = None  # use sh.busybox('mv'), coreutils ignores stdin read errors
 
 USED_SYMBOL_SET = set()
 
@@ -122,7 +121,7 @@ def get_set_kernel_config_option(
     if not state:
         assert not module
     script_path = Path("/usr/src/linux/scripts/config")
-    config_command = sh.Command(script_path)
+    config_command = hs.Command(script_path)
     config_command = config_command.bake("--file", path.as_posix())
 
     if get:
@@ -142,7 +141,7 @@ def get_set_kernel_config_option(
 
     del config_command
     if module:
-        config_command = sh.Command(script_path)
+        config_command = hs.Command(script_path)
         config_command = config_command.bake("--file", path.as_posix())
         config_command = config_command.bake("--module")
         config_command = config_command.bake(define)
@@ -2507,7 +2506,8 @@ def _symlink_config():
     if dot_config.exists():
         if not dot_config.is_symlink():
             timestamp = str(time.time())
-            sh.busybox.mv(
+            hs.Command("busybox")(
+                "mv",
                 dot_config,
                 f"{dot_config}.{timestamp}",
             )
@@ -2515,7 +2515,12 @@ def _symlink_config():
     if not dot_config.exists():
         with resources.path("compile_kernel", ".config") as _kernel_config:
             icp(_kernel_config)
-            sh.ln("-s", _kernel_config, dot_config)
+            hs.Command(
+                "ln",
+                "-s",
+                _kernel_config,
+                dot_config,
+            )
 
 
 def extract_kernel_config():
@@ -2571,13 +2576,13 @@ def boot_is_correct(
 
 def gcc_check():
     #'gcc --version | head -n1 | grep -oP "\d+\.\d+(\.\d+)?" | head -n1 | cut -d. -f1'
-    _gcc_version_string = sh.gcc("--version").splitlines()[0]
+    _gcc_version_string = hs.Command("gcc", "--version").splitlines()[0]
     icp(_gcc_version_string)
     _current_gcc_major_version = _gcc_version_string.split(" ")[-2][:2]
     icp(_current_gcc_major_version)
     # assert _current_gcc_major_version == "14"
     _config_gcc_version = (
-        sh.grep(["CONFIG_GCC_VERSION", "/usr/src/linux/.config"])
+        hs.Command("grep", ["CONFIG_GCC_VERSION", "/usr/src/linux/.config"])
         .strip()
         .split("=")[-1][:2]
     )
@@ -2591,7 +2596,7 @@ def gcc_check():
     else:
         icp("old gcc version detected, calling 'make clean'")
         os.chdir("/usr/src/linux")
-        sh.make("clean")
+        hs.Command("make", "clean")
 
 
 def gcc_check_old():
@@ -2600,7 +2605,7 @@ def gcc_check_old():
         icp(
             "found previously compiled kernel tree, checking is the current gcc version was used"
         )
-        gcc_version = sh.gcc_config("-l")
+        gcc_version = hs.Command("gcc-config", "-l")
         icp(gcc_version)
         gcc_version = gcc_version.splitlines()
         line = None
@@ -2615,7 +2620,8 @@ def gcc_check_old():
         try:
             grep_target = ("gcc/x86_64-pc-linux-gnu/" + gcc_version,)
             icp(grep_target)
-            sh.grep(
+            hs.Command(
+                "grep",
                 grep_target,
                 "/usr/src/linux/init/.init_task.o.cmd",
             )
@@ -2623,12 +2629,13 @@ def gcc_check_old():
                 gcc_version,
                 "was used to compile kernel previously, not running `make clean`",
             )
-        except sh.ErrorReturnCode_1 as e:
-            icp(e)
-            icp("old gcc version detected, make clean required. Sleeping 5.")
-            os.chdir("/usr/src/linux")
-            time.sleep(5)
-            sh.make("clean")
+        except hs.ErrorReturnCode as e:
+            if e.exit_code == 1:
+                icp(e)
+                icp("old gcc version detected, make clean required. Sleeping 5.")
+                os.chdir("/usr/src/linux")
+                time.sleep(5)
+                hs.Command("make", "clean")
 
 
 def kernel_is_already_compiled():
@@ -2658,7 +2665,7 @@ def install_compiled_kernel():
     ):
         os.system("make install")
 
-    genkernel_command = sh.Command("genkernel")
+    genkernel_command = hs.Command("genkernel")
     genkernel_command = genkernel_command.bake("initramfs")
     genkernel_command = genkernel_command.bake("--no-clean")
     genkernel_command = genkernel_command.bake("--no-mrproper")
@@ -2821,38 +2828,36 @@ def compile_and_install_kernel(
         fix=fix,
         warn_only=warn_only,
     )  # must be done after nconfig
-    genkernel_command = sh.Command("genkernel")
-    genkernel_command = genkernel_command.bake("all")
+    genkernel_command = hs.Command("genkernel")
+    genkernel_command.bake("all")
     # if configure:
-    #    genkernel_command.append('--nconfig')
-    genkernel_command = genkernel_command.bake("--no-clean")
-    genkernel_command = genkernel_command.bake("--no-mrproper")
-    genkernel_command = genkernel_command.bake("--symlink")
-    # genkernel_command = genkernel_command.bake("--luks")
-    genkernel_command = genkernel_command.bake("--module-rebuild")
-    genkernel_command = genkernel_command.bake("--all-ramdisk-modules")
-    genkernel_command = genkernel_command.bake("--firmware")
-    genkernel_command = genkernel_command.bake("--microcode=all")
-    genkernel_command = genkernel_command.bake("--microcode-initramfs")
-    genkernel_command = genkernel_command.bake('--makeopts="-j12"')
-    # genkernel_command = genkernel_command.bake("--no-busybox")
-    # genkernel_command = genkernel_command.bake("--no-keymap")
-    genkernel_command = genkernel_command.bake(
-        "--callback=/usr/bin/emerge zfs zfs-kmod @module-rebuild"
-    )
+    #    genkernel_command.bake('--nconfig')
+    genkernel_command.bake("--no-clean")
+    genkernel_command.bake("--no-mrproper")
+    genkernel_command.bake("--symlink")
+    # genkernel_command.bake("--luks")
+    genkernel_command.bake("--module-rebuild")
+    genkernel_command.bake("--all-ramdisk-modules")
+    genkernel_command.bake("--firmware")
+    genkernel_command.bake("--microcode=all")
+    genkernel_command.bake("--microcode-initramfs")
+    genkernel_command.bake('--makeopts="-j12"')
+    # genkernel_command.bake("--no-busybox")
+    # genkernel_command.bake("--no-keymap")
+    genkernel_command.bake("--callback=/usr/bin/emerge zfs zfs-kmod @module-rebuild")
     # --callback="/usr/bin/emerge zfs zfs-kmod sci-libs/linux-gpib sci-libs/linux-gpib-modules @module-rebuild"
     # --zfs
     icp(genkernel_command)
     genkernel_command(_fg=True)
 
-    sh.rc_update("add", "zfs-import", "boot")
-    sh.rc_update("add", "zfs-share", "default")
-    sh.rc_update("add", "zfs-zed", "default")
+    hs.Command("rc-update")("add", "zfs-import", "boot")
+    hs.Command("rc-update")("add", "zfs-share", "default")
+    hs.Command("rc-update")("add", "zfs-zed", "default")
 
     if Path("/boot/grub").is_dir():
-        sh.grub_mkconfig("-o", "/boot/grub/grub.cfg")
+        sh.Command("grub-mkconfig")("-o", "/boot/grub/grub.cfg")
 
-    sh.emerge("sys-kernel/linux-firmware", _out=sys.stdout, _err=sys.stderr)
+    sh.Command("emerge")("sys-kernel/linux-firmware", _out=sys.stdout, _err=sys.stderr)
 
     if Path("/boot/grub").is_dir():
         os.makedirs("/boot_backup", exist_ok=True)
@@ -2860,15 +2865,15 @@ def compile_and_install_kernel(
             "/boot_backup",
         ):
             if not Path("/boot_backup/.git").is_dir():
-                sh.git.init()
+                hs.Command("git").init()
 
-            sh.git.config("user.email", "user@example.com")
-            sh.git.config("user.name", "user")
+            hs.Command("git")("config", "user.email", "user@example.com")
+            hs.Command("git")("config", "user.name", "user")
 
             timestamp = str(time.time())
             os.makedirs(timestamp)
-            sh.cp("-ar", "/boot", timestamp + "/")
-            sh.git.add(timestamp, "--force")
-            sh.git.commit("-m", timestamp)
+            hs.Command("cp")("-ar", "/boot", timestamp + "/")
+            hs.Command("git")("add", timestamp, "--force")
+            hs.Command("git")("commit", "-m", timestamp)
 
     icp("kernel compile and install completed OK")
