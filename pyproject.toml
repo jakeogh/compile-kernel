@@ -10,7 +10,7 @@ backend-path = [
 
 [project]
 name = "compile_kernel"
-version = "1!0.0.1761531503"
+version = "1!0.0.1761531611"
 description = "Compiles kernels with verified optons"
 authors = [
     { name = "Justin Keogh", email = "github.com@v6y.net" },
@@ -35,7 +35,7 @@ compile_kernel = [
 ]
 
 [tool.pep508-url-version-backend]
-dependencies-indexed = ["asserttool>=1!0.0.1761250315", "click-auto-help>=0.0.1761041641", "clicktool>=0.0.1761033403", "eprint>=1!0.0.1761259337", "globalverbose>=0.0.1761031290", "pathtool>=1!0.0.1761531487"]
+dependencies-indexed = ["asserttool>=1!0.0.1761250315", "click-auto-help>=0.0.1761041641", "clicktool>=0.0.1761033403", "eprint>=1!0.0.1761259337", "globalverbose>=0.0.1761031290", "pathtool>=1!0.0.1761531591"]
 dependencies-git = [
     "asserttool @ git+https://git@github.com/jakeogh/asserttool",
     "click-auto-help @ git+https://git@github.com/jakeogh/click-auto-help",
