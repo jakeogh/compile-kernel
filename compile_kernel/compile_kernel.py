@@ -106,7 +106,7 @@ def get_set_kernel_config_option(
     state: bool,
     module: bool,
     get: bool,
-):
+) -> None | str:
     icp(
         path,
         define,
@@ -114,7 +114,6 @@ def get_set_kernel_config_option(
         module,
         get,
     )
-    global USED_SYMBOL_SET
     if not get:
         assert define not in USED_SYMBOL_SET
         USED_SYMBOL_SET.add(define)
@@ -122,34 +121,35 @@ def get_set_kernel_config_option(
         assert not module
     script_path = Path("/usr/src/linux/scripts/config")
     config_command = hs.Command(script_path)
-    config_command = config_command.bake("--file", path.as_posix())
+    config_command.bake("--file", path.as_posix())
 
     if get:
-        config_command = config_command.bake("--state")
-        config_command = config_command.bake(define)
+        config_command.bake("--state")
+        config_command.bake(define)
         _result = config_command().strip()
         return _result
 
     if not state:
-        config_command = config_command.bake("--disable")
+        config_command.bake("--disable")
     else:
-        config_command = config_command.bake("--enable")
+        config_command.bake("--enable")
 
-    config_command = config_command.bake(define)
+    config_command.bake(define)
     _result = config_command()
     icp(_result)
 
     del config_command
     if module:
         config_command = hs.Command(script_path)
-        config_command = config_command.bake("--file", path.as_posix())
-        config_command = config_command.bake("--module")
-        config_command = config_command.bake(define)
+        config_command.bake("--file", path.as_posix())
+        config_command.bake("--module")
+        config_command.bake(define)
         _result = config_command()
         icp(_result)
 
     # content = read_content_of_kernel_config(path)
     # return content
+    return None
 
 
 def verify_kernel_config_setting(
@@ -2515,12 +2515,7 @@ def _symlink_config():
     if not dot_config.exists():
         with resources.path("compile_kernel", ".config") as _kernel_config:
             icp(_kernel_config)
-            hs.Command(
-                "ln",
-                "-s",
-                _kernel_config,
-                dot_config,
-            )
+            hs.Command("ln")("-s", _kernel_config, dot_config)
 
 
 def extract_kernel_config():
@@ -2620,22 +2615,17 @@ def gcc_check_old():
         try:
             grep_target = ("gcc/x86_64-pc-linux-gnu/" + gcc_version,)
             icp(grep_target)
-            hs.Command(
-                "grep",
-                grep_target,
-                "/usr/src/linux/init/.init_task.o.cmd",
-            )
+            hs.Command("grep")(grep_target, "/usr/src/linux/init/.init_task.o.cmd")
             icp(
                 gcc_version,
                 "was used to compile kernel previously, not running `make clean`",
             )
-        except hs.ErrorReturnCode as e:
-            if e.exit_code == 1:
-                icp(e)
-                icp("old gcc version detected, make clean required. Sleeping 5.")
-                os.chdir("/usr/src/linux")
-                time.sleep(5)
-                hs.Command("make", "clean")
+        except hs.ErrorReturnCode_1 as e:
+            icp(e)
+            icp("old gcc version detected, make clean required. Sleeping 5.")
+            os.chdir("/usr/src/linux")
+            time.sleep(5)
+            hs.Command("make", "clean")
 
 
 def kernel_is_already_compiled():
@@ -2660,22 +2650,20 @@ def kernel_is_already_compiled():
 
 
 def install_compiled_kernel():
-    with chdir(
-        "/usr/src/linux",
-    ):
+    with chdir("/usr/src/linux"):
         os.system("make install")
 
     genkernel_command = hs.Command("genkernel")
-    genkernel_command = genkernel_command.bake("initramfs")
-    genkernel_command = genkernel_command.bake("--no-clean")
-    genkernel_command = genkernel_command.bake("--no-mrproper")
-    # genkernel_command = genkernel_command.bake("--no-busybox")
-    # genkernel_command = genkernel_command.bake("--no-keymap")
-    icp(genkernel_command)
+    genkernel_command.bake("initramfs")
+    genkernel_command.bake("--no-clean")
+    genkernel_command.bake("--no-mrproper")
+    # genkernel_command.bake("--no-busybox")
+    # genkernel_command.bake("--no-keymap")
+    #icp(genkernel_command)
     genkernel_command(_fg=True)
 
     assert Path("/boot/grub").is_dir()
-    hs.Command("grub-mkconfig)("-o", "/boot/grub/grub.cfg")
+    hs.Command("grub-mkconfig")("-o", "/boot/grub/grub.cfg")
 
 
 def configure_kernel(
@@ -2758,48 +2746,42 @@ def compile_and_install_kernel(
             _tee=True,
             _tty_out=False,
         )
-    except hs.ErrorReturnCode as e:
-        if e.return_code == 1:
-            icp(e)
-            icp(dir(e))
-            unconfigured_kernel = False
-            if hasattr(e, "stdout"):
-                icp(type(e.stdout))
-                if b"Could not find a usable .config" in e.stdout:
-                    unconfigured_kernel = True
-                if b"tree at that location has not been built." in e.stdout:
-                    unconfigured_kernel = True
-                if b"Kernel sources need compiling first" in e.stdout:
-                    unconfigured_kernel = True
-                if b"Could not find a Makefile in the kernel source directory" in e.stdout:
-                    unconfigured_kernel = True
-                if b"These sources have not yet been prepared" in e.stdout:
-                    unconfigured_kernel = True
+    except hs.ErrorReturnCode_1 as e:
+        icp(e)
+        icp(dir(e))
+        unconfigured_kernel = False
+        if hasattr(e, "stdout"):
+            icp(type(e.stdout))
+            if b"Could not find a usable .config" in e.stdout:
+                unconfigured_kernel = True
+            if b"tree at that location has not been built." in e.stdout:
+                unconfigured_kernel = True
+            if b"Kernel sources need compiling first" in e.stdout:
+                unconfigured_kernel = True
+            if b"Could not find a Makefile in the kernel source directory" in e.stdout:
+                unconfigured_kernel = True
+            if b"These sources have not yet been prepared" in e.stdout:
+                unconfigured_kernel = True
 
-            if not unconfigured_kernel:
-                # ic(unconfigured_kernel)
-                icp("unconfigured_kernel:", unconfigured_kernel)
-                raise e
-            icp(
-                "NOTE: kernel is unconfigured, skipping `emerge sys-fs/zfs sys-fs/zfs-kmod` before kernel compile"
-            )
-        else:
-            raise
+        if not unconfigured_kernel:
+            # ic(unconfigured_kernel)
+            icp("unconfigured_kernel:", unconfigured_kernel)
+            raise e
+        icp(
+            "NOTE: kernel is unconfigured, skipping `emerge sys-fs/zfs sys-fs/zfs-kmod` before kernel compile"
+        )
 
     if not unconfigured_kernel:
         icp("attempting emerge @module-rebuild")
         try:
             hs.Command("emerge")("@module-rebuild", _out=sys.stdout, _err=sys.stderr)
-        except hs.ErrorReturnCode as e:
-            if e.return_code == 1:
-                unconfigured_kernel = True  # todo, get conditions from above
-                if not unconfigured_kernel:
-                    raise e
-                icp(
-                    "NOTE: kernel is unconfigured, skipping `emerge @module-rebuild` before kernel compile"
-                )
-            else:
-                raise
+        except hs.ErrorReturnCode_1 as e:
+            unconfigured_kernel = True  # todo, get conditions from above
+            if not unconfigured_kernel:
+                raise e
+            icp(
+                "NOTE: kernel is unconfigured, skipping `emerge @module-rebuild` before kernel compile"
+            )
 
     # might fail if gcc was upgraded and the kernel hasnt been recompiled yet
     # for line in hs.Command("emerge")('sci-libs/linux-gpib', '-u', _err_to_out=True, _iter=True, _out_bufsize=100):
