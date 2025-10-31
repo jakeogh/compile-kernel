@@ -10,7 +10,7 @@ backend-path = [
 
 [project]
 name = "compile_kernel"
-version = "1!0.0.1761811324"
+version = "1!0.0.1761894818"
 description = "Compiles kernels with verified optons"
 authors = [
     { name = "Justin Keogh", email = "github.com@v6y.net" },

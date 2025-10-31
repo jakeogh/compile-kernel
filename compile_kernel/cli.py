@@ -10,7 +10,7 @@ from itertools import pairwise
 from pathlib import Path
 
 import click
-import sh
+import hs
 from asserttool import ic
 from asserttool import icp
 from click_auto_help import AHGroup
@@ -26,9 +26,6 @@ from compile_kernel import configure_kernel
 from compile_kernel import generate_module_config_dict
 from compile_kernel import get_set_kernel_config_option
 from compile_kernel import install_compiled_kernel
-
-# logging.basicConfig(level=logging.INFO)
-sh.mv = None  # use sh.busybox('mv'), coreutils ignores stdin read errors
 
 
 @click.group(no_args_is_help=True, cls=AHGroup)
@@ -174,7 +171,7 @@ def compare_loaded_modules_to_config(
         gvd.enable()
 
     _m_config_dict = generate_module_config_dict(path=kernel_dir)
-    _lsmod_lines = sh.lsmod().splitlines()[1:]
+    _lsmod_lines = hs.Command("lsmod")().splitlines()[1:]
     _loaded_modules = []
     for _l in _lsmod_lines:
         _m = _l.split()[0]
@@ -362,7 +359,7 @@ def diff_config(
     with resources.path("compile_kernel", "diffconfig.py") as _diffconfig:
         icp(_diffconfig)
         for config1, config2 in pairwise(dotconfigs):
-            _diffconfig_command = sh.Command("python3")
-            _diffconfig_command = _diffconfig_command.bake(_diffconfig)
-            _diffconfig_command = _diffconfig_command.bake(config1, config2)
+            _diffconfig_command = hs.Command("python3")
+            _diffconfig_command.bake(_diffconfig)
+            _diffconfig_command.bake(config1, config2)
             _diffconfig_command(_out=sys.stdout, _err=sys.stderr)
