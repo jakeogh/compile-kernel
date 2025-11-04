@@ -2659,7 +2659,7 @@ def install_compiled_kernel():
     genkernel_command.bake("--no-mrproper")
     # genkernel_command.bake("--no-busybox")
     # genkernel_command.bake("--no-keymap")
-    #icp(genkernel_command)
+    # icp(genkernel_command)
     genkernel_command(_fg=True)
 
     assert Path("/boot/grub").is_dir()
