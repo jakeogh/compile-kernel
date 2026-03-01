@@ -2493,6 +2493,37 @@ def check_kernel_config(
         url="",
     )
 
+    # GCOV kernel debug suppoer (C code coverage reports)
+    verify_kernel_config_setting(
+        path=path,
+        define="CONFIG_DEBUG_FS",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        fix=fix,
+        url="",
+    )
+    # GCOV kernel debug suppoer (C code coverage reports)
+    verify_kernel_config_setting(
+        path=path,
+        define="CONFIG_GCOV_KERNEL",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        fix=fix,
+        url="",
+    )
+    # GCOV kernel debug suppoer (C code coverage reports)
+    verify_kernel_config_setting(
+        path=path,
+        define="CONFIG_GCOV_FORMAT_AUTODETECT",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        fix=fix,
+        url="",
+    )
+
 
 # bpf
 # CONFIG_BPF_SYSCALL:         is not set when it should be.
