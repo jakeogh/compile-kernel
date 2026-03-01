@@ -2620,7 +2620,7 @@ def gcc_check():
     icp(_current_gcc_major_version)
     # assert _current_gcc_major_version == "14"
     _config_gcc_version = (
-        hs.Command("grep", ["CONFIG_GCC_VERSION", "/usr/src/linux/.config"])
+        hs.Command("grep")(["CONFIG_GCC_VERSION", "/usr/src/linux/.config"])
         .strip()
         .split("=")[-1][:2]
     )
@@ -2634,7 +2634,7 @@ def gcc_check():
     else:
         icp("old gcc version detected, calling 'make clean'")
         os.chdir("/usr/src/linux")
-        hs.Command("make", "clean")
+        hs.Command("make")("clean")
 
 
 def gcc_check_old():
@@ -2643,7 +2643,7 @@ def gcc_check_old():
         icp(
             "found previously compiled kernel tree, checking is the current gcc version was used"
         )
-        gcc_version = hs.Command("gcc-config", "-l")
+        gcc_version = hs.Command("gcc-config")("-l")
         icp(gcc_version)
         gcc_version = gcc_version.splitlines()
         line = None
@@ -2668,7 +2668,7 @@ def gcc_check_old():
             icp("old gcc version detected, make clean required. Sleeping 5.")
             os.chdir("/usr/src/linux")
             time.sleep(5)
-            hs.Command("make", "clean")
+            hs.Command("make")("clean")
 
 
 def kernel_is_already_compiled():
@@ -2896,7 +2896,7 @@ def compile_and_install_kernel(
             "/boot_backup",
         ):
             if not Path("/boot_backup/.git").is_dir():
-                hs.Command("git").init()
+                hs.Command("git")("init")
 
             hs.Command("git")("config", "user.email", "user@example.com")
             hs.Command("git")("config", "user.name", "user")
