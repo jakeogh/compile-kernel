@@ -2613,7 +2613,8 @@ def boot_is_correct(
 
 def gcc_check():
     #'gcc --version | head -n1 | grep -oP "\d+\.\d+(\.\d+)?" | head -n1 | cut -d. -f1'
-    _gcc_version_string = hs.Command("gcc", "--version").splitlines()[0]
+    _gcc_version_string_command = hs.Command("gcc")
+    _gcc_version_string = _gcc_version_string_command("--version").splitlines()[0]
     icp(_gcc_version_string)
     _current_gcc_major_version = _gcc_version_string.split(" ")[-2][:2]
     icp(_current_gcc_major_version)
