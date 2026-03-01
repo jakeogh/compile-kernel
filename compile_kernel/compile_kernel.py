@@ -712,7 +712,7 @@ def check_kernel_config(
         url=None,
     )
 
-    # required by sys-fs/zfs-kmod-9999
+    # required by sys-fs/zfs-9999
     verify_kernel_config_setting(
         path=path,
         define="CONFIG_DEBUG_INFO_DWARF5",
@@ -732,7 +732,7 @@ def check_kernel_config(
     #    fix=fix,
     #    url=None,
     # )
-    # required by sys-fs/zfs-kmod-9999
+    # required by sys-fs/zfs-9999
     verify_kernel_config_setting(
         path=path,
         define="CONFIG_UNWINDER_ORC",
@@ -742,7 +742,7 @@ def check_kernel_config(
         fix=fix,
         url=None,
     )
-    # required by sys-fs/zfs-kmod-9999
+    # required by sys-fs/zfs-9999
     # old not required any more, use ORC instead
     verify_kernel_config_setting(
         path=path,
@@ -754,7 +754,7 @@ def check_kernel_config(
         url=None,
     )
 
-    # required by sys-fs/zfs-kmod-9999
+    # required by sys-fs/zfs-9999
     verify_kernel_config_setting(
         path=path,
         define="CONFIG_FRAME_POINTER",
@@ -2139,7 +2139,7 @@ def check_kernel_config(
         url="",
     )
     ## performance
-    ## nope, zfs-kmode REQUIRES this
+    ## nope, zfs REQUIRES this
     # verify_kernel_config_setting(
     #    path=path,
     #    define="CONFIG_DEBUG_INFO_DWARF5",
