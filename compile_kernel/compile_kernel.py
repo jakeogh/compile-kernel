@@ -2778,11 +2778,10 @@ def compile_and_install_kernel(
         interactive=False,
     )
     # handle a downgrade from -9999 before genkernel calls @module-rebuild
-    icp("attempting to upgrade zfs and zfs-kmod")
+    icp("attempting to upgrade zfs")
     try:
         hs.Command("emerge")(
             "sys-fs/zfs",
-            "sys-fs/zfs-kmod",
             "-u",
             # _out=sys.stdout,
             # _err=sys.stderr,
@@ -2811,7 +2810,7 @@ def compile_and_install_kernel(
             icp("unconfigured_kernel:", unconfigured_kernel)
             raise e
         icp(
-            "NOTE: kernel is unconfigured, skipping `emerge sys-fs/zfs sys-fs/zfs-kmod` before kernel compile"
+            "NOTE: kernel is unconfigured, skipping `emerge sys-fs/zfs` before kernel compile"
         )
 
     if not unconfigured_kernel:
@@ -2875,8 +2874,8 @@ def compile_and_install_kernel(
     genkernel_command.bake('--makeopts="-j12"')
     # genkernel_command.bake("--no-busybox")
     # genkernel_command.bake("--no-keymap")
-    genkernel_command.bake("--callback=/usr/bin/emerge zfs zfs-kmod @module-rebuild")
-    # --callback="/usr/bin/emerge zfs zfs-kmod sci-libs/linux-gpib sci-libs/linux-gpib-modules @module-rebuild"
+    genkernel_command.bake("--callback=/usr/bin/emerge zfs @module-rebuild")
+    # --callback="/usr/bin/emerge zfs sci-libs/linux-gpib sci-libs/linux-gpib-modules @module-rebuild"
     # --zfs
     icp(genkernel_command)
     genkernel_command(_fg=True)
