@@ -348,6 +348,16 @@ def check_kernel_config(
         fix=fix,
         url="",
     )
+    # BPF, required for CONFIG_FUNCTION_TRACER (to enable it dynamically, otherwise major slowdown)
+    verify_kernel_config_setting(
+        path=path,
+        define="CONFIG_DYNAMIC_FTRACE",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        fix=fix,
+        url="",
+    )
     # BPF
     verify_kernel_config_setting(
         path=path,
@@ -726,17 +736,18 @@ def check_kernel_config(
     verify_kernel_config_setting(
         path=path,
         define="CONFIG_UNWINDER_ORC",
-        required_state=False,  # so CONFIG_FRAME_POINTER can be set
+        required_state=True,
         module=False,
         warn=warn_only,
         fix=fix,
         url=None,
     )
     # required by sys-fs/zfs-kmod-9999
+    # old not required any more, use ORC instead
     verify_kernel_config_setting(
         path=path,
         define="CONFIG_UNWINDER_FRAME_POINTER",
-        required_state=True,  # so CONFIG_FRAME_POINTER can be set
+        required_state=False,  # when this was set to True, the note was: so CONFIG_FRAME_POINTER can be set
         module=False,
         warn=warn_only,
         fix=fix,
@@ -747,7 +758,7 @@ def check_kernel_config(
     verify_kernel_config_setting(
         path=path,
         define="CONFIG_FRAME_POINTER",
-        required_state=True,
+        required_state=False,  # only used for CONFIG_UNWINDER_FRAME_POINTER=Y
         module=False,
         warn=warn_only,
         fix=fix,
