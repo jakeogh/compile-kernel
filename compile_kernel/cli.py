@@ -27,6 +27,8 @@ from compile_kernel import generate_module_config_dict
 from compile_kernel import get_set_kernel_config_option
 from compile_kernel import install_compiled_kernel
 
+click_option_code_debug = click.option("--code-debug", is_flag=True)
+
 
 @click.group(no_args_is_help=True, cls=AHGroup)
 @click_add_options(click_global_options)
