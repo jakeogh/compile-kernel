@@ -57,6 +57,7 @@ def cli(
 @click.option("--lockdep", is_flag=True, help="Enable lockdep lock correctness checking")
 @click.option("--debug-objects", is_flag=True, help="Enable object lifecycle debugging")
 @click.option("--gcov", is_flag=True, help="Enable GCOV kernel coverage")
+@click.option("--zbtree-debug", is_flag=True, help="Enable KFENCE+SLUB_DEBUG+DEBUG_OBJECTS for out-of-tree module debugging")
 @click_option_code_debug
 @click_add_options(click_global_options)
 @click.pass_context
@@ -69,6 +70,7 @@ def configure(
     lockdep: bool,
     debug_objects: bool,
     gcov: bool,
+    zbtree_debug: bool,
     code_debug: bool,
     verbose_inf: bool,
     dict_output: bool,
@@ -107,6 +109,7 @@ def configure(
         lockdep=lockdep,
         debug_objects=debug_objects,
         gcov=gcov,
+        zbtree_debug=zbtree_debug,
     )
 
 
@@ -235,6 +238,7 @@ def compare_loaded_modules_to_config(
 @click.option("--lockdep", is_flag=True, help="Enable lockdep lock correctness checking")
 @click.option("--debug-objects", is_flag=True, help="Enable object lifecycle debugging")
 @click.option("--gcov", is_flag=True, help="Enable GCOV kernel coverage")
+@click.option("--zbtree-debug", is_flag=True, help="Enable KFENCE+SLUB_DEBUG+DEBUG_OBJECTS for out-of-tree module debugging")
 @click_option_code_debug
 @click_add_options(click_global_options)
 @click.pass_context
@@ -253,6 +257,7 @@ def compile_and_install(
     lockdep: bool,
     debug_objects: bool,
     gcov: bool,
+    zbtree_debug: bool,
     code_debug: bool,
     verbose: bool = False,
 ):
@@ -292,15 +297,30 @@ def compile_and_install(
         lockdep=lockdep,
         debug_objects=debug_objects,
         gcov=gcov,
+        zbtree_debug=zbtree_debug,
     )
     eprint("DONT FORGET TO UMOUNT /boot")
 
 
 @cli.command("install-kernel")
+@click.option("--kasan", is_flag=True, help="Enable KASAN/KFENCE memory error detection")
+@click.option("--kmemleak", is_flag=True, help="Enable kmemleak memory leak detection")
+@click.option("--slub-debug", is_flag=True, help="Enable SLUB allocator debugging")
+@click.option("--lockdep", is_flag=True, help="Enable lockdep lock correctness checking")
+@click.option("--debug-objects", is_flag=True, help="Enable object lifecycle debugging")
+@click.option("--gcov", is_flag=True, help="Enable GCOV kernel coverage")
+@click.option("--zbtree-debug", is_flag=True, help="Enable KFENCE+SLUB_DEBUG+DEBUG_OBJECTS for out-of-tree module debugging")
 @click_add_options(click_global_options)
 @click.pass_context
 def _install_kernel(
     ctx,
+    kasan: bool,
+    kmemleak: bool,
+    slub_debug: bool,
+    lockdep: bool,
+    debug_objects: bool,
+    gcov: bool,
+    zbtree_debug: bool,
     verbose_inf: bool,
     dict_output: bool,
     verbose: bool = False,
@@ -319,7 +339,15 @@ def _install_kernel(
     if verbose_inf:
         gvd.enable()
 
-    install_compiled_kernel()
+    install_compiled_kernel(
+        kasan=kasan,
+        kmemleak=kmemleak,
+        slub_debug=slub_debug,
+        lockdep=lockdep,
+        debug_objects=debug_objects,
+        gcov=gcov,
+        zbtree_debug=zbtree_debug,
+    )
 
 
 @cli.command()
@@ -342,6 +370,7 @@ def _install_kernel(
 @click.option("--lockdep", is_flag=True, help="Enable lockdep lock correctness checking")
 @click.option("--debug-objects", is_flag=True, help="Enable object lifecycle debugging")
 @click.option("--gcov", is_flag=True, help="Enable GCOV kernel coverage")
+@click.option("--zbtree-debug", is_flag=True, help="Enable KFENCE+SLUB_DEBUG+DEBUG_OBJECTS for out-of-tree module debugging")
 @click_option_code_debug
 @click_add_options(click_global_options)
 @click.pass_context
@@ -355,6 +384,7 @@ def check_config(
     lockdep: bool,
     debug_objects: bool,
     gcov: bool,
+    zbtree_debug: bool,
     code_debug: bool,
     verbose_inf: bool,
     dict_output: bool,
@@ -392,6 +422,7 @@ def check_config(
         "lockdep": lockdep,
         "debug-objects": debug_objects,
         "gcov": gcov,
+        "zbtree-debug": zbtree_debug,
     }
 
     for config in dotconfigs:
@@ -412,7 +443,8 @@ def check_config(
             slub_debug=slub_debug,
             lockdep=lockdep,
             debug_objects=debug_objects,
-        gcov=gcov,
+            gcov=gcov,
+            zbtree_debug=zbtree_debug,
         )  # must be done after nconfig
         return
 

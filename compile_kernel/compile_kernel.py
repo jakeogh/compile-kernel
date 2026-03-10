@@ -468,6 +468,22 @@ def check_kernel_config_gcov(
     _dbg_verify(path=path, define="CONFIG_GCOV_FORMAT_AUTODETECT", enable=enable, fix=fix)
 
 
+def check_kernel_config_zbtree_debug(
+    *,
+    path: Path,
+    fix: bool,
+    enable: bool,
+) -> None:
+    """Minimal debug set for out-of-tree module development (zbtree et al).
+    KFENCE: low-overhead sampling UAF/OOB, compatible with out-of-tree modules.
+    SLUB_DEBUG: poisons freed slab objects (0x6b), catches UAF on next access.
+    DEBUG_OBJECTS: tracks registered kernel object lifecycle.
+    """
+    _dbg_verify(path=path, define="CONFIG_KFENCE", enable=enable, fix=fix)
+    _dbg_verify(path=path, define="CONFIG_SLUB_DEBUG", enable=enable, fix=fix)
+    _dbg_verify(path=path, define="CONFIG_DEBUG_OBJECTS", enable=enable, fix=fix)
+
+
 def check_kernel_config(
     *,
     path: Path,
@@ -479,6 +495,7 @@ def check_kernel_config(
     lockdep: bool = False,
     debug_objects: bool = False,
     gcov: bool = False,
+    zbtree_debug: bool = False,
 ):
     icp(path, fix, warn_only)
     global USED_SYMBOL_SET
@@ -494,6 +511,7 @@ def check_kernel_config(
     check_kernel_config_lockdep(path=path, fix=fix, enable=lockdep)
     check_kernel_config_debug_objects(path=path, fix=fix, enable=debug_objects)
     check_kernel_config_gcov(path=path, fix=fix, enable=gcov)
+    check_kernel_config_zbtree_debug(path=path, fix=fix, enable=zbtree_debug)
 
     check_kernel_config_nfs(
         path=path,
@@ -2825,7 +2843,71 @@ def kernel_is_already_compiled():
             return True
 
 
-def install_compiled_kernel():
+def _active_debug_flags(
+    *,
+    kasan: bool,
+    kmemleak: bool,
+    slub_debug: bool,
+    lockdep: bool,
+    debug_objects: bool,
+    gcov: bool,
+    zbtree_debug: bool,
+) -> list[str]:
+    flags = [
+        ("kasan", kasan),
+        ("kmemleak", kmemleak),
+        ("slub-debug", slub_debug),
+        ("lockdep", lockdep),
+        ("debug-objects", debug_objects),
+        ("gcov", gcov),
+        ("zbtree-debug", zbtree_debug),
+    ]
+    return [name for name, enabled in flags if enabled]
+
+
+def _set_grub_distributor(debug_flags: list[str]) -> None:
+    """Patch GRUB_DISTRIBUTOR in /etc/default/grub to include active debug flags.
+    Idempotent: re-running with different flags updates the line in place.
+    """
+    grub_defaults = Path("/etc/default/grub")
+    if not grub_defaults.exists():
+        return
+
+    file_lines = grub_defaults.read_text(encoding="utf8").splitlines()
+    base_name = "Linux"
+    new_lines: list[str] = []
+    found = False
+    for line in file_lines:
+        stripped = line.strip()
+        if stripped.startswith("GRUB_DISTRIBUTOR=") and not stripped.startswith("#"):
+            raw = stripped[len("GRUB_DISTRIBUTOR="):].strip('"').strip("'").strip()
+            base_name = raw.split(" [")[0].strip() or "Linux"
+            found = True
+            continue
+        new_lines.append(line)
+
+    suffix = (" [" + " ".join(debug_flags) + "]") if debug_flags else ""
+    distributor_line = 'GRUB_DISTRIBUTOR="' + base_name + suffix + '"'
+
+    if found:
+        new_lines.append(distributor_line)
+    else:
+        new_lines.append("")
+        new_lines.append(distributor_line)
+
+    grub_defaults.write_text("\n".join(new_lines) + "\n", encoding="utf8")
+    icp(f"GRUB_DISTRIBUTOR set to: {base_name}{suffix}")
+
+
+def install_compiled_kernel(
+    kasan: bool = False,
+    kmemleak: bool = False,
+    slub_debug: bool = False,
+    lockdep: bool = False,
+    debug_objects: bool = False,
+    gcov: bool = False,
+    zbtree_debug: bool = False,
+):
     with chdir("/usr/src/linux"):
         os.system("make install")
 
@@ -2839,6 +2921,11 @@ def install_compiled_kernel():
     genkernel_command(_fg=True)
 
     assert Path("/boot/grub").is_dir()
+    _set_grub_distributor(_active_debug_flags(
+        kasan=kasan, kmemleak=kmemleak, slub_debug=slub_debug,
+        lockdep=lockdep, debug_objects=debug_objects, gcov=gcov,
+        zbtree_debug=zbtree_debug,
+    ))
     hs.Command("grub-mkconfig")("-o", "/boot/grub/grub.cfg")
 
 
@@ -2852,6 +2939,7 @@ def configure_kernel(
     lockdep: bool = False,
     debug_objects: bool = False,
     gcov: bool = False,
+    zbtree_debug: bool = False,
 ):
     if interactive:
         with chdir(
@@ -2868,6 +2956,7 @@ def configure_kernel(
         lockdep=lockdep,
         debug_objects=debug_objects,
         gcov=gcov,
+        zbtree_debug=zbtree_debug,
     )  # must be done after nconfig
 
 
@@ -2885,6 +2974,7 @@ def compile_and_install_kernel(
     lockdep: bool = False,
     debug_objects: bool = False,
     gcov: bool = False,
+    zbtree_debug: bool = False,
 ):
     icp()
     if not root_user():
@@ -2918,6 +3008,8 @@ def compile_and_install_kernel(
             slub_debug=slub_debug,
             lockdep=lockdep,
             debug_objects=debug_objects,
+        gcov=gcov,
+        zbtree_debug=zbtree_debug,
         )
 
     hs.Command("emerge")(
@@ -2937,6 +3029,8 @@ def compile_and_install_kernel(
         slub_debug=slub_debug,
         lockdep=lockdep,
         debug_objects=debug_objects,
+        gcov=gcov,
+        zbtree_debug=zbtree_debug,
     )
     # handle a downgrade from -9999 before genkernel calls @module-rebuild
     icp("attempting to upgrade zfs")
@@ -3029,6 +3123,7 @@ def compile_and_install_kernel(
         lockdep=lockdep,
         debug_objects=debug_objects,
         gcov=gcov,
+        zbtree_debug=zbtree_debug,
     )  # must be done after nconfig
     genkernel_command = hs.Command("genkernel")
     genkernel_command.bake("all")
@@ -3057,6 +3152,11 @@ def compile_and_install_kernel(
     hs.Command("rc-update")("add", "zfs-zed", "default")
 
     if Path("/boot/grub").is_dir():
+        _set_grub_distributor(_active_debug_flags(
+            kasan=kasan, kmemleak=kmemleak, slub_debug=slub_debug,
+            lockdep=lockdep, debug_objects=debug_objects, gcov=gcov,
+            zbtree_debug=zbtree_debug,
+        ))
         hs.Command("grub-mkconfig")("-o", "/boot/grub/grub.cfg")
 
     hs.Command("emerge")("sys-kernel/linux-firmware", _out=sys.stdout, _err=sys.stderr)
