@@ -400,9 +400,13 @@ def check_kernel_config_zfs_compat(
     spec: ConfigSpec,
 ) -> None:
     """ZFS build compatibility overrides.
-    CONFIG_DEBUG_LOCK_ALLOC breaks ZFS module compilation — disable it
-    regardless of what the lockdep layer set.
+    CONFIG_PROVE_LOCKING selects CONFIG_DEBUG_LOCK_ALLOC via Kconfig 'select',
+    so disabling DEBUG_LOCK_ALLOC alone is not enough — make oldconfig will
+    re-enable it. Must disable PROVE_LOCKING (and LOCKDEP which it selects)
+    to prevent the dependency chain from firing.
     """
+    _spec_add(spec, "CONFIG_PROVE_LOCKING", required_state=False, module=False, warn=True)
+    _spec_add(spec, "CONFIG_LOCKDEP", required_state=False, module=False, warn=True)
     _spec_add(spec, "CONFIG_DEBUG_LOCK_ALLOC", required_state=False, module=False, warn=True)
 
 
