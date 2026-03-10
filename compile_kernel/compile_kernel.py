@@ -60,7 +60,11 @@ def _spec_add(
     )
 
 
-def _spec_apply(spec: ConfigSpec, path: Path, fix: bool) -> None:
+def _spec_apply(
+    spec: ConfigSpec,
+    path: Path,
+    fix: bool,
+) -> None:
     """Apply a fully-merged ConfigSpec, writing each symbol exactly once."""
     for define, opt in spec.items():
         verify_kernel_config_setting(
@@ -72,7 +76,6 @@ def _spec_apply(spec: ConfigSpec, path: Path, fix: bool) -> None:
             fix=fix,
             url=opt.url,
         )
-
 
 
 def generate_module_config_dict(path: Path):
@@ -306,15 +309,54 @@ def check_kernel_config_nfs(
     spec: ConfigSpec,
     warn_only: bool,
 ):
-    _spec_add(spec, "CONFIG_NFS_FS", required_state=True, module=True, warn=warn_only, url=None)
-    _spec_add(spec, "CONFIG_NFSD", required_state=True, module=True, warn=warn_only, url=None)
-    _spec_add(spec, "CONFIG_NFSD_V4", required_state=True, module=False, warn=warn_only, url=None)
-    _spec_add(spec, "CONFIG_NFS_V4", required_state=True, module=True, warn=warn_only, url=None)
-    _spec_add(spec, "CONFIG_NFS_V4_1", required_state=True, module=False, warn=warn_only, url=None)
-    _spec_add(spec, "CONFIG_NFS_V4_2", required_state=True, module=False, warn=warn_only, url=None)
-
-
-
+    _spec_add(
+        spec,
+        "CONFIG_NFS_FS",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url=None,
+    )
+    _spec_add(
+        spec,
+        "CONFIG_NFSD",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url=None,
+    )
+    _spec_add(
+        spec,
+        "CONFIG_NFSD_V4",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url=None,
+    )
+    _spec_add(
+        spec,
+        "CONFIG_NFS_V4",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url=None,
+    )
+    _spec_add(
+        spec,
+        "CONFIG_NFS_V4_1",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url=None,
+    )
+    _spec_add(
+        spec,
+        "CONFIG_NFS_V4_2",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url=None,
+    )
 
 
 def check_kernel_config_kasan(
@@ -322,10 +364,34 @@ def check_kernel_config_kasan(
     spec: ConfigSpec,
     enable: bool,
 ) -> None:
-    _spec_add(spec, "CONFIG_KASAN", required_state=enable, module=False, warn=True)
-    _spec_add(spec, "CONFIG_KASAN_INLINE", required_state=enable, module=False, warn=True)  # 2-3x faster than outline
-    _spec_add(spec, "CONFIG_KASAN_VMALLOC", required_state=enable, module=False, warn=True)  # kvmalloc(16KB) can fall back to vmalloc
-    _spec_add(spec, "CONFIG_PANIC_ON_OOPS", required_state=enable, module=False, warn=True)  # force kdump instead of continuing in corrupted state
+    _spec_add(
+        spec,
+        "CONFIG_KASAN",
+        required_state=enable,
+        module=False,
+        warn=True,
+    )
+    _spec_add(
+        spec,
+        "CONFIG_KASAN_INLINE",
+        required_state=enable,
+        module=False,
+        warn=True,
+    )  # 2-3x faster than outline
+    _spec_add(
+        spec,
+        "CONFIG_KASAN_VMALLOC",
+        required_state=enable,
+        module=False,
+        warn=True,
+    )  # kvmalloc(16KB) can fall back to vmalloc
+    _spec_add(
+        spec,
+        "CONFIG_PANIC_ON_OOPS",
+        required_state=enable,
+        module=False,
+        warn=True,
+    )  # force kdump instead of continuing in corrupted state
 
 
 def check_kernel_config_kmemleak(
@@ -333,7 +399,13 @@ def check_kernel_config_kmemleak(
     spec: ConfigSpec,
     enable: bool,
 ) -> None:
-    _spec_add(spec, "CONFIG_DEBUG_KMEMLEAK", required_state=enable, module=False, warn=True)
+    _spec_add(
+        spec,
+        "CONFIG_DEBUG_KMEMLEAK",
+        required_state=enable,
+        module=False,
+        warn=True,
+    )
 
 
 def check_kernel_config_slub_debug(
@@ -341,8 +413,20 @@ def check_kernel_config_slub_debug(
     spec: ConfigSpec,
     enable: bool,
 ) -> None:
-    _spec_add(spec, "CONFIG_SLUB_DEBUG", required_state=enable, module=False, warn=True)
-    _spec_add(spec, "CONFIG_SLUB_DEBUG_ON", required_state=enable, module=False, warn=True)
+    _spec_add(
+        spec,
+        "CONFIG_SLUB_DEBUG",
+        required_state=enable,
+        module=False,
+        warn=True,
+    )
+    _spec_add(
+        spec,
+        "CONFIG_SLUB_DEBUG_ON",
+        required_state=enable,
+        module=False,
+        warn=True,
+    )
 
 
 def check_kernel_config_lockdep(
@@ -350,10 +434,34 @@ def check_kernel_config_lockdep(
     spec: ConfigSpec,
     enable: bool,
 ) -> None:
-    _spec_add(spec, "CONFIG_PROVE_LOCKING", required_state=enable, module=False, warn=True)
-    _spec_add(spec, "CONFIG_DEBUG_SPINLOCK", required_state=enable, module=False, warn=True)
-    _spec_add(spec, "CONFIG_DEBUG_MUTEXES", required_state=enable, module=False, warn=True)
-    _spec_add(spec, "CONFIG_DEBUG_LOCK_ALLOC", required_state=enable, module=False, warn=True)
+    _spec_add(
+        spec,
+        "CONFIG_PROVE_LOCKING",
+        required_state=enable,
+        module=False,
+        warn=True,
+    )
+    _spec_add(
+        spec,
+        "CONFIG_DEBUG_SPINLOCK",
+        required_state=enable,
+        module=False,
+        warn=True,
+    )
+    _spec_add(
+        spec,
+        "CONFIG_DEBUG_MUTEXES",
+        required_state=enable,
+        module=False,
+        warn=True,
+    )
+    _spec_add(
+        spec,
+        "CONFIG_DEBUG_LOCK_ALLOC",
+        required_state=enable,
+        module=False,
+        warn=True,
+    )
 
 
 def check_kernel_config_debug_objects(
@@ -361,9 +469,27 @@ def check_kernel_config_debug_objects(
     spec: ConfigSpec,
     enable: bool,
 ) -> None:
-    _spec_add(spec, "CONFIG_DEBUG_OBJECTS", required_state=enable, module=False, warn=True)
-    _spec_add(spec, "CONFIG_DEBUG_OBJECTS_FREE", required_state=enable, module=False, warn=True)
-    _spec_add(spec, "CONFIG_DEBUG_OBJECTS_TIMERS", required_state=enable, module=False, warn=True)
+    _spec_add(
+        spec,
+        "CONFIG_DEBUG_OBJECTS",
+        required_state=enable,
+        module=False,
+        warn=True,
+    )
+    _spec_add(
+        spec,
+        "CONFIG_DEBUG_OBJECTS_FREE",
+        required_state=enable,
+        module=False,
+        warn=True,
+    )
+    _spec_add(
+        spec,
+        "CONFIG_DEBUG_OBJECTS_TIMERS",
+        required_state=enable,
+        module=False,
+        warn=True,
+    )
 
 
 def check_kernel_config_gcov(
@@ -371,9 +497,27 @@ def check_kernel_config_gcov(
     spec: ConfigSpec,
     enable: bool,
 ) -> None:
-    _spec_add(spec, "CONFIG_DEBUG_FS", required_state=enable, module=False, warn=True)
-    _spec_add(spec, "CONFIG_GCOV_KERNEL", required_state=enable, module=False, warn=True)
-    _spec_add(spec, "CONFIG_GCOV_FORMAT_AUTODETECT", required_state=enable, module=False, warn=True)
+    _spec_add(
+        spec,
+        "CONFIG_DEBUG_FS",
+        required_state=enable,
+        module=False,
+        warn=True,
+    )
+    _spec_add(
+        spec,
+        "CONFIG_GCOV_KERNEL",
+        required_state=enable,
+        module=False,
+        warn=True,
+    )
+    _spec_add(
+        spec,
+        "CONFIG_GCOV_FORMAT_AUTODETECT",
+        required_state=enable,
+        module=False,
+        warn=True,
+    )
 
 
 def check_kernel_config_zbtree_debug(
@@ -390,9 +534,27 @@ def check_kernel_config_zbtree_debug(
     the spec dict is last-writer-wins so the final value is simply the most
     recently applied layer. No USED_SYMBOL_SET conflict possible.
     """
-    _spec_add(spec, "CONFIG_KFENCE", required_state=enable, module=False, warn=True)
-    _spec_add(spec, "CONFIG_SLUB_DEBUG", required_state=enable, module=False, warn=True)
-    _spec_add(spec, "CONFIG_DEBUG_OBJECTS", required_state=enable, module=False, warn=True)
+    _spec_add(
+        spec,
+        "CONFIG_KFENCE",
+        required_state=enable,
+        module=False,
+        warn=True,
+    )
+    _spec_add(
+        spec,
+        "CONFIG_SLUB_DEBUG",
+        required_state=enable,
+        module=False,
+        warn=True,
+    )
+    _spec_add(
+        spec,
+        "CONFIG_DEBUG_OBJECTS",
+        required_state=enable,
+        module=False,
+        warn=True,
+    )
 
 
 def check_kernel_config_zfs_compat(
@@ -405,9 +567,27 @@ def check_kernel_config_zfs_compat(
     re-enable it. Must disable PROVE_LOCKING (and LOCKDEP which it selects)
     to prevent the dependency chain from firing.
     """
-    _spec_add(spec, "CONFIG_PROVE_LOCKING", required_state=False, module=False, warn=True)
-    _spec_add(spec, "CONFIG_LOCKDEP", required_state=False, module=False, warn=True)
-    _spec_add(spec, "CONFIG_DEBUG_LOCK_ALLOC", required_state=False, module=False, warn=True)
+    _spec_add(
+        spec,
+        "CONFIG_PROVE_LOCKING",
+        required_state=False,
+        module=False,
+        warn=True,
+    )
+    _spec_add(
+        spec,
+        "CONFIG_LOCKDEP",
+        required_state=False,
+        module=False,
+        warn=True,
+    )
+    _spec_add(
+        spec,
+        "CONFIG_DEBUG_LOCK_ALLOC",
+        required_state=False,
+        module=False,
+        warn=True,
+    )
 
 
 def check_kernel_config_nvidia_compat(
@@ -417,9 +597,27 @@ def check_kernel_config_nvidia_compat(
     """nvidia-drivers build compatibility overrides.
     nvidia-drivers-590 refuses to build if any of these are set.
     """
-    _spec_add(spec, "CONFIG_LOCKDEP", required_state=False, module=False, warn=True)
-    _spec_add(spec, "CONFIG_SLUB_DEBUG_ON", required_state=False, module=False, warn=True)
-    _spec_add(spec, "CONFIG_DEBUG_MUTEXES", required_state=False, module=False, warn=True)
+    _spec_add(
+        spec,
+        "CONFIG_LOCKDEP",
+        required_state=False,
+        module=False,
+        warn=True,
+    )
+    _spec_add(
+        spec,
+        "CONFIG_SLUB_DEBUG_ON",
+        required_state=False,
+        module=False,
+        warn=True,
+    )
+    _spec_add(
+        spec,
+        "CONFIG_DEBUG_MUTEXES",
+        required_state=False,
+        module=False,
+        warn=True,
+    )
 
 
 def check_kernel_config(
@@ -452,54 +650,222 @@ def check_kernel_config(
     check_kernel_config_nfs(spec=spec, warn_only=warn_only)
 
     # BPF, required for CONFIG_FUNCTION_TRACER
-    _spec_add(spec, "CONFIG_FTRACE", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_FTRACE",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # BPF, required for CONFIG_FUNCTION_TRACER (to enable it dynamically, otherwise major slowdown)
-    _spec_add(spec, "CONFIG_DYNAMIC_FTRACE", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_DYNAMIC_FTRACE",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # BPF
-    _spec_add(spec, "CONFIG_FUNCTION_TRACER", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_FUNCTION_TRACER",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
 
-    _spec_add(spec, "CONFIG_HAVE_FENTRY", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_HAVE_FENTRY",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # to see options like CONFIG_TRIM_UNUSED_KSYMS
-    _spec_add(spec, "CONFIG_EXPERT", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_EXPERT",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # warnings as errors
-    _spec_add(spec, "CONFIG_WERROR", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_WERROR",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # fs
-    _spec_add(spec, "CONFIG_EXT2_FS", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_EXT2_FS",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # fs
-    _spec_add(spec, "CONFIG_EXT3_FS", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_EXT3_FS",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # fs
-    _spec_add(spec, "CONFIG_EXFAT_FS", required_state=True, module=True, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_EXFAT_FS",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
     # fs
-    _spec_add(spec, "CONFIG_NTFS_FS", required_state=True, module=True, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_NTFS_FS",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
     # sec
-    _spec_add(spec, "CONFIG_FORTIFY_SOURCE", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_FORTIFY_SOURCE",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # sec
-    _spec_add(spec, "CONFIG_HARDENED_USERCOPY", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_HARDENED_USERCOPY",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
 
     # legacy old
-    _spec_add(spec, "CONFIG_UID16", required_state=False, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_UID16",
+        required_state=False,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # not a paravirt kernel
-    _spec_add(spec, "CONFIG_PARAVIRT", required_state=False, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_PARAVIRT",
+        required_state=False,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # kvm
-    _spec_add(spec, "CONFIG_KVM", required_state=True, module=True, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_KVM",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
     # kvm
-    _spec_add(spec, "CONFIG_KVM_AMD", required_state=True, module=True, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_KVM_AMD",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
     # kvm
-    _spec_add(spec, "CONFIG_VIRTIO_BALLOON", required_state=True, module=True, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_VIRTIO_BALLOON",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
     # pcie
-    _spec_add(spec, "CONFIG_HOTPLUG_PCI_PCIE", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_HOTPLUG_PCI_PCIE",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # intel low power support
-    _spec_add(spec, "CONFIG_X86_INTEL_LPSS", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_X86_INTEL_LPSS",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # boot VESA
-    _spec_add(spec, "CONFIG_FB", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_FB",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # boot VESA
-    _spec_add(spec, "CONFIG_FRAMEBUFFER_CONSOLE", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_FRAMEBUFFER_CONSOLE",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # boot VESA
-    _spec_add(spec, "CONFIG_FB_MODE_HELPERS", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_FB_MODE_HELPERS",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # boot VESA
-    _spec_add(spec, "CONFIG_FB_RADEON", required_state=True, module=True, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_FB_RADEON",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
     # boot VESA
-    _spec_add(spec, "CONFIG_FB_NVIDIA", required_state=False, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_FB_NVIDIA",
+        required_state=False,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     ## boot VESA
     # seems to have been removed, oldconfig removes it
     # verify_kernel_config_setting(
@@ -512,33 +878,124 @@ def check_kernel_config(
     #    url="",
     # )
     # boot VESA
-    _spec_add(spec, "CONFIG_SYSFB_SIMPLEFB", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_SYSFB_SIMPLEFB",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # boot VESA
-    _spec_add(spec, "CONFIG_BOOT_VESA_SUPPORT", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_BOOT_VESA_SUPPORT",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # boot VESA
-    _spec_add(spec, "CONFIG_DRM_LOAD_EDID_FIRMWARE", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_DRM_LOAD_EDID_FIRMWARE",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # power managment debug
-    _spec_add(spec, "CONFIG_PM_DEBUG", required_state=False, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_PM_DEBUG",
+        required_state=False,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
 
     # required for CONFIG_MEDIA_USB_SUPPORT below
-    _spec_add(spec, "CONFIG_MEDIA_SUPPORT", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_MEDIA_SUPPORT",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # unknown if necessary
-    _spec_add(spec, "CONFIG_MEDIA_USB_SUPPORT", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_MEDIA_USB_SUPPORT",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
 
-    _spec_add(spec, "CONFIG_FB_EFI", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_FB_EFI",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
 
-    _spec_add(spec, "CONFIG_TRIM_UNUSED_KSYMS", required_state=False, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_TRIM_UNUSED_KSYMS",
+        required_state=False,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
 
-    _spec_add(spec, "CONFIG_INTEL_IOMMU_DEFAULT_ON", required_state=False, module=False, warn=True, url="http://forums.debian.net/viewtopic.php?t=126397")
+    _spec_add(
+        spec,
+        "CONFIG_INTEL_IOMMU_DEFAULT_ON",
+        required_state=False,
+        module=False,
+        warn=True,
+        url="http://forums.debian.net/viewtopic.php?t=126397",
+    )
 
-    _spec_add(spec, "CONFIG_IKCONFIG_PROC", required_state=True, module=False, warn=warn_only, url=None)
+    _spec_add(
+        spec,
+        "CONFIG_IKCONFIG_PROC",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url=None,
+    )
 
-    _spec_add(spec, "CONFIG_IKCONFIG", required_state=True, module=False, warn=warn_only, url=None)
+    _spec_add(
+        spec,
+        "CONFIG_IKCONFIG",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url=None,
+    )
 
-    _spec_add(spec, "CONFIG_SUNRPC_DEBUG", required_state=True, module=False, warn=warn_only, url=None)
+    _spec_add(
+        spec,
+        "CONFIG_SUNRPC_DEBUG",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url=None,
+    )
 
     # required by sys-fs/zfs-9999
-    _spec_add(spec, "CONFIG_DEBUG_INFO_DWARF5", required_state=True, module=False, warn=warn_only, url=None)
+    _spec_add(
+        spec,
+        "CONFIG_DEBUG_INFO_DWARF5",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url=None,
+    )
 
     # verify_kernel_config_setting(
     #    path=path,
@@ -550,12 +1007,33 @@ def check_kernel_config(
     #    url=None,
     # )
     # required by sys-fs/zfs-9999
-    _spec_add(spec, "CONFIG_UNWINDER_ORC", required_state=True, module=False, warn=warn_only, url=None)
+    _spec_add(
+        spec,
+        "CONFIG_UNWINDER_ORC",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url=None,
+    )
     # required by sys-fs/zfs-9999
     # old not required any more, use ORC instead
-    _spec_add(spec, "CONFIG_UNWINDER_FRAME_POINTER", required_state=False, module=False, warn=warn_only, url=None)
+    _spec_add(
+        spec,
+        "CONFIG_UNWINDER_FRAME_POINTER",
+        required_state=False,
+        module=False,
+        warn=warn_only,
+        url=None,
+    )
 
-    _spec_add(spec, "CONFIG_FRAME_POINTER", required_state=False, module=False, warn=warn_only, url=None)
+    _spec_add(
+        spec,
+        "CONFIG_FRAME_POINTER",
+        required_state=False,
+        module=False,
+        warn=warn_only,
+        url=None,
+    )
 
     ## not sure what this was for
     # verify_kernel_config_setting(
@@ -567,103 +1045,460 @@ def check_kernel_config(
     #    url=None,
     # )
 
-    _spec_add(spec, "CONFIG_DRM", required_state=True, module=True, warn=warn_only, url="https://wiki.gentoo.org/wiki/Nouveau")
+    _spec_add(
+        spec,
+        "CONFIG_DRM",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="https://wiki.gentoo.org/wiki/Nouveau",
+    )
 
-    _spec_add(spec, "CONFIG_DRM_FBDEV_EMULATION", required_state=True, module=False, warn=warn_only, url="https://wiki.gentoo.org/wiki/Nouveau")
-    _spec_add(spec, "CONFIG_DRM_AMDGPU", required_state=True, module=True, warn=warn_only, url="")
-    _spec_add(spec, "CONFIG_DRM_UDL", required_state=True, module=True, warn=warn_only, url="")
-    _spec_add(spec, "CONFIG_FIRMWARE_EDID", required_state=True, module=False, warn=warn_only, url="")
-    _spec_add(spec, "CONFIG_FB_VESA", required_state=True, module=False, warn=warn_only, url="")
-    _spec_add(spec, "CONFIG_MTRR_SANITIZER", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_DRM_FBDEV_EMULATION",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="https://wiki.gentoo.org/wiki/Nouveau",
+    )
+    _spec_add(
+        spec,
+        "CONFIG_DRM_AMDGPU",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
+    _spec_add(
+        spec,
+        "CONFIG_DRM_UDL",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
+    _spec_add(
+        spec,
+        "CONFIG_FIRMWARE_EDID",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
+    _spec_add(
+        spec,
+        "CONFIG_FB_VESA",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
+    _spec_add(
+        spec,
+        "CONFIG_MTRR_SANITIZER",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # speculative execution
-    _spec_add(spec, "CONFIG_MITIGATION_SLS", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_MITIGATION_SLS",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # ACPI
-    _spec_add(spec, "CONFIG_ACPI_FPDT", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_ACPI_FPDT",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # ACPI
-    _spec_add(spec, "CONFIG_ACPI_TAD", required_state=True, module=True, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_ACPI_TAD",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
     # ACPI
-    _spec_add(spec, "CONFIG_ACPI_PCI_SLOT", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_ACPI_PCI_SLOT",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # ACPI
-    _spec_add(spec, "CONFIG_ACPI_SBS", required_state=True, module=True, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_ACPI_SBS",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
     # ACPI
-    _spec_add(spec, "CONFIG_ACPI_HED", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_ACPI_HED",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # ACPI
-    _spec_add(spec, "CONFIG_ACPI_APEI", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_ACPI_APEI",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # ACPI
-    _spec_add(spec, "CONFIG_ACPI_DPTF", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_ACPI_DPTF",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # ACPI
-    _spec_add(spec, "CONFIG_ACPI_CONFIGFS", required_state=True, module=True, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_ACPI_CONFIGFS",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
     # ACPI
-    _spec_add(spec, "CONFIG_ACPI_APEI_GHES", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_ACPI_APEI_GHES",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # ACPI
-    _spec_add(spec, "CONFIG_ACPI_APEI_PCIEAER", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_ACPI_APEI_PCIEAER",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # ACPI
-    _spec_add(spec, "CONFIG_ACPI_NFIT", required_state=True, module=True, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_ACPI_NFIT",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
     # ACPI
-    _spec_add(spec, "CONFIG_ACPI_PROCESSOR_AGGREGATOR", required_state=True, module=True, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_ACPI_PROCESSOR_AGGREGATOR",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
     # ACPI
-    _spec_add(spec, "CONFIG_HIBERNATION", required_state=False, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_HIBERNATION",
+        required_state=False,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # cpu frequency
-    _spec_add(spec, "CONFIG_CPU_FREQ_STAT", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_CPU_FREQ_STAT",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # module versioning
-    _spec_add(spec, "CONFIG_MODVERSIONS", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_MODVERSIONS",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # block layer SG
-    _spec_add(spec, "CONFIG_BLK_DEV_BSGLIB", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_BLK_DEV_BSGLIB",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # ECC
-    _spec_add(spec, "CONFIG_MEMORY_FAILURE", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_MEMORY_FAILURE",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # ECC
-    _spec_add(spec, "CONFIG_MTD_NAND_ECC_SW_BCH", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_MTD_NAND_ECC_SW_BCH",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # ECC
-    _spec_add(spec, "CONFIG_RAS_CEC", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_RAS_CEC",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # mem
-    _spec_add(spec, "CONFIG_PAGE_REPORTING", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_PAGE_REPORTING",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # mem
-    _spec_add(spec, "CONFIG_TRANSPARENT_HUGEPAGE", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_TRANSPARENT_HUGEPAGE",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # mem
-    _spec_add(spec, "CONFIG_PER_VMA_LOCK", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_PER_VMA_LOCK",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # chipset
-    _spec_add(spec, "CONFIG_LPC_ICH", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_LPC_ICH",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # chipset
-    _spec_add(spec, "CONFIG_LPC_SCH", required_state=True, module=True, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_LPC_SCH",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
     # pcie
-    _spec_add(spec, "CONFIG_PCIEAER", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_PCIEAER",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # pcie
-    _spec_add(spec, "CONFIG_PCIE_DPC", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_PCIE_DPC",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # pcie
-    _spec_add(spec, "CONFIG_PCI_IOV", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_PCI_IOV",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # old interface
-    _spec_add(spec, "CONFIG_UEVENT_HELPER", required_state=False, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_UEVENT_HELPER",
+        required_state=False,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # dmi
-    _spec_add(spec, "CONFIG_DMI_SYSFS", required_state=True, module=True, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_DMI_SYSFS",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
     # mtd
-    _spec_add(spec, "CONFIG_MTD", required_state=True, module=True, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_MTD",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
     # i386
     # I forget why... maybe virtualbox?
-    _spec_add(spec, "CONFIG_IA32_EMULATION", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_IA32_EMULATION",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # usb speakers
-    _spec_add(spec, "CONFIG_SND_USB_AUDIO", required_state=True, module=True, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_SND_USB_AUDIO",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
     # alsa required for the rest
-    _spec_add(spec, "CONFIG_SND", required_state=True, module=True, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_SND",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
     # alsa required for the rest
-    _spec_add(spec, "CONFIG_SND_SOC", required_state=True, module=True, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_SND_SOC",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
     # alsa
-    _spec_add(spec, "CONFIG_SND_SOC_AMD_ACP", required_state=True, module=True, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_SND_SOC_AMD_ACP",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
     # alsa
-    _spec_add(spec, "CONFIG_SND_OSSEMUL", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_SND_OSSEMUL",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # alsa
-    _spec_add(spec, "CONFIG_SND_MIXER_OSS", required_state=True, module=True, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_SND_MIXER_OSS",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
     # alsa
-    _spec_add(spec, "CONFIG_SND_PCM_OSS", required_state=True, module=True, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_SND_PCM_OSS",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
     # alsa
-    _spec_add(spec, "CONFIG_SND_INTEL8X0", required_state=True, module=True, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_SND_INTEL8X0",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
     # alsa
-    _spec_add(spec, "CONFIG_SND_INTEL8X0M", required_state=True, module=True, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_SND_INTEL8X0M",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
     # alsa
-    _spec_add(spec, "CONFIG_SND_HDA_GENERIC", required_state=True, module=True, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_SND_HDA_GENERIC",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
     # alsa audio
-    _spec_add(spec, "CONFIG_SND_AC97_CODEC", required_state=True, module=True, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_SND_AC97_CODEC",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
     # alsa
-    _spec_add(spec, "CONFIG_USB_GADGET", required_state=True, module=True, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_USB_GADGET",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
     ## alsa
     # verify_kernel_config_setting(
     #    path=path,
@@ -675,21 +1510,84 @@ def check_kernel_config(
     #    url="",
     # )
     # alsa
-    _spec_add(spec, "CONFIG_SND_SUPPORT_OLD_API", required_state=False, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_SND_SUPPORT_OLD_API",
+        required_state=False,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # alsa
-    _spec_add(spec, "CONFIG_SOUNDWIRE", required_state=True, module=True, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_SOUNDWIRE",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
     # usb otg
-    _spec_add(spec, "CONFIG_USB_OTG", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_USB_OTG",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
 
-    _spec_add(spec, "CONFIG_DRM_NOUVEAU", required_state=True, module=True, warn=warn_only, url="https://wiki.gentoo.org/wiki/Nouveau")
-    _spec_add(spec, "CONFIG_VT_HW_CONSOLE_BINDING", required_state=True, module=False, warn=warn_only, url="")
-    _spec_add(spec, "CONFIG_VGA_SWITCHEROO", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_DRM_NOUVEAU",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="https://wiki.gentoo.org/wiki/Nouveau",
+    )
+    _spec_add(
+        spec,
+        "CONFIG_VT_HW_CONSOLE_BINDING",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
+    _spec_add(
+        spec,
+        "CONFIG_VGA_SWITCHEROO",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
 
-    _spec_add(spec, "CONFIG_DRM_RADEON", required_state=True, module=True, warn=warn_only, url="https://wiki.gentoo.org/wiki/Nouveau")
+    _spec_add(
+        spec,
+        "CONFIG_DRM_RADEON",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="https://wiki.gentoo.org/wiki/Nouveau",
+    )
 
-    _spec_add(spec, "CONFIG_BINFMT_MISC", required_state=True, module=True, warn=warn_only, url="https://pypi.org/project/fchroot")
+    _spec_add(
+        spec,
+        "CONFIG_BINFMT_MISC",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="https://pypi.org/project/fchroot",
+    )
 
-    _spec_add(spec, "HID_WACOM", required_state=True, module=True, warn=warn_only, url="https://github.com/gentoo/gentoo/blob/master/x11-drivers/xf86-input-wacom/xf86-input-wacom-0.40.0.ebuild")
+    _spec_add(
+        spec,
+        "HID_WACOM",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="https://github.com/gentoo/gentoo/blob/master/x11-drivers/xf86-input-wacom/xf86-input-wacom-0.40.0.ebuild",
+    )
 
     ## performance
     ## required to enable CONFIG_TASK_DELAY_ACCT below, but disabled for now
@@ -712,68 +1610,320 @@ def check_kernel_config(
     #    url="http://guichaz.free.fr/iotop/",
     # )
 
-    _spec_add(spec, "CONFIG_NET_CORE", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_NET_CORE",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
 
-    _spec_add(spec, "CONFIG_TUN", required_state=True, module=True, warn=warn_only, url="https://www.kernel.org/doc/html/latest/networking/tuntap.html")
+    _spec_add(
+        spec,
+        "CONFIG_TUN",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="https://www.kernel.org/doc/html/latest/networking/tuntap.html",
+    )
 
-    _spec_add(spec, "CONFIG_VIRTIO_NET", required_state=True, module=True, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_VIRTIO_NET",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
 
-    _spec_add(spec, "CONFIG_APPLE_PROPERTIES", required_state=True, module=False, warn=warn_only, url="")
-    _spec_add(spec, "CONFIG_SPI", required_state=True, module=False, warn=warn_only, url="")
-    _spec_add(spec, "CONFIG_KEYBOARD_APPLESPI", required_state=True, module=True, warn=warn_only, url="")
-    _spec_add(spec, "CONFIG_MOUSE_APPLETOUCH", required_state=True, module=True, warn=warn_only, url="https://www.kernel.org/doc/html/v6.1-rc4/input/devices/appletouch.html")
-    _spec_add(spec, "CONFIG_BACKLIGHT_APPLE", required_state=True, module=True, warn=warn_only, url="")
-    _spec_add(spec, "CONFIG_HID_APPLE", required_state=True, module=True, warn=warn_only, url="")
-    _spec_add(spec, "CONFIG_HID_APPLEIR", required_state=True, module=True, warn=warn_only, url="")
-    _spec_add(spec, "CONFIG_USB_APPLEDISPLAY", required_state=True, module=True, warn=warn_only, url="")
-    _spec_add(spec, "CONFIG_APPLE_MFI_FASTCHARGE", required_state=True, module=True, warn=warn_only, url="")
-    _spec_add(spec, "CONFIG_APPLE_GMUX", required_state=True, module=True, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_APPLE_PROPERTIES",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
+    _spec_add(
+        spec,
+        "CONFIG_SPI",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
+    _spec_add(
+        spec,
+        "CONFIG_KEYBOARD_APPLESPI",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
+    _spec_add(
+        spec,
+        "CONFIG_MOUSE_APPLETOUCH",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="https://www.kernel.org/doc/html/v6.1-rc4/input/devices/appletouch.html",
+    )
+    _spec_add(
+        spec,
+        "CONFIG_BACKLIGHT_APPLE",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
+    _spec_add(
+        spec,
+        "CONFIG_HID_APPLE",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
+    _spec_add(
+        spec,
+        "CONFIG_HID_APPLEIR",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
+    _spec_add(
+        spec,
+        "CONFIG_USB_APPLEDISPLAY",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
+    _spec_add(
+        spec,
+        "CONFIG_APPLE_MFI_FASTCHARGE",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
+    _spec_add(
+        spec,
+        "CONFIG_APPLE_GMUX",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
     # for GPM
-    _spec_add(spec, "CONFIG_INPUT_MOUSEDEV", required_state=True, module=True, warn=warn_only, url="")
-    _spec_add(spec, "CONFIG_ZRAM", required_state=True, module=True, warn=warn_only, url="")
-    _spec_add(spec, "CONFIG_ZRAM_MEMORY_TRACKING", required_state=True, module=False, warn=warn_only, url="")
-    _spec_add(spec, "CONFIG_BLK_DEV_FD", required_state=True, module=True, warn=warn_only, url="")
-    _spec_add(spec, "CONFIG_EARLY_PRINTK", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_INPUT_MOUSEDEV",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
+    _spec_add(
+        spec,
+        "CONFIG_ZRAM",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
+    _spec_add(
+        spec,
+        "CONFIG_ZRAM_MEMORY_TRACKING",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
+    _spec_add(
+        spec,
+        "CONFIG_BLK_DEV_FD",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
+    _spec_add(
+        spec,
+        "CONFIG_EARLY_PRINTK",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # sshuttle
-    _spec_add(spec, "CONFIG_NF_NAT", required_state=True, module=True, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_NF_NAT",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
     # sshuttle
-    _spec_add(spec, "CONFIG_NETFILTER_ADVANCED", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_NETFILTER_ADVANCED",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # sshuttle
-    _spec_add(spec, "CONFIG_IP_NF_MATCH_TTL", required_state=True, module=True, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_IP_NF_MATCH_TTL",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
     # sshuttle
-    _spec_add(spec, "CONFIG_IP_NF_TARGET_REDIRECT", required_state=True, module=True, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_IP_NF_TARGET_REDIRECT",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
     # sshuttle
-    _spec_add(spec, "CONFIG_NETFILTER_XT_TARGET_HL", required_state=True, module=True, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_NETFILTER_XT_TARGET_HL",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
     # old outdated option
-    _spec_add(spec, "CONFIG_NO_HZ", required_state=False, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_NO_HZ",
+        required_state=False,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
 
     # speed
-    _spec_add(spec, "CONFIG_PREEMPT_NONE", required_state=False, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_PREEMPT_NONE",
+        required_state=False,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # speed
-    _spec_add(spec, "CONFIG_PREEMPT_VOLUNTARY", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_PREEMPT_VOLUNTARY",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # speed
-    _spec_add(spec, "CONFIG_PREEMPT", required_state=False, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_PREEMPT",
+        required_state=False,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # new process accounting
-    _spec_add(spec, "CONFIG_BSD_PROCESS_ACCT_V3", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_BSD_PROCESS_ACCT_V3",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # memory cgrroup
-    _spec_add(spec, "CONFIG_MEMCG", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_MEMCG",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # cgroup debugging
-    _spec_add(spec, "CONFIG_CGROUP_DEBUG", required_state=False, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_CGROUP_DEBUG",
+        required_state=False,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # cgroup
-    _spec_add(spec, "CONFIG_CGROUP_FAVOR_DYNMODS", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_CGROUP_FAVOR_DYNMODS",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     #
-    _spec_add(spec, "CONFIG_CHECKPOINT_RESTORE", required_state=False, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_CHECKPOINT_RESTORE",
+        required_state=False,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
 
     # required for CONFIG_X86_SGX below
-    _spec_add(spec, "CONFIG_X86_X2APIC", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_X86_X2APIC",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     #
-    _spec_add(spec, "CONFIG_X86_SGX", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_X86_SGX",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
 
     # auto cgroups... might contradict PREEMPT_NONE
-    _spec_add(spec, "CONFIG_SCHED_AUTOGROUP", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_SCHED_AUTOGROUP",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
 
     # zswap
-    _spec_add(spec, "CONFIG_ZSWAP", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_ZSWAP",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     ## zswap
     ## depreciated
     # verify_kernel_config_setting(
@@ -786,56 +1936,238 @@ def check_kernel_config(
     #    url="",
     # )
     # memory deduplication
-    _spec_add(spec, "CONFIG_KSM", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_KSM",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # nvme
-    _spec_add(spec, "CONFIG_BLK_DEV_NVME", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_BLK_DEV_NVME",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # nvme
-    _spec_add(spec, "CONFIG_NVME_VERBOSE_ERRORS", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_NVME_VERBOSE_ERRORS",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # nvme
-    _spec_add(spec, "CONFIG_NVME_HWMON", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_NVME_HWMON",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # nvme
-    _spec_add(spec, "CONFIG_NVME_MULTIPATH", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_NVME_MULTIPATH",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # nvme
-    _spec_add(spec, "CONFIG_NVME_TARGET", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_NVME_TARGET",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     #
-    _spec_add(spec, "CONFIG_X86_CPU_RESCTRL", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_X86_CPU_RESCTRL",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     #
-    _spec_add(spec, "CONFIG_BCACHE", required_state=True, module=True, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_BCACHE",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
     #
-    _spec_add(spec, "CONFIG_THERMAL_STATISTICS", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_THERMAL_STATISTICS",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # audio
-    _spec_add(spec, "CONFIG_SND_SEQUENCER_OSS", required_state=True, module=True, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_SND_SEQUENCER_OSS",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
     # audio
-    _spec_add(spec, "CONFIG_SND_HDA_CODEC_HDMI", required_state=True, module=True, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_SND_HDA_CODEC_HDMI",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
     # audio pc-speaker
-    _spec_add(spec, "CONFIG_INPUT_PCSPKR", required_state=True, module=True, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_INPUT_PCSPKR",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
     # pcie pc-card reader
-    _spec_add(spec, "CONFIG_MISC_RTSX_PCI", required_state=True, module=True, warn=warn_only, url="")
-    _spec_add(spec, "CONFIG_BPF_SYSCALL", required_state=True, module=False, warn=warn_only, url="")
-    _spec_add(spec, "CONFIG_NET_CLS_BPF", required_state=True, module=True, warn=warn_only, url="")
-    _spec_add(spec, "CONFIG_NET_ACT_BPF", required_state=True, module=True, warn=warn_only, url="")
-    _spec_add(spec, "CONFIG_BPF_EVENTS", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_MISC_RTSX_PCI",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
+    _spec_add(
+        spec,
+        "CONFIG_BPF_SYSCALL",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
+    _spec_add(
+        spec,
+        "CONFIG_NET_CLS_BPF",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
+    _spec_add(
+        spec,
+        "CONFIG_NET_ACT_BPF",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
+    _spec_add(
+        spec,
+        "CONFIG_BPF_EVENTS",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # kvm
-    _spec_add(spec, "CONFIG_KVM_INTEL", required_state=True, module=True, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_KVM_INTEL",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
     # kvm
-    _spec_add(spec, "CONFIG_VHOST_NET", required_state=True, module=True, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_VHOST_NET",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
 
     # mmc
     # required for CONFIG_MMC_BLOCK below
-    _spec_add(spec, "CONFIG_MMC", required_state=True, module=True, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_MMC",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
     # mmc
-    _spec_add(spec, "CONFIG_MMC_BLOCK", required_state=True, module=True, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_MMC_BLOCK",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
 
     # FUSE
-    _spec_add(spec, "CONFIG_FUSE_FS", required_state=True, module=True, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_FUSE_FS",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
     # vlan
-    _spec_add(spec, "CONFIG_VLAN_8021Q", required_state=True, module=True, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_VLAN_8021Q",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
     # NUMA
-    _spec_add(spec, "CONFIG_NUMA", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_NUMA",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # udev
-    _spec_add(spec, "CONFIG_DEVTMPFS", required_state=True, module=False, warn=warn_only, url="https://wiki.gentoo.org/wiki/Udev")
+    _spec_add(
+        spec,
+        "CONFIG_DEVTMPFS",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="https://wiki.gentoo.org/wiki/Udev",
+    )
     # wireguard
-    _spec_add(spec, "CONFIG_WIREGUARD", required_state=True, module=True, warn=warn_only, url="https://wiki.gentoo.org/wiki/WireGuard")
+    _spec_add(
+        spec,
+        "CONFIG_WIREGUARD",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="https://wiki.gentoo.org/wiki/WireGuard",
+    )
     ## serial console debugging
     # verify_kernel_config_setting(
     #    path=path,
@@ -846,14 +2178,70 @@ def check_kernel_config(
     #    fix=fix,
     #    url="",
     # )
-    _spec_add(spec, "CONFIG_USB_SERIAL", required_state=True, module=True, warn=warn_only, url="")
-    _spec_add(spec, "CONFIG_USB_SERIAL_PL2303", required_state=True, module=True, warn=warn_only, url="")
-    _spec_add(spec, "CONFIG_USB_SERIAL_CH341", required_state=True, module=True, warn=warn_only, url="")
-    _spec_add(spec, "CONFIG_USB_SERIAL_FTDI_SIO", required_state=True, module=True, warn=warn_only, url="")
-    _spec_add(spec, "CONFIG_USB_PEGASUS", required_state=True, module=True, warn=warn_only, url="")
-    _spec_add(spec, "CONFIG_USB_USBNET", required_state=True, module=True, warn=warn_only, url="")
-    _spec_add(spec, "CONFIG_USB_SERIAL_CYPRESS_M8", required_state=True, module=True, warn=warn_only, url="")
-    _spec_add(spec, "CONFIG_USB_ACM", required_state=True, module=True, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_USB_SERIAL",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
+    _spec_add(
+        spec,
+        "CONFIG_USB_SERIAL_PL2303",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
+    _spec_add(
+        spec,
+        "CONFIG_USB_SERIAL_CH341",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
+    _spec_add(
+        spec,
+        "CONFIG_USB_SERIAL_FTDI_SIO",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
+    _spec_add(
+        spec,
+        "CONFIG_USB_PEGASUS",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
+    _spec_add(
+        spec,
+        "CONFIG_USB_USBNET",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
+    _spec_add(
+        spec,
+        "CONFIG_USB_SERIAL_CYPRESS_M8",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
+    _spec_add(
+        spec,
+        "CONFIG_USB_ACM",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
     # verify_kernel_config_setting(
     #    path=path,
     #    define="CONFIG_NET_DROP_MONITOR",
@@ -863,9 +2251,30 @@ def check_kernel_config(
     #    fix=fix,
     #    url="",
     # )
-    _spec_add(spec, "CONFIG_BRIDGE", required_state=True, module=True, warn=warn_only, url="")
-    _spec_add(spec, "CONFIG_BLK_DEV_NBD", required_state=True, module=True, warn=warn_only, url="")
-    _spec_add(spec, "CONFIG_USB4", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_BRIDGE",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
+    _spec_add(
+        spec,
+        "CONFIG_BLK_DEV_NBD",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
+    _spec_add(
+        spec,
+        "CONFIG_USB4",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     ## performance
     ## nope, zfs REQUIRES this
     # verify_kernel_config_setting(
@@ -878,16 +2287,51 @@ def check_kernel_config(
     #    url="",
     # )
     # performance
-    _spec_add(spec, "CONFIG_DEBUG_STACK_USAGE", required_state=False, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_DEBUG_STACK_USAGE",
+        required_state=False,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # performance
-    _spec_add(spec, "CONFIG_DEBUG_WX", required_state=False, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_DEBUG_WX",
+        required_state=False,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # performance
-    _spec_add(spec, "CONFIG_DEBUG_KERNEL", required_state=False, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_DEBUG_KERNEL",
+        required_state=False,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # performance
-    _spec_add(spec, "CONFIG_DEBUG_MISC", required_state=False, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_DEBUG_MISC",
+        required_state=False,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
 
     # performance
-    _spec_add(spec, "CONFIG_DEBUG_MEMORY_INIT", required_state=False, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_DEBUG_MEMORY_INIT",
+        required_state=False,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     ## performance
     ## BPF requires this
     # verify_kernel_config_setting(
@@ -920,9 +2364,23 @@ def check_kernel_config(
     #    url="",
     # )
     # performance
-    _spec_add(spec, "CONFIG_RCU_TRACE", required_state=False, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_RCU_TRACE",
+        required_state=False,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # performance
-    _spec_add(spec, "CONFIG_SCHEDSTATS", required_state=False, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_SCHEDSTATS",
+        required_state=False,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     ## performance
     # verify_kernel_config_setting(
     #    path=path,
@@ -945,17 +2403,59 @@ def check_kernel_config(
     # )
     # performance
     # enable THP only for applications that explicitly request it (via madvise), MADV_DONTNEED
-    _spec_add(spec, "CONFIG_TRANSPARENT_HUGEPAGE_MADVISE", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_TRANSPARENT_HUGEPAGE_MADVISE",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # performance
-    _spec_add(spec, "CONFIG_CPU_FREQ_DEFAULT_GOV_USERSPACE", required_state=False, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_CPU_FREQ_DEFAULT_GOV_USERSPACE",
+        required_state=False,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # performance
-    _spec_add(spec, "CONFIG_CPU_FREQ_DEFAULT_GOV_PERFORMANCE", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_CPU_FREQ_DEFAULT_GOV_PERFORMANCE",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # performance
-    _spec_add(spec, "CONFIG_X86_INTEL_PSTATE", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_X86_INTEL_PSTATE",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # performance
-    _spec_add(spec, "CONFIG_X86_AMD_PSTATE", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_X86_AMD_PSTATE",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # performance
-    _spec_add(spec, "CONFIG_SECURITY_SELINUX", required_state=False, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_SECURITY_SELINUX",
+        required_state=False,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     ## performance
     # verify_kernel_config_setting(
     #    path=path,
@@ -1068,15 +2568,50 @@ def check_kernel_config(
     # )
 
     # zfs LSI
-    _spec_add(spec, "CONFIG_SCSI_MPT3SAS", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_SCSI_MPT3SAS",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # security, like pledge
-    _spec_add(spec, "CONFIG_SECURITY_LANDLOCK", required_state=True, module=False, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_SECURITY_LANDLOCK",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
     # 10G Ethernet
-    _spec_add(spec, "CONFIG_NET_VENDOR_AQUANTIA", required_state=True, module=True, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_NET_VENDOR_AQUANTIA",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
     # 10G Ethernet
-    _spec_add(spec, "CONFIG_AQTION", required_state=True, module=True, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_AQTION",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
     # zbook g5 sd card reader
-    _spec_add(spec, "CONFIG_MMC_REALTEK_PCI", required_state=True, module=True, warn=warn_only, url="")
+    _spec_add(
+        spec,
+        "CONFIG_MMC_REALTEK_PCI",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
 
     # --- layer 2: debug group overrides (last-writer-wins over production base) ---
     check_kernel_config_kasan(spec=spec, enable=kasan)
@@ -1290,7 +2825,7 @@ def _set_grub_distributor(debug_flags: list[str]) -> None:
     for line in file_lines:
         stripped = line.strip()
         if stripped.startswith("GRUB_DISTRIBUTOR=") and not stripped.startswith("#"):
-            raw = stripped[len("GRUB_DISTRIBUTOR="):].strip('"').strip("'").strip()
+            raw = stripped[len("GRUB_DISTRIBUTOR=") :].strip('"').strip("'").strip()
             base_name = raw.split(" [")[0].strip() or "Linux"
             found = True
             continue
@@ -1331,11 +2866,17 @@ def install_compiled_kernel(
     genkernel_command(_fg=True)
 
     assert Path("/boot/grub").is_dir()
-    _set_grub_distributor(_active_debug_flags(
-        kasan=kasan, kmemleak=kmemleak, slub_debug=slub_debug,
-        lockdep=lockdep, debug_objects=debug_objects, gcov=gcov,
-        zbtree_debug=zbtree_debug,
-    ))
+    _set_grub_distributor(
+        _active_debug_flags(
+            kasan=kasan,
+            kmemleak=kmemleak,
+            slub_debug=slub_debug,
+            lockdep=lockdep,
+            debug_objects=debug_objects,
+            gcov=gcov,
+            zbtree_debug=zbtree_debug,
+        )
+    )
     hs.Command("grub-mkconfig")("-o", "/boot/grub/grub.cfg")
 
 
@@ -1424,10 +2965,10 @@ def compile_and_install_kernel(
             slub_debug=slub_debug,
             lockdep=lockdep,
             debug_objects=debug_objects,
-        gcov=gcov,
-        zbtree_debug=zbtree_debug,
-        zfs_compat=zfs_compat,
-        nvidia_compat=nvidia_compat,
+            gcov=gcov,
+            zbtree_debug=zbtree_debug,
+            zfs_compat=zfs_compat,
+            nvidia_compat=nvidia_compat,
         )
 
     hs.Command("emerge")(
@@ -1574,11 +3115,17 @@ def compile_and_install_kernel(
     hs.Command("rc-update")("add", "zfs-zed", "default")
 
     if Path("/boot/grub").is_dir():
-        _set_grub_distributor(_active_debug_flags(
-            kasan=kasan, kmemleak=kmemleak, slub_debug=slub_debug,
-            lockdep=lockdep, debug_objects=debug_objects, gcov=gcov,
-            zbtree_debug=zbtree_debug,
-        ))
+        _set_grub_distributor(
+            _active_debug_flags(
+                kasan=kasan,
+                kmemleak=kmemleak,
+                slub_debug=slub_debug,
+                lockdep=lockdep,
+                debug_objects=debug_objects,
+                gcov=gcov,
+                zbtree_debug=zbtree_debug,
+            )
+        )
         hs.Command("grub-mkconfig")("-o", "/boot/grub/grub.cfg")
 
     hs.Command("emerge")("sys-kernel/linux-firmware", _out=sys.stdout, _err=sys.stderr)
