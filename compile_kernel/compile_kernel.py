@@ -406,6 +406,18 @@ def check_kernel_config_zfs_compat(
     _spec_add(spec, "CONFIG_DEBUG_LOCK_ALLOC", required_state=False, module=False, warn=True)
 
 
+def check_kernel_config_nvidia_compat(
+    *,
+    spec: ConfigSpec,
+) -> None:
+    """nvidia-drivers build compatibility overrides.
+    nvidia-drivers-590 refuses to build if any of these are set.
+    """
+    _spec_add(spec, "CONFIG_LOCKDEP", required_state=False, module=False, warn=True)
+    _spec_add(spec, "CONFIG_SLUB_DEBUG_ON", required_state=False, module=False, warn=True)
+    _spec_add(spec, "CONFIG_DEBUG_MUTEXES", required_state=False, module=False, warn=True)
+
+
 def check_kernel_config(
     *,
     path: Path,
@@ -419,6 +431,7 @@ def check_kernel_config(
     gcov: bool = False,
     zbtree_debug: bool = False,
     zfs_compat: bool = False,
+    nvidia_compat: bool = False,
 ):
     icp(path, fix, warn_only)
     global USED_SYMBOL_SET
@@ -1073,6 +1086,8 @@ def check_kernel_config(
     # --- layer 3: compat overrides (win over everything) ---
     if zfs_compat:
         check_kernel_config_zfs_compat(spec=spec)
+    if nvidia_compat:
+        check_kernel_config_nvidia_compat(spec=spec)
 
     # --- apply merged spec — each symbol written exactly once ---
     _spec_apply(spec=spec, path=path, fix=fix)
@@ -1332,6 +1347,7 @@ def configure_kernel(
     gcov: bool = False,
     zbtree_debug: bool = False,
     zfs_compat: bool = False,
+    nvidia_compat: bool = False,
 ):
     if interactive:
         with chdir(
@@ -1350,6 +1366,7 @@ def configure_kernel(
         gcov=gcov,
         zbtree_debug=zbtree_debug,
         zfs_compat=zfs_compat,
+        nvidia_compat=nvidia_compat,
     )  # must be done after nconfig
 
 
@@ -1369,6 +1386,7 @@ def compile_and_install_kernel(
     gcov: bool = False,
     zbtree_debug: bool = False,
     zfs_compat: bool = False,
+    nvidia_compat: bool = False,
 ):
     icp()
     if not root_user():
@@ -1405,6 +1423,7 @@ def compile_and_install_kernel(
         gcov=gcov,
         zbtree_debug=zbtree_debug,
         zfs_compat=zfs_compat,
+        nvidia_compat=nvidia_compat,
         )
 
     hs.Command("emerge")(
@@ -1427,6 +1446,7 @@ def compile_and_install_kernel(
         gcov=gcov,
         zbtree_debug=zbtree_debug,
         zfs_compat=zfs_compat,
+        nvidia_compat=nvidia_compat,
     )
     # handle a downgrade from -9999 before genkernel calls @module-rebuild
     icp("attempting to upgrade zfs")
@@ -1521,6 +1541,7 @@ def compile_and_install_kernel(
         gcov=gcov,
         zbtree_debug=zbtree_debug,
         zfs_compat=zfs_compat,
+        nvidia_compat=nvidia_compat,
     )  # must be done after nconfig
     genkernel_command = hs.Command("genkernel")
     genkernel_command.bake("all")

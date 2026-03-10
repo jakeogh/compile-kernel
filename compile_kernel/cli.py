@@ -59,6 +59,7 @@ def cli(
 @click.option("--gcov", is_flag=True, help="Enable GCOV kernel coverage")
 @click.option("--zbtree-debug", is_flag=True, help="Enable KFENCE+SLUB_DEBUG+DEBUG_OBJECTS for out-of-tree module debugging")
 @click.option("--zfs-compat", is_flag=True, help="Override CONFIG_DEBUG_LOCK_ALLOC=n so ZFS builds with --lockdep")
+@click.option("--nvidia-compat", is_flag=True, help="Override LOCKDEP/SLUB_DEBUG_ON/DEBUG_MUTEXES=n so nvidia-drivers builds")
 @click_option_code_debug
 @click_add_options(click_global_options)
 @click.pass_context
@@ -73,6 +74,7 @@ def configure(
     gcov: bool,
     zbtree_debug: bool,
     zfs_compat: bool,
+    nvidia_compat: bool,
     code_debug: bool,
     verbose_inf: bool,
     dict_output: bool,
@@ -113,6 +115,7 @@ def configure(
         gcov=gcov,
         zbtree_debug=zbtree_debug,
         zfs_compat=zfs_compat,
+        nvidia_compat=nvidia_compat,
     )
 
 
@@ -243,6 +246,7 @@ def compare_loaded_modules_to_config(
 @click.option("--gcov", is_flag=True, help="Enable GCOV kernel coverage")
 @click.option("--zbtree-debug", is_flag=True, help="Enable KFENCE+SLUB_DEBUG+DEBUG_OBJECTS for out-of-tree module debugging")
 @click.option("--zfs-compat", is_flag=True, help="Override CONFIG_DEBUG_LOCK_ALLOC=n so ZFS builds with --lockdep")
+@click.option("--nvidia-compat", is_flag=True, help="Override LOCKDEP/SLUB_DEBUG_ON/DEBUG_MUTEXES=n so nvidia-drivers builds")
 @click_option_code_debug
 @click_add_options(click_global_options)
 @click.pass_context
@@ -263,6 +267,7 @@ def compile_and_install(
     gcov: bool,
     zbtree_debug: bool,
     zfs_compat: bool,
+    nvidia_compat: bool,
     code_debug: bool,
     verbose: bool = False,
 ):
@@ -304,6 +309,7 @@ def compile_and_install(
         gcov=gcov,
         zbtree_debug=zbtree_debug,
         zfs_compat=zfs_compat,
+        nvidia_compat=nvidia_compat,
     )
     eprint("DONT FORGET TO UMOUNT /boot")
 
@@ -317,6 +323,7 @@ def compile_and_install(
 @click.option("--gcov", is_flag=True, help="Enable GCOV kernel coverage")
 @click.option("--zbtree-debug", is_flag=True, help="Enable KFENCE+SLUB_DEBUG+DEBUG_OBJECTS for out-of-tree module debugging")
 @click.option("--zfs-compat", is_flag=True, help="Override CONFIG_DEBUG_LOCK_ALLOC=n so ZFS builds with --lockdep")
+@click.option("--nvidia-compat", is_flag=True, help="Override LOCKDEP/SLUB_DEBUG_ON/DEBUG_MUTEXES=n so nvidia-drivers builds")
 @click_add_options(click_global_options)
 @click.pass_context
 def _install_kernel(
@@ -329,6 +336,7 @@ def _install_kernel(
     gcov: bool,
     zbtree_debug: bool,
     zfs_compat: bool,
+    nvidia_compat: bool,
     verbose_inf: bool,
     dict_output: bool,
     verbose: bool = False,
@@ -356,6 +364,7 @@ def _install_kernel(
         gcov=gcov,
         zbtree_debug=zbtree_debug,
         zfs_compat=zfs_compat,
+        nvidia_compat=nvidia_compat,
     )
 
 
@@ -381,6 +390,7 @@ def _install_kernel(
 @click.option("--gcov", is_flag=True, help="Enable GCOV kernel coverage")
 @click.option("--zbtree-debug", is_flag=True, help="Enable KFENCE+SLUB_DEBUG+DEBUG_OBJECTS for out-of-tree module debugging")
 @click.option("--zfs-compat", is_flag=True, help="Override CONFIG_DEBUG_LOCK_ALLOC=n so ZFS builds with --lockdep")
+@click.option("--nvidia-compat", is_flag=True, help="Override LOCKDEP/SLUB_DEBUG_ON/DEBUG_MUTEXES=n so nvidia-drivers builds")
 @click_option_code_debug
 @click_add_options(click_global_options)
 @click.pass_context
@@ -396,6 +406,7 @@ def check_config(
     gcov: bool,
     zbtree_debug: bool,
     zfs_compat: bool,
+    nvidia_compat: bool,
     code_debug: bool,
     verbose_inf: bool,
     dict_output: bool,
@@ -435,6 +446,7 @@ def check_config(
         "gcov": gcov,
         "zbtree-debug": zbtree_debug,
         "zfs-compat": zfs_compat,
+        "nvidia-compat": nvidia_compat,
     }
 
     for config in dotconfigs:
@@ -458,6 +470,7 @@ def check_config(
             gcov=gcov,
             zbtree_debug=zbtree_debug,
             zfs_compat=zfs_compat,
+            nvidia_compat=nvidia_compat,
         )  # must be done after nconfig
         return
 
