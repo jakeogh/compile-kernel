@@ -108,7 +108,7 @@ def generate_module_config_dict(path: Path):
         _prefixes.append(_p)
 
     for _makefile in _makefiles:
-        with open(_makefile, "r", encoding="utf8") as f:
+        with open(_makefile, encoding="utf8") as f:
             for line in f:
                 line = line.strip()  # some lines have leading whitespace
                 if line.startswith("#"):
@@ -141,10 +141,14 @@ def generate_module_config_dict(path: Path):
 
 def read_content_of_kernel_config(path: Path):
     try:
-        with gzip.open(path, mode="rt", encoding="utf8") as _fh:
+        with gzip.open(
+            path,
+            mode="rt",
+            encoding="utf8",
+        ) as _fh:
             content = _fh.read()
     except gzip.BadGzipFile:
-        with open(path, mode="rt", encoding="utf8") as _fh:
+        with open(path, encoding="utf8") as _fh:
             content = _fh.read()
     return content
 
@@ -234,7 +238,11 @@ def verify_kernel_config_setting(
     if _current_state == "y" and required_state and not module:
         return
     if (_current_state == "m") and (required_state and module):
-        ic(_current_state, required_state, module)
+        ic(
+            _current_state,
+            required_state,
+            module,
+        )
         return
     if not required_state and not module and _current_state not in ("y", "m"):
         return  # undef/n/absent all mean "not enabled" — satisfied
@@ -562,10 +570,17 @@ def check_kernel_config_zfs_compat(
     spec: ConfigSpec,
 ) -> None:
     """ZFS build compatibility overrides.
-    CONFIG_PROVE_LOCKING selects CONFIG_DEBUG_LOCK_ALLOC via Kconfig 'select',
-    so disabling DEBUG_LOCK_ALLOC alone is not enough — make oldconfig will
-    re-enable it. Must disable PROVE_LOCKING (and LOCKDEP which it selects)
-    to prevent the dependency chain from firing.
+    LOCKDEP and DEBUG_LOCK_ALLOC are 'select'-only symbols — they cannot be
+    directly disabled; Kconfig will re-enable them via make oldconfig if any
+    of their selectors remain set. Must disable the full selector chain:
+
+      PROVE_LOCKING  → selects LOCKDEP, DEBUG_LOCK_ALLOC
+      LOCK_STAT      → selects LOCKDEP
+      DEBUG_LOCK_ALLOC → selects LOCKDEP
+
+    Also disable DEBUG_SPINLOCK and DEBUG_MUTEXES from the lockdep group so
+    there are no lingering symbols that could trigger re-selection on future
+    oldconfig runs.
     """
     _spec_add(
         spec,
@@ -576,7 +591,7 @@ def check_kernel_config_zfs_compat(
     )
     _spec_add(
         spec,
-        "CONFIG_LOCKDEP",
+        "CONFIG_LOCK_STAT",
         required_state=False,
         module=False,
         warn=True,
@@ -584,6 +599,28 @@ def check_kernel_config_zfs_compat(
     _spec_add(
         spec,
         "CONFIG_DEBUG_LOCK_ALLOC",
+        required_state=False,
+        module=False,
+        warn=True,
+    )
+    _spec_add(
+        spec,
+        "CONFIG_DEBUG_SPINLOCK",
+        required_state=False,
+        module=False,
+        warn=True,
+    )
+    _spec_add(
+        spec,
+        "CONFIG_DEBUG_MUTEXES",
+        required_state=False,
+        module=False,
+        warn=True,
+    )
+    # LOCKDEP is select-only — disable last after all selectors are cleared
+    _spec_add(
+        spec,
+        "CONFIG_LOCKDEP",
         required_state=False,
         module=False,
         warn=True,
@@ -635,7 +672,11 @@ def check_kernel_config(
     zfs_compat: bool = False,
     nvidia_compat: bool = False,
 ):
-    icp(path, fix, warn_only)
+    icp(
+        path,
+        fix,
+        warn_only,
+    )
     global USED_SYMBOL_SET
     USED_SYMBOL_SET = set()
 
@@ -2629,7 +2670,11 @@ def check_kernel_config(
         check_kernel_config_nvidia_compat(spec=spec)
 
     # --- apply merged spec — each symbol written exactly once ---
-    _spec_apply(spec=spec, path=path, fix=fix)
+    _spec_apply(
+        spec=spec,
+        path=path,
+        fix=fix,
+    )
 
 
 # bpf
@@ -2653,7 +2698,11 @@ def _symlink_config():
     if not dot_config.exists():
         with resources.path("compile_kernel", ".config") as _kernel_config:
             icp(_kernel_config)
-            hs.Command("ln")("-s", _kernel_config, dot_config)
+            hs.Command("ln")(
+                "-s",
+                _kernel_config,
+                dot_config,
+            )
 
 
 def extract_kernel_config():
@@ -3032,7 +3081,11 @@ def compile_and_install_kernel(
     if not unconfigured_kernel:
         icp("attempting emerge @module-rebuild")
         try:
-            hs.Command("emerge")("@module-rebuild", _out=sys.stdout, _err=sys.stderr)
+            hs.Command("emerge")(
+                "@module-rebuild",
+                _out=sys.stdout,
+                _err=sys.stderr,
+            )
         except hs.ErrorReturnCode_1 as e:
             unconfigured_kernel = True  # todo, get conditions from above
             if not unconfigured_kernel:
@@ -3110,9 +3163,21 @@ def compile_and_install_kernel(
     icp(genkernel_command)
     genkernel_command(_fg=True)
 
-    hs.Command("rc-update")("add", "zfs-import", "boot")
-    hs.Command("rc-update")("add", "zfs-share", "default")
-    hs.Command("rc-update")("add", "zfs-zed", "default")
+    hs.Command("rc-update")(
+        "add",
+        "zfs-import",
+        "boot",
+    )
+    hs.Command("rc-update")(
+        "add",
+        "zfs-share",
+        "default",
+    )
+    hs.Command("rc-update")(
+        "add",
+        "zfs-zed",
+        "default",
+    )
 
     if Path("/boot/grub").is_dir():
         _set_grub_distributor(
@@ -3128,7 +3193,11 @@ def compile_and_install_kernel(
         )
         hs.Command("grub-mkconfig")("-o", "/boot/grub/grub.cfg")
 
-    hs.Command("emerge")("sys-kernel/linux-firmware", _out=sys.stdout, _err=sys.stderr)
+    hs.Command("emerge")(
+        "sys-kernel/linux-firmware",
+        _out=sys.stdout,
+        _err=sys.stderr,
+    )
 
     if Path("/boot/grub").is_dir():
         os.makedirs("/boot_backup", exist_ok=True)
@@ -3138,13 +3207,33 @@ def compile_and_install_kernel(
             if not Path("/boot_backup/.git").is_dir():
                 hs.Command("git")("init")
 
-            hs.Command("git")("config", "user.email", "user@example.com")
-            hs.Command("git")("config", "user.name", "user")
+            hs.Command("git")(
+                "config",
+                "user.email",
+                "user@example.com",
+            )
+            hs.Command("git")(
+                "config",
+                "user.name",
+                "user",
+            )
 
             timestamp = str(time.time())
             os.makedirs(timestamp)
-            hs.Command("cp")("-ar", "/boot", timestamp + "/")
-            hs.Command("git")("add", timestamp, "--force")
-            hs.Command("git")("commit", "-m", timestamp)
+            hs.Command("cp")(
+                "-ar",
+                "/boot",
+                timestamp + "/",
+            )
+            hs.Command("git")(
+                "add",
+                timestamp,
+                "--force",
+            )
+            hs.Command("git")(
+                "commit",
+                "-m",
+                timestamp,
+            )
 
     icp("kernel compile and install completed OK")
