@@ -51,15 +51,12 @@ def cli(
 
 @cli.command()
 @click.option("--no-fix", is_flag=True)
-@click.option(
-    "--kasan", is_flag=True, help="Enable KASAN/KFENCE memory error detection"
-)
+@click.option("--kasan", is_flag=True, help="Enable KASAN/KFENCE memory error detection")
 @click.option("--kmemleak", is_flag=True, help="Enable kmemleak memory leak detection")
 @click.option("--slub-debug", is_flag=True, help="Enable SLUB allocator debugging")
-@click.option(
-    "--lockdep", is_flag=True, help="Enable lockdep lock correctness checking"
-)
+@click.option("--lockdep", is_flag=True, help="Enable lockdep lock correctness checking")
 @click.option("--debug-objects", is_flag=True, help="Enable object lifecycle debugging")
+@click.option("--gcov", is_flag=True, help="Enable GCOV kernel coverage")
 @click_option_code_debug
 @click_add_options(click_global_options)
 @click.pass_context
@@ -71,6 +68,7 @@ def configure(
     slub_debug: bool,
     lockdep: bool,
     debug_objects: bool,
+    gcov: bool,
     code_debug: bool,
     verbose_inf: bool,
     dict_output: bool,
@@ -108,6 +106,7 @@ def configure(
         slub_debug=slub_debug,
         lockdep=lockdep,
         debug_objects=debug_objects,
+        gcov=gcov,
     )
 
 
@@ -230,15 +229,12 @@ def compare_loaded_modules_to_config(
 @click.option("--no-fix", is_flag=True)
 @click.option("--symlink-config", is_flag=True)
 @click.option("--no-check-boot", is_flag=True)
-@click.option(
-    "--kasan", is_flag=True, help="Enable KASAN/KFENCE memory error detection"
-)
+@click.option("--kasan", is_flag=True, help="Enable KASAN/KFENCE memory error detection")
 @click.option("--kmemleak", is_flag=True, help="Enable kmemleak memory leak detection")
 @click.option("--slub-debug", is_flag=True, help="Enable SLUB allocator debugging")
-@click.option(
-    "--lockdep", is_flag=True, help="Enable lockdep lock correctness checking"
-)
+@click.option("--lockdep", is_flag=True, help="Enable lockdep lock correctness checking")
 @click.option("--debug-objects", is_flag=True, help="Enable object lifecycle debugging")
+@click.option("--gcov", is_flag=True, help="Enable GCOV kernel coverage")
 @click_option_code_debug
 @click_add_options(click_global_options)
 @click.pass_context
@@ -256,6 +252,7 @@ def compile_and_install(
     slub_debug: bool,
     lockdep: bool,
     debug_objects: bool,
+    gcov: bool,
     code_debug: bool,
     verbose: bool = False,
 ):
@@ -294,6 +291,7 @@ def compile_and_install(
         slub_debug=slub_debug,
         lockdep=lockdep,
         debug_objects=debug_objects,
+        gcov=gcov,
     )
     eprint("DONT FORGET TO UMOUNT /boot")
 
@@ -338,15 +336,12 @@ def _install_kernel(
     metavar="DOTCONFIG...",
 )
 @click.option("--fix", is_flag=True)
-@click.option(
-    "--kasan", is_flag=True, help="Enable KASAN/KFENCE memory error detection"
-)
+@click.option("--kasan", is_flag=True, help="Enable KASAN/KFENCE memory error detection")
 @click.option("--kmemleak", is_flag=True, help="Enable kmemleak memory leak detection")
 @click.option("--slub-debug", is_flag=True, help="Enable SLUB allocator debugging")
-@click.option(
-    "--lockdep", is_flag=True, help="Enable lockdep lock correctness checking"
-)
+@click.option("--lockdep", is_flag=True, help="Enable lockdep lock correctness checking")
 @click.option("--debug-objects", is_flag=True, help="Enable object lifecycle debugging")
+@click.option("--gcov", is_flag=True, help="Enable GCOV kernel coverage")
 @click_option_code_debug
 @click_add_options(click_global_options)
 @click.pass_context
@@ -359,6 +354,7 @@ def check_config(
     slub_debug: bool,
     lockdep: bool,
     debug_objects: bool,
+    gcov: bool,
     code_debug: bool,
     verbose_inf: bool,
     dict_output: bool,
@@ -387,9 +383,7 @@ def check_config(
         ic.enable()
 
     if not dotconfigs:
-        raise click.UsageError(
-            "at least one DOTCONFIG path is required (e.g. /usr/src/linux/.config or /proc/config.gz)"
-        )
+        raise click.UsageError("at least one DOTCONFIG path is required (e.g. /usr/src/linux/.config or /proc/config.gz)")
 
     debug_flags: dict[str, bool] = {
         "kasan": kasan,
@@ -397,6 +391,7 @@ def check_config(
         "slub-debug": slub_debug,
         "lockdep": lockdep,
         "debug-objects": debug_objects,
+        "gcov": gcov,
     }
 
     for config in dotconfigs:
@@ -417,6 +412,7 @@ def check_config(
             slub_debug=slub_debug,
             lockdep=lockdep,
             debug_objects=debug_objects,
+        gcov=gcov,
         )  # must be done after nconfig
         return
 

@@ -186,8 +186,8 @@ def verify_kernel_config_setting(
     if (_current_state == "m") and (required_state and module):
         ic(_current_state, required_state, module)
         return
-    if not required_state and not module and _current_state not in ("y", "m"):
-        return  # undef/n/absent all mean "not enabled" — satisfied
+    if _current_state == "n" and not required_state and not module:
+        return
 
     if fix:
         get_set_kernel_config_option(
@@ -228,8 +228,9 @@ def verify_kernel_config_setting(
     if _current_state == "m":
         if required_state and module:
             return  # all is well
-    if not required_state and not module and _current_state not in ("y", "m"):
-        return  # all is well
+    if _current_state == "n":
+        if not required_state and not module:
+            return  # all is well
 
     # mypy: Invalid index type "None | bool" for "Dict[bool, str]"; expected type "bool"  [index] (E)
     if gvd:
@@ -456,6 +457,17 @@ def check_kernel_config_debug_objects(
     )
 
 
+def check_kernel_config_gcov(
+    *,
+    path: Path,
+    fix: bool,
+    enable: bool,
+) -> None:
+    _dbg_verify(path=path, define="CONFIG_DEBUG_FS", enable=enable, fix=fix)
+    _dbg_verify(path=path, define="CONFIG_GCOV_KERNEL", enable=enable, fix=fix)
+    _dbg_verify(path=path, define="CONFIG_GCOV_FORMAT_AUTODETECT", enable=enable, fix=fix)
+
+
 def check_kernel_config(
     *,
     path: Path,
@@ -466,6 +478,7 @@ def check_kernel_config(
     slub_debug: bool = False,
     lockdep: bool = False,
     debug_objects: bool = False,
+    gcov: bool = False,
 ):
     icp(path, fix, warn_only)
     global USED_SYMBOL_SET
@@ -480,6 +493,7 @@ def check_kernel_config(
     check_kernel_config_slub_debug(path=path, fix=fix, enable=slub_debug)
     check_kernel_config_lockdep(path=path, fix=fix, enable=lockdep)
     check_kernel_config_debug_objects(path=path, fix=fix, enable=debug_objects)
+    check_kernel_config_gcov(path=path, fix=fix, enable=gcov)
 
     check_kernel_config_nfs(
         path=path,
@@ -2652,36 +2666,7 @@ def check_kernel_config(
         url="",
     )
 
-    # GCOV kernel debug suppoer (C code coverage reports)
-    verify_kernel_config_setting(
-        path=path,
-        define="CONFIG_DEBUG_FS",
-        required_state=True,
-        module=False,
-        warn=warn_only,
-        fix=fix,
-        url="",
-    )
-    # GCOV kernel debug suppoer (C code coverage reports)
-    verify_kernel_config_setting(
-        path=path,
-        define="CONFIG_GCOV_KERNEL",
-        required_state=True,
-        module=False,
-        warn=warn_only,
-        fix=fix,
-        url="",
-    )
-    # GCOV kernel debug suppoer (C code coverage reports)
-    verify_kernel_config_setting(
-        path=path,
-        define="CONFIG_GCOV_FORMAT_AUTODETECT",
-        required_state=True,
-        module=False,
-        warn=warn_only,
-        fix=fix,
-        url="",
-    )
+
 
 
 # bpf
@@ -2866,6 +2851,7 @@ def configure_kernel(
     slub_debug: bool = False,
     lockdep: bool = False,
     debug_objects: bool = False,
+    gcov: bool = False,
 ):
     if interactive:
         with chdir(
@@ -2881,6 +2867,7 @@ def configure_kernel(
         slub_debug=slub_debug,
         lockdep=lockdep,
         debug_objects=debug_objects,
+        gcov=gcov,
     )  # must be done after nconfig
 
 
@@ -2897,6 +2884,7 @@ def compile_and_install_kernel(
     slub_debug: bool = False,
     lockdep: bool = False,
     debug_objects: bool = False,
+    gcov: bool = False,
 ):
     icp()
     if not root_user():
@@ -3040,6 +3028,7 @@ def compile_and_install_kernel(
         slub_debug=slub_debug,
         lockdep=lockdep,
         debug_objects=debug_objects,
+        gcov=gcov,
     )  # must be done after nconfig
     genkernel_command = hs.Command("genkernel")
     genkernel_command.bake("all")
