@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf8 -*-
 
 
 from __future__ import annotations
@@ -582,6 +581,10 @@ def check_kernel_config_zfs_compat(
     there are no lingering symbols that could trigger re-selection on future
     oldconfig runs.
     """
+    # Disable in dependency order: user-visible selectors first, then selected symbols.
+    # PROVE_LOCKING and LOCK_STAT are the root user-visible nodes.
+    # PROVE_LOCKING also selects DEBUG_WW_MUTEX_SLOWPATH which itself selects DEBUG_LOCK_ALLOC.
+    # Must disable the full chain or make oldconfig re-enables it.
     _spec_add(
         spec,
         "CONFIG_PROVE_LOCKING",
@@ -592,6 +595,13 @@ def check_kernel_config_zfs_compat(
     _spec_add(
         spec,
         "CONFIG_LOCK_STAT",
+        required_state=False,
+        module=False,
+        warn=True,
+    )
+    _spec_add(
+        spec,
+        "CONFIG_DEBUG_WW_MUTEX_SLOWPATH",
         required_state=False,
         module=False,
         warn=True,
