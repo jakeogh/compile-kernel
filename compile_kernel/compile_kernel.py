@@ -186,8 +186,8 @@ def verify_kernel_config_setting(
     if (_current_state == "m") and (required_state and module):
         ic(_current_state, required_state, module)
         return
-    if _current_state == "n" and not required_state and not module:
-        return
+    if not required_state and not module and _current_state not in ("y", "m"):
+        return  # undef/n/absent all mean "not enabled" — satisfied
 
     if fix:
         get_set_kernel_config_option(
@@ -228,9 +228,8 @@ def verify_kernel_config_setting(
     if _current_state == "m":
         if required_state and module:
             return  # all is well
-    if _current_state == "n":
-        if not required_state and not module:
-            return  # all is well
+    if not required_state and not module and _current_state not in ("y", "m"):
+        return  # all is well
 
     # mypy: Invalid index type "None | bool" for "Dict[bool, str]"; expected type "bool"  [index] (E)
     if gvd:
@@ -326,18 +325,6 @@ def _dbg_verify(
     fix: bool,
 ) -> None:
     """Enable or disable a debug/sanitizer config option. Always warns, never raises."""
-    if not enable:
-        # When ensuring a debug option is OFF, undef/absent is as good as n.
-        # Only warn/fix if it is explicitly enabled (y or m).
-        current = get_set_kernel_config_option(
-            path=path,
-            define=define,
-            state=False,
-            module=False,
-            get=True,
-        )
-        if current not in ("y", "m"):
-            return
     verify_kernel_config_setting(
         path=path,
         define=define,
