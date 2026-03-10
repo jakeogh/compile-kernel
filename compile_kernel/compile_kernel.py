@@ -916,7 +916,6 @@ def check_kernel_config(
         url=None,
     )
 
-    # required by sys-fs/zfs-9999
     verify_kernel_config_setting(
         path=path,
         define="CONFIG_FRAME_POINTER",
@@ -941,7 +940,7 @@ def check_kernel_config(
         path=path,
         define="CONFIG_DRM",
         required_state=True,
-        module=False,  # technically, it can be a module, but that breaks stuff
+        module=True,
         warn=warn_only,
         fix=fix,
         url="https://wiki.gentoo.org/wiki/Nouveau",
