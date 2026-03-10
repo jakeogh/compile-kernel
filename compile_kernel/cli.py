@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import logging
 import sys
 from importlib import resources
 from itertools import pairwise
@@ -84,8 +85,10 @@ def configure(
     )
     if not verbose:
         ic.disable()
+        logging.disable(logging.INFO)
     else:
         ic.enable()
+        logging.disable(logging.NOTSET)
     if verbose_inf:
         gvd.enable()
 
@@ -265,8 +268,10 @@ def compile_and_install(
     )
     if not verbose:
         ic.disable()
+        logging.disable(logging.INFO)
     else:
         ic.enable()
+        logging.disable(logging.NOTSET)
     if verbose_inf:
         gvd.enable()
 
@@ -368,8 +373,10 @@ def check_config(
     )
     if not verbose:
         ic.disable()
+        logging.disable(logging.INFO)
     else:
         ic.enable()
+        logging.disable(logging.NOTSET)
     if verbose_inf:
         gvd.enable()
 

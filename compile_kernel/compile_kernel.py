@@ -23,7 +23,7 @@ from pathtool import file_exists_nonzero
 from with_chdir import chdir
 
 # from rich import print as pprint
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.WARNING)
 
 USED_SYMBOL_SET = set()
 
@@ -318,13 +318,7 @@ def check_kernel_config_nfs(
     )
 
 
-def _dbg_verify(
-    *,
-    path: Path,
-    define: str,
-    enable: bool,
-    fix: bool,
-) -> None:
+def _dbg_verify(*, path: Path, define: str, enable: bool, fix: bool) -> None:
     """Enable or disable a debug/sanitizer config option. Always warns, never raises."""
     verify_kernel_config_setting(
         path=path,
@@ -337,124 +331,34 @@ def _dbg_verify(
     )
 
 
-def check_kernel_config_kasan(
-    *,
-    path: Path,
-    fix: bool,
-    enable: bool,
-) -> None:
-    _dbg_verify(
-        path=path,
-        define="CONFIG_KASAN",
-        enable=enable,
-        fix=fix,
-    )
-    _dbg_verify(
-        path=path,
-        define="CONFIG_KFENCE",
-        enable=enable,
-        fix=fix,
-    )
-    _dbg_verify(
-        path=path,
-        define="CONFIG_KASAN_VMALLOC",
-        enable=enable,
-        fix=fix,
-    )
+def check_kernel_config_kasan(*, path: Path, fix: bool, enable: bool) -> None:
+    _dbg_verify(path=path, define="CONFIG_KASAN", enable=enable, fix=fix)
+    _dbg_verify(path=path, define="CONFIG_KFENCE", enable=enable, fix=fix)
+    _dbg_verify(path=path, define="CONFIG_KASAN_VMALLOC", enable=enable, fix=fix)
     # CONFIG_KASAN_INLINE / CONFIG_KASAN_OUTLINE are mutually exclusive sub-options;
     # leave them for Kconfig (make oldconfig/nconfig) to resolve.
 
 
-def check_kernel_config_kmemleak(
-    *,
-    path: Path,
-    fix: bool,
-    enable: bool,
-) -> None:
-    _dbg_verify(
-        path=path,
-        define="CONFIG_DEBUG_KMEMLEAK",
-        enable=enable,
-        fix=fix,
-    )
+def check_kernel_config_kmemleak(*, path: Path, fix: bool, enable: bool) -> None:
+    _dbg_verify(path=path, define="CONFIG_DEBUG_KMEMLEAK", enable=enable, fix=fix)
 
 
-def check_kernel_config_slub_debug(
-    *,
-    path: Path,
-    fix: bool,
-    enable: bool,
-) -> None:
-    _dbg_verify(
-        path=path,
-        define="CONFIG_SLUB_DEBUG",
-        enable=enable,
-        fix=fix,
-    )
-    _dbg_verify(
-        path=path,
-        define="CONFIG_SLUB_DEBUG_ON",
-        enable=enable,
-        fix=fix,
-    )
+def check_kernel_config_slub_debug(*, path: Path, fix: bool, enable: bool) -> None:
+    _dbg_verify(path=path, define="CONFIG_SLUB_DEBUG", enable=enable, fix=fix)
+    _dbg_verify(path=path, define="CONFIG_SLUB_DEBUG_ON", enable=enable, fix=fix)
 
 
-def check_kernel_config_lockdep(
-    *,
-    path: Path,
-    fix: bool,
-    enable: bool,
-) -> None:
-    _dbg_verify(
-        path=path,
-        define="CONFIG_PROVE_LOCKING",
-        enable=enable,
-        fix=fix,
-    )
-    _dbg_verify(
-        path=path,
-        define="CONFIG_DEBUG_SPINLOCK",
-        enable=enable,
-        fix=fix,
-    )
-    _dbg_verify(
-        path=path,
-        define="CONFIG_DEBUG_MUTEXES",
-        enable=enable,
-        fix=fix,
-    )
-    _dbg_verify(
-        path=path,
-        define="CONFIG_DEBUG_LOCK_ALLOC",
-        enable=enable,
-        fix=fix,
-    )
+def check_kernel_config_lockdep(*, path: Path, fix: bool, enable: bool) -> None:
+    _dbg_verify(path=path, define="CONFIG_PROVE_LOCKING", enable=enable, fix=fix)
+    _dbg_verify(path=path, define="CONFIG_DEBUG_SPINLOCK", enable=enable, fix=fix)
+    _dbg_verify(path=path, define="CONFIG_DEBUG_MUTEXES", enable=enable, fix=fix)
+    _dbg_verify(path=path, define="CONFIG_DEBUG_LOCK_ALLOC", enable=enable, fix=fix)
 
 
-def check_kernel_config_debug_objects(
-    *,
-    path: Path,
-    fix: bool,
-    enable: bool,
-) -> None:
-    _dbg_verify(
-        path=path,
-        define="CONFIG_DEBUG_OBJECTS",
-        enable=enable,
-        fix=fix,
-    )
-    _dbg_verify(
-        path=path,
-        define="CONFIG_DEBUG_OBJECTS_FREE",
-        enable=enable,
-        fix=fix,
-    )
-    _dbg_verify(
-        path=path,
-        define="CONFIG_DEBUG_OBJECTS_TIMERS",
-        enable=enable,
-        fix=fix,
-    )
+def check_kernel_config_debug_objects(*, path: Path, fix: bool, enable: bool) -> None:
+    _dbg_verify(path=path, define="CONFIG_DEBUG_OBJECTS", enable=enable, fix=fix)
+    _dbg_verify(path=path, define="CONFIG_DEBUG_OBJECTS_FREE", enable=enable, fix=fix)
+    _dbg_verify(path=path, define="CONFIG_DEBUG_OBJECTS_TIMERS", enable=enable, fix=fix)
 
 
 def check_kernel_config(
