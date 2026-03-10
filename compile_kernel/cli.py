@@ -50,11 +50,23 @@ def cli(
 
 @cli.command()
 @click.option("--no-fix", is_flag=True)
+@click.option("--kasan", is_flag=True, help="Enable KASAN/KFENCE memory error detection")
+@click.option("--kmemleak", is_flag=True, help="Enable kmemleak memory leak detection")
+@click.option("--slub-debug", is_flag=True, help="Enable SLUB allocator debugging")
+@click.option("--lockdep", is_flag=True, help="Enable lockdep lock correctness checking")
+@click.option("--debug-objects", is_flag=True, help="Enable object lifecycle debugging")
+@click_option_code_debug
 @click_add_options(click_global_options)
 @click.pass_context
 def configure(
     ctx,
     no_fix: bool,
+    kasan: bool,
+    kmemleak: bool,
+    slub_debug: bool,
+    lockdep: bool,
+    debug_objects: bool,
+    code_debug: bool,
     verbose_inf: bool,
     dict_output: bool,
     verbose: bool = False,
@@ -77,11 +89,18 @@ def configure(
     warn_only = False
     if not fix:
         warn_only = True
+    if code_debug:
+        ic.enable()
 
     configure_kernel(
         fix=fix,
         warn_only=warn_only,
         interactive=True,
+        kasan=kasan,
+        kmemleak=kmemleak,
+        slub_debug=slub_debug,
+        lockdep=lockdep,
+        debug_objects=debug_objects,
     )
 
 
@@ -204,6 +223,12 @@ def compare_loaded_modules_to_config(
 @click.option("--no-fix", is_flag=True)
 @click.option("--symlink-config", is_flag=True)
 @click.option("--no-check-boot", is_flag=True)
+@click.option("--kasan", is_flag=True, help="Enable KASAN/KFENCE memory error detection")
+@click.option("--kmemleak", is_flag=True, help="Enable kmemleak memory leak detection")
+@click.option("--slub-debug", is_flag=True, help="Enable SLUB allocator debugging")
+@click.option("--lockdep", is_flag=True, help="Enable lockdep lock correctness checking")
+@click.option("--debug-objects", is_flag=True, help="Enable object lifecycle debugging")
+@click_option_code_debug
 @click_add_options(click_global_options)
 @click.pass_context
 def compile_and_install(
@@ -215,6 +240,12 @@ def compile_and_install(
     dict_output: bool,
     force: bool,
     no_check_boot: bool,
+    kasan: bool,
+    kmemleak: bool,
+    slub_debug: bool,
+    lockdep: bool,
+    debug_objects: bool,
+    code_debug: bool,
     verbose: bool = False,
 ):
     tty, verbose = tvicgvd(
@@ -235,6 +266,8 @@ def compile_and_install(
     warn_only = False
     if not fix:
         warn_only = True
+    if code_debug:
+        ic.enable()
 
     compile_and_install_kernel(
         configure=configure,
@@ -243,6 +276,11 @@ def compile_and_install(
         warn_only=warn_only,
         no_check_boot=no_check_boot,
         symlink_config=symlink_config,
+        kasan=kasan,
+        kmemleak=kmemleak,
+        slub_debug=slub_debug,
+        lockdep=lockdep,
+        debug_objects=debug_objects,
     )
     eprint("DONT FORGET TO UMOUNT /boot")
 
@@ -286,12 +324,24 @@ def _install_kernel(
     nargs=-1,
 )
 @click.option("--fix", is_flag=True)
+@click.option("--kasan", is_flag=True, help="Enable KASAN/KFENCE memory error detection")
+@click.option("--kmemleak", is_flag=True, help="Enable kmemleak memory leak detection")
+@click.option("--slub-debug", is_flag=True, help="Enable SLUB allocator debugging")
+@click.option("--lockdep", is_flag=True, help="Enable lockdep lock correctness checking")
+@click.option("--debug-objects", is_flag=True, help="Enable object lifecycle debugging")
+@click_option_code_debug
 @click_add_options(click_global_options)
 @click.pass_context
 def check_config(
     ctx,
     dotconfigs: tuple[Path, ...],
     fix: bool,
+    kasan: bool,
+    kmemleak: bool,
+    slub_debug: bool,
+    lockdep: bool,
+    debug_objects: bool,
+    code_debug: bool,
     verbose_inf: bool,
     dict_output: bool,
     verbose: bool = False,
@@ -313,12 +363,19 @@ def check_config(
     warn_only = False
     if not fix:
         warn_only = True
+    if code_debug:
+        ic.enable()
 
     for config in dotconfigs:
         check_kernel_config(
             path=config,
             fix=fix,
             warn_only=warn_only,
+            kasan=kasan,
+            kmemleak=kmemleak,
+            slub_debug=slub_debug,
+            lockdep=lockdep,
+            debug_objects=debug_objects,
         )  # must be done after nconfig
         return
 

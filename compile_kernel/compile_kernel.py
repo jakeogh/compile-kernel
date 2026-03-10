@@ -318,11 +318,59 @@ def check_kernel_config_nfs(
     )
 
 
+def _dbg_verify(*, path: Path, define: str, enable: bool, fix: bool) -> None:
+    """Enable or disable a debug/sanitizer config option. Always warns, never raises."""
+    verify_kernel_config_setting(
+        path=path,
+        define=define,
+        required_state=enable,
+        module=False,
+        warn=True,  # never raise for debug group toggles — absent options are common
+        fix=fix,
+        url=None,
+    )
+
+
+def check_kernel_config_kasan(*, path: Path, fix: bool, enable: bool) -> None:
+    _dbg_verify(path=path, define="CONFIG_KASAN", enable=enable, fix=fix)
+    _dbg_verify(path=path, define="CONFIG_KFENCE", enable=enable, fix=fix)
+    _dbg_verify(path=path, define="CONFIG_KASAN_VMALLOC", enable=enable, fix=fix)
+    # CONFIG_KASAN_INLINE / CONFIG_KASAN_OUTLINE are mutually exclusive sub-options;
+    # leave them for Kconfig (make oldconfig/nconfig) to resolve.
+
+
+def check_kernel_config_kmemleak(*, path: Path, fix: bool, enable: bool) -> None:
+    _dbg_verify(path=path, define="CONFIG_DEBUG_KMEMLEAK", enable=enable, fix=fix)
+
+
+def check_kernel_config_slub_debug(*, path: Path, fix: bool, enable: bool) -> None:
+    _dbg_verify(path=path, define="CONFIG_SLUB_DEBUG", enable=enable, fix=fix)
+    _dbg_verify(path=path, define="CONFIG_SLUB_DEBUG_ON", enable=enable, fix=fix)
+
+
+def check_kernel_config_lockdep(*, path: Path, fix: bool, enable: bool) -> None:
+    _dbg_verify(path=path, define="CONFIG_PROVE_LOCKING", enable=enable, fix=fix)
+    _dbg_verify(path=path, define="CONFIG_DEBUG_SPINLOCK", enable=enable, fix=fix)
+    _dbg_verify(path=path, define="CONFIG_DEBUG_MUTEXES", enable=enable, fix=fix)
+    _dbg_verify(path=path, define="CONFIG_DEBUG_LOCK_ALLOC", enable=enable, fix=fix)
+
+
+def check_kernel_config_debug_objects(*, path: Path, fix: bool, enable: bool) -> None:
+    _dbg_verify(path=path, define="CONFIG_DEBUG_OBJECTS", enable=enable, fix=fix)
+    _dbg_verify(path=path, define="CONFIG_DEBUG_OBJECTS_FREE", enable=enable, fix=fix)
+    _dbg_verify(path=path, define="CONFIG_DEBUG_OBJECTS_TIMERS", enable=enable, fix=fix)
+
+
 def check_kernel_config(
     *,
     path: Path,
     fix: bool,
     warn_only: bool,
+    kasan: bool = False,
+    kmemleak: bool = False,
+    slub_debug: bool = False,
+    lockdep: bool = False,
+    debug_objects: bool = False,
 ):
     icp(path, fix, warn_only)
     global USED_SYMBOL_SET
@@ -331,6 +379,12 @@ def check_kernel_config(
     path = path.resolve()
     assert insure_config_exists()
     icp(path, warn_only)
+
+    check_kernel_config_kasan(path=path, fix=fix, enable=kasan)
+    check_kernel_config_kmemleak(path=path, fix=fix, enable=kmemleak)
+    check_kernel_config_slub_debug(path=path, fix=fix, enable=slub_debug)
+    check_kernel_config_lockdep(path=path, fix=fix, enable=lockdep)
+    check_kernel_config_debug_objects(path=path, fix=fix, enable=debug_objects)
 
     check_kernel_config_nfs(
         path=path,
@@ -2713,6 +2767,11 @@ def configure_kernel(
     fix: bool,
     warn_only: bool,
     interactive: bool,
+    kasan: bool = False,
+    kmemleak: bool = False,
+    slub_debug: bool = False,
+    lockdep: bool = False,
+    debug_objects: bool = False,
 ):
     if interactive:
         with chdir(
@@ -2723,6 +2782,11 @@ def configure_kernel(
         path=Path("/usr/src/linux/.config"),
         fix=fix,
         warn_only=warn_only,
+        kasan=kasan,
+        kmemleak=kmemleak,
+        slub_debug=slub_debug,
+        lockdep=lockdep,
+        debug_objects=debug_objects,
     )  # must be done after nconfig
 
 
@@ -2734,6 +2798,11 @@ def compile_and_install_kernel(
     warn_only: bool,
     no_check_boot: bool,
     symlink_config: bool,
+    kasan: bool = False,
+    kmemleak: bool = False,
+    slub_debug: bool = False,
+    lockdep: bool = False,
+    debug_objects: bool = False,
 ):
     icp()
     if not root_user():
@@ -2762,6 +2831,11 @@ def compile_and_install_kernel(
             fix=fix,
             warn_only=warn_only,
             interactive=True,
+            kasan=kasan,
+            kmemleak=kmemleak,
+            slub_debug=slub_debug,
+            lockdep=lockdep,
+            debug_objects=debug_objects,
         )
 
     hs.Command("emerge")(
@@ -2776,6 +2850,11 @@ def compile_and_install_kernel(
         fix=fix,
         warn_only=warn_only,
         interactive=False,
+        kasan=kasan,
+        kmemleak=kmemleak,
+        slub_debug=slub_debug,
+        lockdep=lockdep,
+        debug_objects=debug_objects,
     )
     # handle a downgrade from -9999 before genkernel calls @module-rebuild
     icp("attempting to upgrade zfs")
@@ -2851,12 +2930,22 @@ def compile_and_install_kernel(
             path=Path("/usr/src/linux/.config"),
             fix=True,
             warn_only=warn_only,
+            kasan=kasan,
+            kmemleak=kmemleak,
+            slub_debug=slub_debug,
+            lockdep=lockdep,
+            debug_objects=debug_objects,
         )
 
     check_kernel_config(
         path=Path("/usr/src/linux/.config"),
         fix=fix,
         warn_only=warn_only,
+        kasan=kasan,
+        kmemleak=kmemleak,
+        slub_debug=slub_debug,
+        lockdep=lockdep,
+        debug_objects=debug_objects,
     )  # must be done after nconfig
     genkernel_command = hs.Command("genkernel")
     genkernel_command.bake("all")

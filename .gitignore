@@ -2,3 +2,4 @@
 .git
 .edit_config
 enable_github.sh
+update_delme.sh
