@@ -323,9 +323,9 @@ def check_kernel_config_kasan(
     enable: bool,
 ) -> None:
     _spec_add(spec, "CONFIG_KASAN", required_state=enable, module=False, warn=True)
-    _spec_add(spec, "CONFIG_KASAN_VMALLOC", required_state=enable, module=False, warn=True)
-    # CONFIG_KASAN_INLINE / CONFIG_KASAN_OUTLINE are mutually exclusive sub-options;
-    # leave them for Kconfig (make oldconfig/nconfig) to resolve.
+    _spec_add(spec, "CONFIG_KASAN_INLINE", required_state=enable, module=False, warn=True)  # 2-3x faster than outline
+    _spec_add(spec, "CONFIG_KASAN_VMALLOC", required_state=enable, module=False, warn=True)  # kvmalloc(16KB) can fall back to vmalloc
+    _spec_add(spec, "CONFIG_PANIC_ON_OOPS", required_state=enable, module=False, warn=True)  # force kdump instead of continuing in corrupted state
 
 
 def check_kernel_config_kmemleak(
