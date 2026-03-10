@@ -50,10 +50,14 @@ def cli(
 
 @cli.command()
 @click.option("--no-fix", is_flag=True)
-@click.option("--kasan", is_flag=True, help="Enable KASAN/KFENCE memory error detection")
+@click.option(
+    "--kasan", is_flag=True, help="Enable KASAN/KFENCE memory error detection"
+)
 @click.option("--kmemleak", is_flag=True, help="Enable kmemleak memory leak detection")
 @click.option("--slub-debug", is_flag=True, help="Enable SLUB allocator debugging")
-@click.option("--lockdep", is_flag=True, help="Enable lockdep lock correctness checking")
+@click.option(
+    "--lockdep", is_flag=True, help="Enable lockdep lock correctness checking"
+)
 @click.option("--debug-objects", is_flag=True, help="Enable object lifecycle debugging")
 @click_option_code_debug
 @click_add_options(click_global_options)
@@ -223,10 +227,14 @@ def compare_loaded_modules_to_config(
 @click.option("--no-fix", is_flag=True)
 @click.option("--symlink-config", is_flag=True)
 @click.option("--no-check-boot", is_flag=True)
-@click.option("--kasan", is_flag=True, help="Enable KASAN/KFENCE memory error detection")
+@click.option(
+    "--kasan", is_flag=True, help="Enable KASAN/KFENCE memory error detection"
+)
 @click.option("--kmemleak", is_flag=True, help="Enable kmemleak memory leak detection")
 @click.option("--slub-debug", is_flag=True, help="Enable SLUB allocator debugging")
-@click.option("--lockdep", is_flag=True, help="Enable lockdep lock correctness checking")
+@click.option(
+    "--lockdep", is_flag=True, help="Enable lockdep lock correctness checking"
+)
 @click.option("--debug-objects", is_flag=True, help="Enable object lifecycle debugging")
 @click_option_code_debug
 @click_add_options(click_global_options)
@@ -322,12 +330,17 @@ def _install_kernel(
         path_type=Path,
     ),
     nargs=-1,
+    metavar="DOTCONFIG...",
 )
 @click.option("--fix", is_flag=True)
-@click.option("--kasan", is_flag=True, help="Enable KASAN/KFENCE memory error detection")
+@click.option(
+    "--kasan", is_flag=True, help="Enable KASAN/KFENCE memory error detection"
+)
 @click.option("--kmemleak", is_flag=True, help="Enable kmemleak memory leak detection")
 @click.option("--slub-debug", is_flag=True, help="Enable SLUB allocator debugging")
-@click.option("--lockdep", is_flag=True, help="Enable lockdep lock correctness checking")
+@click.option(
+    "--lockdep", is_flag=True, help="Enable lockdep lock correctness checking"
+)
 @click.option("--debug-objects", is_flag=True, help="Enable object lifecycle debugging")
 @click_option_code_debug
 @click_add_options(click_global_options)
@@ -366,7 +379,28 @@ def check_config(
     if code_debug:
         ic.enable()
 
+    if not dotconfigs:
+        raise click.UsageError(
+            "at least one DOTCONFIG path is required (e.g. /usr/src/linux/.config or /proc/config.gz)"
+        )
+
+    debug_flags: dict[str, bool] = {
+        "kasan": kasan,
+        "kmemleak": kmemleak,
+        "slub-debug": slub_debug,
+        "lockdep": lockdep,
+        "debug-objects": debug_objects,
+    }
+
     for config in dotconfigs:
+        eprint(f"check-config: {config.resolve()}")
+        eprint(f"  mode: {'fix' if fix else 'warn-only'}")
+        active = [k for k, v in debug_flags.items() if v]
+        inactive = [k for k, v in debug_flags.items() if not v]
+        if active:
+            eprint(f"  debug groups ON:  {' '.join(active)}")
+        if inactive:
+            eprint(f"  debug groups OFF: {' '.join(inactive)}")
         check_kernel_config(
             path=config,
             fix=fix,
