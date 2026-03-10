@@ -58,6 +58,7 @@ def cli(
 @click.option("--debug-objects", is_flag=True, help="Enable object lifecycle debugging")
 @click.option("--gcov", is_flag=True, help="Enable GCOV kernel coverage")
 @click.option("--zbtree-debug", is_flag=True, help="Enable KFENCE+SLUB_DEBUG+DEBUG_OBJECTS for out-of-tree module debugging")
+@click.option("--zfs-compat", is_flag=True, help="Override CONFIG_DEBUG_LOCK_ALLOC=n so ZFS builds with --lockdep")
 @click_option_code_debug
 @click_add_options(click_global_options)
 @click.pass_context
@@ -71,6 +72,7 @@ def configure(
     debug_objects: bool,
     gcov: bool,
     zbtree_debug: bool,
+    zfs_compat: bool,
     code_debug: bool,
     verbose_inf: bool,
     dict_output: bool,
@@ -110,6 +112,7 @@ def configure(
         debug_objects=debug_objects,
         gcov=gcov,
         zbtree_debug=zbtree_debug,
+        zfs_compat=zfs_compat,
     )
 
 
@@ -239,6 +242,7 @@ def compare_loaded_modules_to_config(
 @click.option("--debug-objects", is_flag=True, help="Enable object lifecycle debugging")
 @click.option("--gcov", is_flag=True, help="Enable GCOV kernel coverage")
 @click.option("--zbtree-debug", is_flag=True, help="Enable KFENCE+SLUB_DEBUG+DEBUG_OBJECTS for out-of-tree module debugging")
+@click.option("--zfs-compat", is_flag=True, help="Override CONFIG_DEBUG_LOCK_ALLOC=n so ZFS builds with --lockdep")
 @click_option_code_debug
 @click_add_options(click_global_options)
 @click.pass_context
@@ -258,6 +262,7 @@ def compile_and_install(
     debug_objects: bool,
     gcov: bool,
     zbtree_debug: bool,
+    zfs_compat: bool,
     code_debug: bool,
     verbose: bool = False,
 ):
@@ -298,6 +303,7 @@ def compile_and_install(
         debug_objects=debug_objects,
         gcov=gcov,
         zbtree_debug=zbtree_debug,
+        zfs_compat=zfs_compat,
     )
     eprint("DONT FORGET TO UMOUNT /boot")
 
@@ -310,6 +316,7 @@ def compile_and_install(
 @click.option("--debug-objects", is_flag=True, help="Enable object lifecycle debugging")
 @click.option("--gcov", is_flag=True, help="Enable GCOV kernel coverage")
 @click.option("--zbtree-debug", is_flag=True, help="Enable KFENCE+SLUB_DEBUG+DEBUG_OBJECTS for out-of-tree module debugging")
+@click.option("--zfs-compat", is_flag=True, help="Override CONFIG_DEBUG_LOCK_ALLOC=n so ZFS builds with --lockdep")
 @click_add_options(click_global_options)
 @click.pass_context
 def _install_kernel(
@@ -321,6 +328,7 @@ def _install_kernel(
     debug_objects: bool,
     gcov: bool,
     zbtree_debug: bool,
+    zfs_compat: bool,
     verbose_inf: bool,
     dict_output: bool,
     verbose: bool = False,
@@ -347,6 +355,7 @@ def _install_kernel(
         debug_objects=debug_objects,
         gcov=gcov,
         zbtree_debug=zbtree_debug,
+        zfs_compat=zfs_compat,
     )
 
 
@@ -371,6 +380,7 @@ def _install_kernel(
 @click.option("--debug-objects", is_flag=True, help="Enable object lifecycle debugging")
 @click.option("--gcov", is_flag=True, help="Enable GCOV kernel coverage")
 @click.option("--zbtree-debug", is_flag=True, help="Enable KFENCE+SLUB_DEBUG+DEBUG_OBJECTS for out-of-tree module debugging")
+@click.option("--zfs-compat", is_flag=True, help="Override CONFIG_DEBUG_LOCK_ALLOC=n so ZFS builds with --lockdep")
 @click_option_code_debug
 @click_add_options(click_global_options)
 @click.pass_context
@@ -385,6 +395,7 @@ def check_config(
     debug_objects: bool,
     gcov: bool,
     zbtree_debug: bool,
+    zfs_compat: bool,
     code_debug: bool,
     verbose_inf: bool,
     dict_output: bool,
@@ -423,6 +434,7 @@ def check_config(
         "debug-objects": debug_objects,
         "gcov": gcov,
         "zbtree-debug": zbtree_debug,
+        "zfs-compat": zfs_compat,
     }
 
     for config in dotconfigs:
@@ -445,6 +457,7 @@ def check_config(
             debug_objects=debug_objects,
             gcov=gcov,
             zbtree_debug=zbtree_debug,
+            zfs_compat=zfs_compat,
         )  # must be done after nconfig
         return
 
