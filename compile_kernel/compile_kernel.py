@@ -1077,6 +1077,7 @@ def check_kernel_config(
         url=None,
     )
 
+    # CONFIG_FRAME_POINTER is required to be enabled if "sys-fs/zfs debug" USE is enabled
     _spec_add(
         spec,
         "CONFIG_FRAME_POINTER",
