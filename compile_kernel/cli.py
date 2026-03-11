@@ -51,15 +51,36 @@ def cli(
 
 @cli.command()
 @click.option("--no-fix", is_flag=True)
-@click.option("--kasan", is_flag=True, help="Enable KASAN/KFENCE memory error detection")
+@click.option(
+    "--kasan", is_flag=True, help="Enable KASAN/KFENCE memory error detection"
+)
 @click.option("--kmemleak", is_flag=True, help="Enable kmemleak memory leak detection")
 @click.option("--slub-debug", is_flag=True, help="Enable SLUB allocator debugging")
-@click.option("--lockdep", is_flag=True, help="Enable lockdep lock correctness checking")
+@click.option(
+    "--lockdep", is_flag=True, help="Enable lockdep lock correctness checking"
+)
 @click.option("--debug-objects", is_flag=True, help="Enable object lifecycle debugging")
 @click.option("--gcov", is_flag=True, help="Enable GCOV kernel coverage")
-@click.option("--zbtree-debug", is_flag=True, help="Enable KFENCE+SLUB_DEBUG+DEBUG_OBJECTS for out-of-tree module debugging")
-@click.option("--zfs-compat", is_flag=True, help="Override CONFIG_DEBUG_LOCK_ALLOC=n so ZFS builds with --lockdep")
-@click.option("--nvidia-compat", is_flag=True, help="Override LOCKDEP/SLUB_DEBUG_ON/DEBUG_MUTEXES=n so nvidia-drivers builds")
+@click.option(
+    "--zbtree-debug",
+    is_flag=True,
+    help="Enable KFENCE+SLUB_DEBUG+DEBUG_OBJECTS for out-of-tree module debugging",
+)
+@click.option(
+    "--zfs-debug",
+    is_flag=True,
+    help="Enable CONFIG_FRAME_POINTER required by sys-fs/zfs USE=debug",
+)
+@click.option(
+    "--zfs-compat",
+    is_flag=True,
+    help="Override CONFIG_DEBUG_LOCK_ALLOC=n so ZFS builds with --lockdep",
+)
+@click.option(
+    "--nvidia-compat",
+    is_flag=True,
+    help="Override LOCKDEP/SLUB_DEBUG_ON/DEBUG_MUTEXES=n so nvidia-drivers builds",
+)
 @click_option_code_debug
 @click_add_options(click_global_options)
 @click.pass_context
@@ -73,6 +94,7 @@ def configure(
     debug_objects: bool,
     gcov: bool,
     zbtree_debug: bool,
+    zfs_debug: bool,
     zfs_compat: bool,
     nvidia_compat: bool,
     code_debug: bool,
@@ -114,6 +136,7 @@ def configure(
         debug_objects=debug_objects,
         gcov=gcov,
         zbtree_debug=zbtree_debug,
+        zfs_debug=zfs_debug,
         zfs_compat=zfs_compat,
         nvidia_compat=nvidia_compat,
     )
@@ -238,15 +261,36 @@ def compare_loaded_modules_to_config(
 @click.option("--no-fix", is_flag=True)
 @click.option("--symlink-config", is_flag=True)
 @click.option("--no-check-boot", is_flag=True)
-@click.option("--kasan", is_flag=True, help="Enable KASAN/KFENCE memory error detection")
+@click.option(
+    "--kasan", is_flag=True, help="Enable KASAN/KFENCE memory error detection"
+)
 @click.option("--kmemleak", is_flag=True, help="Enable kmemleak memory leak detection")
 @click.option("--slub-debug", is_flag=True, help="Enable SLUB allocator debugging")
-@click.option("--lockdep", is_flag=True, help="Enable lockdep lock correctness checking")
+@click.option(
+    "--lockdep", is_flag=True, help="Enable lockdep lock correctness checking"
+)
 @click.option("--debug-objects", is_flag=True, help="Enable object lifecycle debugging")
 @click.option("--gcov", is_flag=True, help="Enable GCOV kernel coverage")
-@click.option("--zbtree-debug", is_flag=True, help="Enable KFENCE+SLUB_DEBUG+DEBUG_OBJECTS for out-of-tree module debugging")
-@click.option("--zfs-compat", is_flag=True, help="Override CONFIG_DEBUG_LOCK_ALLOC=n so ZFS builds with --lockdep")
-@click.option("--nvidia-compat", is_flag=True, help="Override LOCKDEP/SLUB_DEBUG_ON/DEBUG_MUTEXES=n so nvidia-drivers builds")
+@click.option(
+    "--zbtree-debug",
+    is_flag=True,
+    help="Enable KFENCE+SLUB_DEBUG+DEBUG_OBJECTS for out-of-tree module debugging",
+)
+@click.option(
+    "--zfs-debug",
+    is_flag=True,
+    help="Enable CONFIG_FRAME_POINTER required by sys-fs/zfs USE=debug",
+)
+@click.option(
+    "--zfs-compat",
+    is_flag=True,
+    help="Override CONFIG_DEBUG_LOCK_ALLOC=n so ZFS builds with --lockdep",
+)
+@click.option(
+    "--nvidia-compat",
+    is_flag=True,
+    help="Override LOCKDEP/SLUB_DEBUG_ON/DEBUG_MUTEXES=n so nvidia-drivers builds",
+)
 @click_option_code_debug
 @click_add_options(click_global_options)
 @click.pass_context
@@ -266,6 +310,7 @@ def compile_and_install(
     debug_objects: bool,
     gcov: bool,
     zbtree_debug: bool,
+    zfs_debug: bool,
     zfs_compat: bool,
     nvidia_compat: bool,
     code_debug: bool,
@@ -308,6 +353,7 @@ def compile_and_install(
         debug_objects=debug_objects,
         gcov=gcov,
         zbtree_debug=zbtree_debug,
+        zfs_debug=zfs_debug,
         zfs_compat=zfs_compat,
         nvidia_compat=nvidia_compat,
     )
@@ -315,15 +361,36 @@ def compile_and_install(
 
 
 @cli.command("install-kernel")
-@click.option("--kasan", is_flag=True, help="Enable KASAN/KFENCE memory error detection")
+@click.option(
+    "--kasan", is_flag=True, help="Enable KASAN/KFENCE memory error detection"
+)
 @click.option("--kmemleak", is_flag=True, help="Enable kmemleak memory leak detection")
 @click.option("--slub-debug", is_flag=True, help="Enable SLUB allocator debugging")
-@click.option("--lockdep", is_flag=True, help="Enable lockdep lock correctness checking")
+@click.option(
+    "--lockdep", is_flag=True, help="Enable lockdep lock correctness checking"
+)
 @click.option("--debug-objects", is_flag=True, help="Enable object lifecycle debugging")
 @click.option("--gcov", is_flag=True, help="Enable GCOV kernel coverage")
-@click.option("--zbtree-debug", is_flag=True, help="Enable KFENCE+SLUB_DEBUG+DEBUG_OBJECTS for out-of-tree module debugging")
-@click.option("--zfs-compat", is_flag=True, help="Override CONFIG_DEBUG_LOCK_ALLOC=n so ZFS builds with --lockdep")
-@click.option("--nvidia-compat", is_flag=True, help="Override LOCKDEP/SLUB_DEBUG_ON/DEBUG_MUTEXES=n so nvidia-drivers builds")
+@click.option(
+    "--zbtree-debug",
+    is_flag=True,
+    help="Enable KFENCE+SLUB_DEBUG+DEBUG_OBJECTS for out-of-tree module debugging",
+)
+@click.option(
+    "--zfs-debug",
+    is_flag=True,
+    help="Enable CONFIG_FRAME_POINTER required by sys-fs/zfs USE=debug",
+)
+@click.option(
+    "--zfs-compat",
+    is_flag=True,
+    help="Override CONFIG_DEBUG_LOCK_ALLOC=n so ZFS builds with --lockdep",
+)
+@click.option(
+    "--nvidia-compat",
+    is_flag=True,
+    help="Override LOCKDEP/SLUB_DEBUG_ON/DEBUG_MUTEXES=n so nvidia-drivers builds",
+)
 @click_add_options(click_global_options)
 @click.pass_context
 def _install_kernel(
@@ -335,6 +402,7 @@ def _install_kernel(
     debug_objects: bool,
     gcov: bool,
     zbtree_debug: bool,
+    zfs_debug: bool,
     zfs_compat: bool,
     nvidia_compat: bool,
     verbose_inf: bool,
@@ -363,6 +431,7 @@ def _install_kernel(
         debug_objects=debug_objects,
         gcov=gcov,
         zbtree_debug=zbtree_debug,
+        zfs_debug=zfs_debug,
         zfs_compat=zfs_compat,
         nvidia_compat=nvidia_compat,
     )
@@ -382,15 +451,36 @@ def _install_kernel(
     metavar="DOTCONFIG...",
 )
 @click.option("--fix", is_flag=True)
-@click.option("--kasan", is_flag=True, help="Enable KASAN/KFENCE memory error detection")
+@click.option(
+    "--kasan", is_flag=True, help="Enable KASAN/KFENCE memory error detection"
+)
 @click.option("--kmemleak", is_flag=True, help="Enable kmemleak memory leak detection")
 @click.option("--slub-debug", is_flag=True, help="Enable SLUB allocator debugging")
-@click.option("--lockdep", is_flag=True, help="Enable lockdep lock correctness checking")
+@click.option(
+    "--lockdep", is_flag=True, help="Enable lockdep lock correctness checking"
+)
 @click.option("--debug-objects", is_flag=True, help="Enable object lifecycle debugging")
 @click.option("--gcov", is_flag=True, help="Enable GCOV kernel coverage")
-@click.option("--zbtree-debug", is_flag=True, help="Enable KFENCE+SLUB_DEBUG+DEBUG_OBJECTS for out-of-tree module debugging")
-@click.option("--zfs-compat", is_flag=True, help="Override CONFIG_DEBUG_LOCK_ALLOC=n so ZFS builds with --lockdep")
-@click.option("--nvidia-compat", is_flag=True, help="Override LOCKDEP/SLUB_DEBUG_ON/DEBUG_MUTEXES=n so nvidia-drivers builds")
+@click.option(
+    "--zbtree-debug",
+    is_flag=True,
+    help="Enable KFENCE+SLUB_DEBUG+DEBUG_OBJECTS for out-of-tree module debugging",
+)
+@click.option(
+    "--zfs-debug",
+    is_flag=True,
+    help="Enable CONFIG_FRAME_POINTER required by sys-fs/zfs USE=debug",
+)
+@click.option(
+    "--zfs-compat",
+    is_flag=True,
+    help="Override CONFIG_DEBUG_LOCK_ALLOC=n so ZFS builds with --lockdep",
+)
+@click.option(
+    "--nvidia-compat",
+    is_flag=True,
+    help="Override LOCKDEP/SLUB_DEBUG_ON/DEBUG_MUTEXES=n so nvidia-drivers builds",
+)
 @click_option_code_debug
 @click_add_options(click_global_options)
 @click.pass_context
@@ -405,6 +495,7 @@ def check_config(
     debug_objects: bool,
     gcov: bool,
     zbtree_debug: bool,
+    zfs_debug: bool,
     zfs_compat: bool,
     nvidia_compat: bool,
     code_debug: bool,
@@ -435,7 +526,9 @@ def check_config(
         ic.enable()
 
     if not dotconfigs:
-        raise click.UsageError("at least one DOTCONFIG path is required (e.g. /usr/src/linux/.config or /proc/config.gz)")
+        raise click.UsageError(
+            "at least one DOTCONFIG path is required (e.g. /usr/src/linux/.config or /proc/config.gz)"
+        )
 
     debug_flags: dict[str, bool] = {
         "kasan": kasan,
@@ -445,6 +538,7 @@ def check_config(
         "debug-objects": debug_objects,
         "gcov": gcov,
         "zbtree-debug": zbtree_debug,
+        "zfs-debug": zfs_debug,
         "zfs-compat": zfs_compat,
         "nvidia-compat": nvidia_compat,
     }
@@ -469,6 +563,7 @@ def check_config(
             debug_objects=debug_objects,
             gcov=gcov,
             zbtree_debug=zbtree_debug,
+            zfs_debug=zfs_debug,
             zfs_compat=zfs_compat,
             nvidia_compat=nvidia_compat,
         )  # must be done after nconfig
