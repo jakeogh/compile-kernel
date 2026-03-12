@@ -72,12 +72,30 @@ def cli(
     help="Enable CONFIG_FRAME_POINTER required by sys-fs/zfs USE=debug",
 )
 @click.option("--ubsan", is_flag=True, help="Enable UBSAN undefined behaviour checks")
-@click.option("--kcsan", is_flag=True, help="Enable KCSAN data-race detector (sampling)")
-@click.option("--watchdog", is_flag=True, help="Enable softlockup/hardlockup/hung-task/WQ watchdogs")
-@click.option("--fault-inject", is_flag=True, help="Enable fault injection framework (slab/page/futex)")
-@click.option("--mem-init", is_flag=True, help="Enable memory init-on-alloc/free and page poisoning")
+@click.option(
+    "--kcsan", is_flag=True, help="Enable KCSAN data-race detector (sampling)"
+)
+@click.option(
+    "--watchdog",
+    is_flag=True,
+    help="Enable softlockup/hardlockup/hung-task/WQ watchdogs",
+)
+@click.option(
+    "--fault-inject",
+    is_flag=True,
+    help="Enable fault injection framework (slab/page/futex)",
+)
+@click.option(
+    "--mem-init",
+    is_flag=True,
+    help="Enable memory init-on-alloc/free and page poisoning",
+)
 @click.option("--dma-debug", is_flag=True, help="Enable DMA API correctness checking")
-@click.option("--data-struct-debug", is_flag=True, help="Enable list/SG/notifier/IRQ integrity checks")
+@click.option(
+    "--data-struct-debug",
+    is_flag=True,
+    help="Enable list/SG/notifier/IRQ integrity checks",
+)
 @click.option(
     "--zfs-compat",
     is_flag=True,
@@ -303,12 +321,30 @@ def compare_loaded_modules_to_config(
     help="Enable CONFIG_FRAME_POINTER required by sys-fs/zfs USE=debug",
 )
 @click.option("--ubsan", is_flag=True, help="Enable UBSAN undefined behaviour checks")
-@click.option("--kcsan", is_flag=True, help="Enable KCSAN data-race detector (sampling)")
-@click.option("--watchdog", is_flag=True, help="Enable softlockup/hardlockup/hung-task/WQ watchdogs")
-@click.option("--fault-inject", is_flag=True, help="Enable fault injection framework (slab/page/futex)")
-@click.option("--mem-init", is_flag=True, help="Enable memory init-on-alloc/free and page poisoning")
+@click.option(
+    "--kcsan", is_flag=True, help="Enable KCSAN data-race detector (sampling)"
+)
+@click.option(
+    "--watchdog",
+    is_flag=True,
+    help="Enable softlockup/hardlockup/hung-task/WQ watchdogs",
+)
+@click.option(
+    "--fault-inject",
+    is_flag=True,
+    help="Enable fault injection framework (slab/page/futex)",
+)
+@click.option(
+    "--mem-init",
+    is_flag=True,
+    help="Enable memory init-on-alloc/free and page poisoning",
+)
 @click.option("--dma-debug", is_flag=True, help="Enable DMA API correctness checking")
-@click.option("--data-struct-debug", is_flag=True, help="Enable list/SG/notifier/IRQ integrity checks")
+@click.option(
+    "--data-struct-debug",
+    is_flag=True,
+    help="Enable list/SG/notifier/IRQ integrity checks",
+)
 @click.option(
     "--zfs-compat",
     is_flag=True,
@@ -318,6 +354,11 @@ def compare_loaded_modules_to_config(
     "--nvidia-compat",
     is_flag=True,
     help="Override LOCKDEP/SLUB_DEBUG_ON/DEBUG_MUTEXES=n so nvidia-drivers builds",
+)
+@click.option(
+    "--skip-module-rebuild",
+    is_flag=True,
+    help="Skip reuilding the modules before kernel compile",
 )
 @click_option_code_debug
 @click_add_options(click_global_options)
@@ -349,6 +390,7 @@ def compile_and_install(
     zfs_compat: bool,
     nvidia_compat: bool,
     code_debug: bool,
+    skip_module_rebuild: bool,
     verbose: bool = False,
 ):
     tty, verbose = tvicgvd(
@@ -398,6 +440,7 @@ def compile_and_install(
         data_struct_debug=data_struct_debug,
         zfs_compat=zfs_compat,
         nvidia_compat=nvidia_compat,
+        skip_module_rebuild=skip_module_rebuild,
     )
     eprint("DONT FORGET TO UMOUNT /boot")
 
@@ -424,12 +467,30 @@ def compile_and_install(
     help="Enable CONFIG_FRAME_POINTER required by sys-fs/zfs USE=debug",
 )
 @click.option("--ubsan", is_flag=True, help="Enable UBSAN undefined behaviour checks")
-@click.option("--kcsan", is_flag=True, help="Enable KCSAN data-race detector (sampling)")
-@click.option("--watchdog", is_flag=True, help="Enable softlockup/hardlockup/hung-task/WQ watchdogs")
-@click.option("--fault-inject", is_flag=True, help="Enable fault injection framework (slab/page/futex)")
-@click.option("--mem-init", is_flag=True, help="Enable memory init-on-alloc/free and page poisoning")
+@click.option(
+    "--kcsan", is_flag=True, help="Enable KCSAN data-race detector (sampling)"
+)
+@click.option(
+    "--watchdog",
+    is_flag=True,
+    help="Enable softlockup/hardlockup/hung-task/WQ watchdogs",
+)
+@click.option(
+    "--fault-inject",
+    is_flag=True,
+    help="Enable fault injection framework (slab/page/futex)",
+)
+@click.option(
+    "--mem-init",
+    is_flag=True,
+    help="Enable memory init-on-alloc/free and page poisoning",
+)
 @click.option("--dma-debug", is_flag=True, help="Enable DMA API correctness checking")
-@click.option("--data-struct-debug", is_flag=True, help="Enable list/SG/notifier/IRQ integrity checks")
+@click.option(
+    "--data-struct-debug",
+    is_flag=True,
+    help="Enable list/SG/notifier/IRQ integrity checks",
+)
 @click.option(
     "--zfs-compat",
     is_flag=True,
@@ -535,12 +596,30 @@ def _install_kernel(
     help="Enable CONFIG_FRAME_POINTER required by sys-fs/zfs USE=debug",
 )
 @click.option("--ubsan", is_flag=True, help="Enable UBSAN undefined behaviour checks")
-@click.option("--kcsan", is_flag=True, help="Enable KCSAN data-race detector (sampling)")
-@click.option("--watchdog", is_flag=True, help="Enable softlockup/hardlockup/hung-task/WQ watchdogs")
-@click.option("--fault-inject", is_flag=True, help="Enable fault injection framework (slab/page/futex)")
-@click.option("--mem-init", is_flag=True, help="Enable memory init-on-alloc/free and page poisoning")
+@click.option(
+    "--kcsan", is_flag=True, help="Enable KCSAN data-race detector (sampling)"
+)
+@click.option(
+    "--watchdog",
+    is_flag=True,
+    help="Enable softlockup/hardlockup/hung-task/WQ watchdogs",
+)
+@click.option(
+    "--fault-inject",
+    is_flag=True,
+    help="Enable fault injection framework (slab/page/futex)",
+)
+@click.option(
+    "--mem-init",
+    is_flag=True,
+    help="Enable memory init-on-alloc/free and page poisoning",
+)
 @click.option("--dma-debug", is_flag=True, help="Enable DMA API correctness checking")
-@click.option("--data-struct-debug", is_flag=True, help="Enable list/SG/notifier/IRQ integrity checks")
+@click.option(
+    "--data-struct-debug",
+    is_flag=True,
+    help="Enable list/SG/notifier/IRQ integrity checks",
+)
 @click.option(
     "--zfs-compat",
     is_flag=True,

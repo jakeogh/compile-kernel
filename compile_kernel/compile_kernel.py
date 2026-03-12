@@ -3409,6 +3409,7 @@ def compile_and_install_kernel(
     warn_only: bool,
     no_check_boot: bool,
     symlink_config: bool,
+    skip_module_rebuild: bool,
     kasan: bool = False,
     kmemleak: bool = False,
     slub_debug: bool = False,
@@ -3540,16 +3541,19 @@ def compile_and_install_kernel(
         )
 
     if not unconfigured_kernel:
-        icp("attempting emerge @module-rebuild")
-        try:
-            hs.Command("emerge")("@module-rebuild", _out=sys.stdout, _err=sys.stderr)
-        except hs.ErrorReturnCode_1 as e:
-            unconfigured_kernel = True  # todo, get conditions from above
-            if not unconfigured_kernel:
-                raise e
-            icp(
-                "NOTE: kernel is unconfigured, skipping `emerge @module-rebuild` before kernel compile"
-            )
+        if not skip_module_rebuild:
+            icp("attempting emerge @module-rebuild")
+            try:
+                hs.Command("emerge")(
+                    "@module-rebuild", _out=sys.stdout, _err=sys.stderr
+                )
+            except hs.ErrorReturnCode_1 as e:
+                unconfigured_kernel = True  # todo, get conditions from above
+                if not unconfigured_kernel:
+                    raise e
+                icp(
+                    "NOTE: kernel is unconfigured, skipping `emerge @module-rebuild` before kernel compile"
+                )
 
     # might fail if gcc was upgraded and the kernel hasnt been recompiled yet
     # for line in hs.Command("emerge")('sci-libs/linux-gpib', '-u', _err_to_out=True, _iter=True, _out_bufsize=100):
