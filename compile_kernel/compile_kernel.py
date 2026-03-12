@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf8 -*-
 
 
 from __future__ import annotations
@@ -108,7 +107,7 @@ def generate_module_config_dict(path: Path):
         _prefixes.append(_p)
 
     for _makefile in _makefiles:
-        with open(_makefile, "r", encoding="utf8") as f:
+        with open(_makefile, encoding="utf8") as f:
             for line in f:
                 line = line.strip()  # some lines have leading whitespace
                 if line.startswith("#"):
@@ -141,10 +140,14 @@ def generate_module_config_dict(path: Path):
 
 def read_content_of_kernel_config(path: Path):
     try:
-        with gzip.open(path, mode="rt", encoding="utf8") as _fh:
+        with gzip.open(
+            path,
+            mode="rt",
+            encoding="utf8",
+        ) as _fh:
             content = _fh.read()
     except gzip.BadGzipFile:
-        with open(path, mode="rt", encoding="utf8") as _fh:
+        with open(path, encoding="utf8") as _fh:
             content = _fh.read()
     return content
 
@@ -234,7 +237,11 @@ def verify_kernel_config_setting(
     if _current_state == "y" and required_state and not module:
         return
     if (_current_state == "m") and (required_state and module):
-        ic(_current_state, required_state, module)
+        ic(
+            _current_state,
+            required_state,
+            module,
+        )
         return
     if not required_state and not module and _current_state not in ("y", "m"):
         return  # undef/n/absent all mean "not enabled" — satisfied
@@ -873,6 +880,32 @@ def check_kernel_config_data_struct_debug(
     )
 
 
+def check_kernel_config_netconsole(
+    *,
+    spec: ConfigSpec,
+    enable: bool,
+) -> None:
+    """Netconsole — send kernel log messages over UDP to a remote syslog host.
+    NETCONSOLE_DYNAMIC enables runtime reconfiguration via configfs (target
+    IP/port/interface changeable without reboot). Requires NETCONSOLE as the
+    parent module.
+    """
+    _spec_add(
+        spec,
+        "CONFIG_NETCONSOLE",
+        required_state=enable,
+        module=True,
+        warn=True,
+    )
+    _spec_add(
+        spec,
+        "CONFIG_NETCONSOLE_DYNAMIC",
+        required_state=enable,
+        module=False,
+        warn=True,
+    )
+
+
 def check_kernel_config_zfs_compat(
     *,
     spec: ConfigSpec,
@@ -1029,10 +1062,15 @@ def check_kernel_config(
     mem_init: bool = False,
     dma_debug: bool = False,
     data_struct_debug: bool = False,
+    netconsole: bool = False,
     zfs_compat: bool = False,
     nvidia_compat: bool = False,
 ):
-    icp(path, fix, warn_only)
+    icp(
+        path,
+        fix,
+        warn_only,
+    )
     global USED_SYMBOL_SET
     USED_SYMBOL_SET = set()
 
@@ -3059,6 +3097,7 @@ def check_kernel_config(
     check_kernel_config_mem_init(spec=spec, enable=mem_init)
     check_kernel_config_dma_debug(spec=spec, enable=dma_debug)
     check_kernel_config_data_struct_debug(spec=spec, enable=data_struct_debug)
+    check_kernel_config_netconsole(spec=spec, enable=netconsole)
 
     # --- layer 3: compat overrides (win over everything) ---
     if zfs_compat:
@@ -3067,7 +3106,11 @@ def check_kernel_config(
         check_kernel_config_nvidia_compat(spec=spec)
 
     # --- apply merged spec — each symbol written exactly once ---
-    _spec_apply(spec=spec, path=path, fix=fix)
+    _spec_apply(
+        spec=spec,
+        path=path,
+        fix=fix,
+    )
 
 
 # bpf
@@ -3091,7 +3134,11 @@ def _symlink_config():
     if not dot_config.exists():
         with resources.path("compile_kernel", ".config") as _kernel_config:
             icp(_kernel_config)
-            hs.Command("ln")("-s", _kernel_config, dot_config)
+            hs.Command("ln")(
+                "-s",
+                _kernel_config,
+                dot_config,
+            )
 
 
 def extract_kernel_config():
@@ -3243,6 +3290,7 @@ def _active_debug_flags(
     mem_init: bool,
     dma_debug: bool,
     data_struct_debug: bool,
+    netconsole: bool,
 ) -> list[str]:
     flags = [
         ("kasan", kasan),
@@ -3260,6 +3308,7 @@ def _active_debug_flags(
         ("mem-init", mem_init),
         ("dma-debug", dma_debug),
         ("data-struct-debug", data_struct_debug),
+        ("netconsole", netconsole),
     ]
     return [name for name, enabled in flags if enabled]
 
@@ -3314,6 +3363,7 @@ def install_compiled_kernel(
     mem_init: bool = False,
     dma_debug: bool = False,
     data_struct_debug: bool = False,
+    netconsole: bool = False,
 ):
     with chdir("/usr/src/linux"):
         os.system("make install")
@@ -3345,6 +3395,7 @@ def install_compiled_kernel(
             mem_init=mem_init,
             dma_debug=dma_debug,
             data_struct_debug=data_struct_debug,
+            netconsole=netconsole,
         )
     )
     hs.Command("grub-mkconfig")("-o", "/boot/grub/grub.cfg")
@@ -3369,6 +3420,7 @@ def configure_kernel(
     mem_init: bool = False,
     dma_debug: bool = False,
     data_struct_debug: bool = False,
+    netconsole: bool = False,
     zfs_compat: bool = False,
     nvidia_compat: bool = False,
 ):
@@ -3396,6 +3448,7 @@ def configure_kernel(
         mem_init=mem_init,
         dma_debug=dma_debug,
         data_struct_debug=data_struct_debug,
+        netconsole=netconsole,
         zfs_compat=zfs_compat,
         nvidia_compat=nvidia_compat,
     )  # must be done after nconfig
@@ -3425,6 +3478,7 @@ def compile_and_install_kernel(
     mem_init: bool = False,
     dma_debug: bool = False,
     data_struct_debug: bool = False,
+    netconsole: bool = False,
     zfs_compat: bool = False,
     nvidia_compat: bool = False,
 ):
@@ -3470,6 +3524,7 @@ def compile_and_install_kernel(
             mem_init=mem_init,
             dma_debug=dma_debug,
             data_struct_debug=data_struct_debug,
+            netconsole=netconsole,
             zfs_compat=zfs_compat,
             nvidia_compat=nvidia_compat,
         )
@@ -3501,6 +3556,7 @@ def compile_and_install_kernel(
         mem_init=mem_init,
         dma_debug=dma_debug,
         data_struct_debug=data_struct_debug,
+        netconsole=netconsole,
         zfs_compat=zfs_compat,
         nvidia_compat=nvidia_compat,
     )
@@ -3545,7 +3601,9 @@ def compile_and_install_kernel(
             icp("attempting emerge @module-rebuild")
             try:
                 hs.Command("emerge")(
-                    "@module-rebuild", _out=sys.stdout, _err=sys.stderr
+                    "@module-rebuild",
+                    _out=sys.stdout,
+                    _err=sys.stderr,
                 )
             except hs.ErrorReturnCode_1 as e:
                 unconfigured_kernel = True  # todo, get conditions from above
@@ -3607,6 +3665,7 @@ def compile_and_install_kernel(
         mem_init=mem_init,
         dma_debug=dma_debug,
         data_struct_debug=data_struct_debug,
+        netconsole=netconsole,
         zfs_compat=zfs_compat,
         nvidia_compat=nvidia_compat,
     )  # must be done after nconfig
@@ -3632,9 +3691,21 @@ def compile_and_install_kernel(
     icp(genkernel_command)
     genkernel_command(_fg=True)
 
-    hs.Command("rc-update")("add", "zfs-import", "boot")
-    hs.Command("rc-update")("add", "zfs-share", "default")
-    hs.Command("rc-update")("add", "zfs-zed", "default")
+    hs.Command("rc-update")(
+        "add",
+        "zfs-import",
+        "boot",
+    )
+    hs.Command("rc-update")(
+        "add",
+        "zfs-share",
+        "default",
+    )
+    hs.Command("rc-update")(
+        "add",
+        "zfs-zed",
+        "default",
+    )
 
     if Path("/boot/grub").is_dir():
         _set_grub_distributor(
@@ -3654,11 +3725,16 @@ def compile_and_install_kernel(
                 mem_init=mem_init,
                 dma_debug=dma_debug,
                 data_struct_debug=data_struct_debug,
+                netconsole=netconsole,
             )
         )
         hs.Command("grub-mkconfig")("-o", "/boot/grub/grub.cfg")
 
-    hs.Command("emerge")("sys-kernel/linux-firmware", _out=sys.stdout, _err=sys.stderr)
+    hs.Command("emerge")(
+        "sys-kernel/linux-firmware",
+        _out=sys.stdout,
+        _err=sys.stderr,
+    )
 
     if Path("/boot/grub").is_dir():
         os.makedirs("/boot_backup", exist_ok=True)
@@ -3668,13 +3744,33 @@ def compile_and_install_kernel(
             if not Path("/boot_backup/.git").is_dir():
                 hs.Command("git")("init")
 
-            hs.Command("git")("config", "user.email", "user@example.com")
-            hs.Command("git")("config", "user.name", "user")
+            hs.Command("git")(
+                "config",
+                "user.email",
+                "user@example.com",
+            )
+            hs.Command("git")(
+                "config",
+                "user.name",
+                "user",
+            )
 
             timestamp = str(time.time())
             os.makedirs(timestamp)
-            hs.Command("cp")("-ar", "/boot", timestamp + "/")
-            hs.Command("git")("add", timestamp, "--force")
-            hs.Command("git")("commit", "-m", timestamp)
+            hs.Command("cp")(
+                "-ar",
+                "/boot",
+                timestamp + "/",
+            )
+            hs.Command("git")(
+                "add",
+                timestamp,
+                "--force",
+            )
+            hs.Command("git")(
+                "commit",
+                "-m",
+                timestamp,
+            )
 
     icp("kernel compile and install completed OK")

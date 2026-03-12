@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf8 -*-
 
 
 from __future__ import annotations
@@ -52,15 +51,35 @@ def cli(
 @cli.command()
 @click.option("--no-fix", is_flag=True)
 @click.option(
-    "--kasan", is_flag=True, help="Enable KASAN/KFENCE memory error detection"
+    "--kasan",
+    is_flag=True,
+    help="Enable KASAN/KFENCE memory error detection",
 )
-@click.option("--kmemleak", is_flag=True, help="Enable kmemleak memory leak detection")
-@click.option("--slub-debug", is_flag=True, help="Enable SLUB allocator debugging")
 @click.option(
-    "--lockdep", is_flag=True, help="Enable lockdep lock correctness checking"
+    "--kmemleak",
+    is_flag=True,
+    help="Enable kmemleak memory leak detection",
 )
-@click.option("--debug-objects", is_flag=True, help="Enable object lifecycle debugging")
-@click.option("--gcov", is_flag=True, help="Enable GCOV kernel coverage")
+@click.option(
+    "--slub-debug",
+    is_flag=True,
+    help="Enable SLUB allocator debugging",
+)
+@click.option(
+    "--lockdep",
+    is_flag=True,
+    help="Enable lockdep lock correctness checking",
+)
+@click.option(
+    "--debug-objects",
+    is_flag=True,
+    help="Enable object lifecycle debugging",
+)
+@click.option(
+    "--gcov",
+    is_flag=True,
+    help="Enable GCOV kernel coverage",
+)
 @click.option(
     "--zbtree-debug",
     is_flag=True,
@@ -71,9 +90,15 @@ def cli(
     is_flag=True,
     help="Enable CONFIG_FRAME_POINTER required by sys-fs/zfs USE=debug",
 )
-@click.option("--ubsan", is_flag=True, help="Enable UBSAN undefined behaviour checks")
 @click.option(
-    "--kcsan", is_flag=True, help="Enable KCSAN data-race detector (sampling)"
+    "--ubsan",
+    is_flag=True,
+    help="Enable UBSAN undefined behaviour checks",
+)
+@click.option(
+    "--kcsan",
+    is_flag=True,
+    help="Enable KCSAN data-race detector (sampling)",
 )
 @click.option(
     "--watchdog",
@@ -90,11 +115,20 @@ def cli(
     is_flag=True,
     help="Enable memory init-on-alloc/free and page poisoning",
 )
-@click.option("--dma-debug", is_flag=True, help="Enable DMA API correctness checking")
+@click.option(
+    "--dma-debug",
+    is_flag=True,
+    help="Enable DMA API correctness checking",
+)
 @click.option(
     "--data-struct-debug",
     is_flag=True,
     help="Enable list/SG/notifier/IRQ integrity checks",
+)
+@click.option(
+    "--netconsole",
+    is_flag=True,
+    help="Enable netconsole UDP kernel log (with dynamic reconfiguration)",
 )
 @click.option(
     "--zfs-compat",
@@ -127,6 +161,7 @@ def configure(
     mem_init: bool,
     dma_debug: bool,
     data_struct_debug: bool,
+    netconsole: bool,
     zfs_compat: bool,
     nvidia_compat: bool,
     code_debug: bool,
@@ -176,6 +211,7 @@ def configure(
         mem_init=mem_init,
         dma_debug=dma_debug,
         data_struct_debug=data_struct_debug,
+        netconsole=netconsole,
         zfs_compat=zfs_compat,
         nvidia_compat=nvidia_compat,
     )
@@ -295,21 +331,45 @@ def compare_loaded_modules_to_config(
 
 
 @cli.command()
-@click.option("--configure", "--config", is_flag=True)
+@click.option(
+    "--configure",
+    "--config",
+    is_flag=True,
+)
 @click.option("--force", is_flag=True)
 @click.option("--no-fix", is_flag=True)
 @click.option("--symlink-config", is_flag=True)
 @click.option("--no-check-boot", is_flag=True)
 @click.option(
-    "--kasan", is_flag=True, help="Enable KASAN/KFENCE memory error detection"
+    "--kasan",
+    is_flag=True,
+    help="Enable KASAN/KFENCE memory error detection",
 )
-@click.option("--kmemleak", is_flag=True, help="Enable kmemleak memory leak detection")
-@click.option("--slub-debug", is_flag=True, help="Enable SLUB allocator debugging")
 @click.option(
-    "--lockdep", is_flag=True, help="Enable lockdep lock correctness checking"
+    "--kmemleak",
+    is_flag=True,
+    help="Enable kmemleak memory leak detection",
 )
-@click.option("--debug-objects", is_flag=True, help="Enable object lifecycle debugging")
-@click.option("--gcov", is_flag=True, help="Enable GCOV kernel coverage")
+@click.option(
+    "--slub-debug",
+    is_flag=True,
+    help="Enable SLUB allocator debugging",
+)
+@click.option(
+    "--lockdep",
+    is_flag=True,
+    help="Enable lockdep lock correctness checking",
+)
+@click.option(
+    "--debug-objects",
+    is_flag=True,
+    help="Enable object lifecycle debugging",
+)
+@click.option(
+    "--gcov",
+    is_flag=True,
+    help="Enable GCOV kernel coverage",
+)
 @click.option(
     "--zbtree-debug",
     is_flag=True,
@@ -320,9 +380,15 @@ def compare_loaded_modules_to_config(
     is_flag=True,
     help="Enable CONFIG_FRAME_POINTER required by sys-fs/zfs USE=debug",
 )
-@click.option("--ubsan", is_flag=True, help="Enable UBSAN undefined behaviour checks")
 @click.option(
-    "--kcsan", is_flag=True, help="Enable KCSAN data-race detector (sampling)"
+    "--ubsan",
+    is_flag=True,
+    help="Enable UBSAN undefined behaviour checks",
+)
+@click.option(
+    "--kcsan",
+    is_flag=True,
+    help="Enable KCSAN data-race detector (sampling)",
 )
 @click.option(
     "--watchdog",
@@ -339,11 +405,20 @@ def compare_loaded_modules_to_config(
     is_flag=True,
     help="Enable memory init-on-alloc/free and page poisoning",
 )
-@click.option("--dma-debug", is_flag=True, help="Enable DMA API correctness checking")
+@click.option(
+    "--dma-debug",
+    is_flag=True,
+    help="Enable DMA API correctness checking",
+)
 @click.option(
     "--data-struct-debug",
     is_flag=True,
     help="Enable list/SG/notifier/IRQ integrity checks",
+)
+@click.option(
+    "--netconsole",
+    is_flag=True,
+    help="Enable netconsole UDP kernel log (with dynamic reconfiguration)",
 )
 @click.option(
     "--zfs-compat",
@@ -387,6 +462,7 @@ def compile_and_install(
     mem_init: bool,
     dma_debug: bool,
     data_struct_debug: bool,
+    netconsole: bool,
     zfs_compat: bool,
     nvidia_compat: bool,
     code_debug: bool,
@@ -438,6 +514,7 @@ def compile_and_install(
         mem_init=mem_init,
         dma_debug=dma_debug,
         data_struct_debug=data_struct_debug,
+        netconsole=netconsole,
         zfs_compat=zfs_compat,
         nvidia_compat=nvidia_compat,
         skip_module_rebuild=skip_module_rebuild,
@@ -447,15 +524,35 @@ def compile_and_install(
 
 @cli.command("install-kernel")
 @click.option(
-    "--kasan", is_flag=True, help="Enable KASAN/KFENCE memory error detection"
+    "--kasan",
+    is_flag=True,
+    help="Enable KASAN/KFENCE memory error detection",
 )
-@click.option("--kmemleak", is_flag=True, help="Enable kmemleak memory leak detection")
-@click.option("--slub-debug", is_flag=True, help="Enable SLUB allocator debugging")
 @click.option(
-    "--lockdep", is_flag=True, help="Enable lockdep lock correctness checking"
+    "--kmemleak",
+    is_flag=True,
+    help="Enable kmemleak memory leak detection",
 )
-@click.option("--debug-objects", is_flag=True, help="Enable object lifecycle debugging")
-@click.option("--gcov", is_flag=True, help="Enable GCOV kernel coverage")
+@click.option(
+    "--slub-debug",
+    is_flag=True,
+    help="Enable SLUB allocator debugging",
+)
+@click.option(
+    "--lockdep",
+    is_flag=True,
+    help="Enable lockdep lock correctness checking",
+)
+@click.option(
+    "--debug-objects",
+    is_flag=True,
+    help="Enable object lifecycle debugging",
+)
+@click.option(
+    "--gcov",
+    is_flag=True,
+    help="Enable GCOV kernel coverage",
+)
 @click.option(
     "--zbtree-debug",
     is_flag=True,
@@ -466,9 +563,15 @@ def compile_and_install(
     is_flag=True,
     help="Enable CONFIG_FRAME_POINTER required by sys-fs/zfs USE=debug",
 )
-@click.option("--ubsan", is_flag=True, help="Enable UBSAN undefined behaviour checks")
 @click.option(
-    "--kcsan", is_flag=True, help="Enable KCSAN data-race detector (sampling)"
+    "--ubsan",
+    is_flag=True,
+    help="Enable UBSAN undefined behaviour checks",
+)
+@click.option(
+    "--kcsan",
+    is_flag=True,
+    help="Enable KCSAN data-race detector (sampling)",
 )
 @click.option(
     "--watchdog",
@@ -485,11 +588,20 @@ def compile_and_install(
     is_flag=True,
     help="Enable memory init-on-alloc/free and page poisoning",
 )
-@click.option("--dma-debug", is_flag=True, help="Enable DMA API correctness checking")
+@click.option(
+    "--dma-debug",
+    is_flag=True,
+    help="Enable DMA API correctness checking",
+)
 @click.option(
     "--data-struct-debug",
     is_flag=True,
     help="Enable list/SG/notifier/IRQ integrity checks",
+)
+@click.option(
+    "--netconsole",
+    is_flag=True,
+    help="Enable netconsole UDP kernel log (with dynamic reconfiguration)",
 )
 @click.option(
     "--zfs-compat",
@@ -520,6 +632,7 @@ def _install_kernel(
     mem_init: bool,
     dma_debug: bool,
     data_struct_debug: bool,
+    netconsole: bool,
     zfs_compat: bool,
     nvidia_compat: bool,
     verbose_inf: bool,
@@ -556,6 +669,7 @@ def _install_kernel(
         mem_init=mem_init,
         dma_debug=dma_debug,
         data_struct_debug=data_struct_debug,
+        netconsole=netconsole,
         zfs_compat=zfs_compat,
         nvidia_compat=nvidia_compat,
     )
@@ -576,15 +690,35 @@ def _install_kernel(
 )
 @click.option("--fix", is_flag=True)
 @click.option(
-    "--kasan", is_flag=True, help="Enable KASAN/KFENCE memory error detection"
+    "--kasan",
+    is_flag=True,
+    help="Enable KASAN/KFENCE memory error detection",
 )
-@click.option("--kmemleak", is_flag=True, help="Enable kmemleak memory leak detection")
-@click.option("--slub-debug", is_flag=True, help="Enable SLUB allocator debugging")
 @click.option(
-    "--lockdep", is_flag=True, help="Enable lockdep lock correctness checking"
+    "--kmemleak",
+    is_flag=True,
+    help="Enable kmemleak memory leak detection",
 )
-@click.option("--debug-objects", is_flag=True, help="Enable object lifecycle debugging")
-@click.option("--gcov", is_flag=True, help="Enable GCOV kernel coverage")
+@click.option(
+    "--slub-debug",
+    is_flag=True,
+    help="Enable SLUB allocator debugging",
+)
+@click.option(
+    "--lockdep",
+    is_flag=True,
+    help="Enable lockdep lock correctness checking",
+)
+@click.option(
+    "--debug-objects",
+    is_flag=True,
+    help="Enable object lifecycle debugging",
+)
+@click.option(
+    "--gcov",
+    is_flag=True,
+    help="Enable GCOV kernel coverage",
+)
 @click.option(
     "--zbtree-debug",
     is_flag=True,
@@ -595,9 +729,15 @@ def _install_kernel(
     is_flag=True,
     help="Enable CONFIG_FRAME_POINTER required by sys-fs/zfs USE=debug",
 )
-@click.option("--ubsan", is_flag=True, help="Enable UBSAN undefined behaviour checks")
 @click.option(
-    "--kcsan", is_flag=True, help="Enable KCSAN data-race detector (sampling)"
+    "--ubsan",
+    is_flag=True,
+    help="Enable UBSAN undefined behaviour checks",
+)
+@click.option(
+    "--kcsan",
+    is_flag=True,
+    help="Enable KCSAN data-race detector (sampling)",
 )
 @click.option(
     "--watchdog",
@@ -614,11 +754,20 @@ def _install_kernel(
     is_flag=True,
     help="Enable memory init-on-alloc/free and page poisoning",
 )
-@click.option("--dma-debug", is_flag=True, help="Enable DMA API correctness checking")
+@click.option(
+    "--dma-debug",
+    is_flag=True,
+    help="Enable DMA API correctness checking",
+)
 @click.option(
     "--data-struct-debug",
     is_flag=True,
     help="Enable list/SG/notifier/IRQ integrity checks",
+)
+@click.option(
+    "--netconsole",
+    is_flag=True,
+    help="Enable netconsole UDP kernel log (with dynamic reconfiguration)",
 )
 @click.option(
     "--zfs-compat",
@@ -652,6 +801,7 @@ def check_config(
     mem_init: bool,
     dma_debug: bool,
     data_struct_debug: bool,
+    netconsole: bool,
     zfs_compat: bool,
     nvidia_compat: bool,
     code_debug: bool,
@@ -702,6 +852,7 @@ def check_config(
         "mem-init": mem_init,
         "dma-debug": dma_debug,
         "data-struct-debug": data_struct_debug,
+        "netconsole": netconsole,
         "zfs-compat": zfs_compat,
         "nvidia-compat": nvidia_compat,
     }
@@ -734,6 +885,7 @@ def check_config(
             mem_init=mem_init,
             dma_debug=dma_debug,
             data_struct_debug=data_struct_debug,
+            netconsole=netconsole,
             zfs_compat=zfs_compat,
             nvidia_compat=nvidia_compat,
         )  # must be done after nconfig
