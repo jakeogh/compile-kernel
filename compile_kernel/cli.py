@@ -71,6 +71,13 @@ def cli(
     is_flag=True,
     help="Enable CONFIG_FRAME_POINTER required by sys-fs/zfs USE=debug",
 )
+@click.option("--ubsan", is_flag=True, help="Enable UBSAN undefined behaviour checks")
+@click.option("--kcsan", is_flag=True, help="Enable KCSAN data-race detector (sampling)")
+@click.option("--watchdog", is_flag=True, help="Enable softlockup/hardlockup/hung-task/WQ watchdogs")
+@click.option("--fault-inject", is_flag=True, help="Enable fault injection framework (slab/page/futex)")
+@click.option("--mem-init", is_flag=True, help="Enable memory init-on-alloc/free and page poisoning")
+@click.option("--dma-debug", is_flag=True, help="Enable DMA API correctness checking")
+@click.option("--data-struct-debug", is_flag=True, help="Enable list/SG/notifier/IRQ integrity checks")
 @click.option(
     "--zfs-compat",
     is_flag=True,
@@ -95,6 +102,13 @@ def configure(
     gcov: bool,
     zbtree_debug: bool,
     zfs_debug: bool,
+    ubsan: bool,
+    kcsan: bool,
+    watchdog: bool,
+    fault_inject: bool,
+    mem_init: bool,
+    dma_debug: bool,
+    data_struct_debug: bool,
     zfs_compat: bool,
     nvidia_compat: bool,
     code_debug: bool,
@@ -137,6 +151,13 @@ def configure(
         gcov=gcov,
         zbtree_debug=zbtree_debug,
         zfs_debug=zfs_debug,
+        ubsan=ubsan,
+        kcsan=kcsan,
+        watchdog=watchdog,
+        fault_inject=fault_inject,
+        mem_init=mem_init,
+        dma_debug=dma_debug,
+        data_struct_debug=data_struct_debug,
         zfs_compat=zfs_compat,
         nvidia_compat=nvidia_compat,
     )
@@ -281,6 +302,13 @@ def compare_loaded_modules_to_config(
     is_flag=True,
     help="Enable CONFIG_FRAME_POINTER required by sys-fs/zfs USE=debug",
 )
+@click.option("--ubsan", is_flag=True, help="Enable UBSAN undefined behaviour checks")
+@click.option("--kcsan", is_flag=True, help="Enable KCSAN data-race detector (sampling)")
+@click.option("--watchdog", is_flag=True, help="Enable softlockup/hardlockup/hung-task/WQ watchdogs")
+@click.option("--fault-inject", is_flag=True, help="Enable fault injection framework (slab/page/futex)")
+@click.option("--mem-init", is_flag=True, help="Enable memory init-on-alloc/free and page poisoning")
+@click.option("--dma-debug", is_flag=True, help="Enable DMA API correctness checking")
+@click.option("--data-struct-debug", is_flag=True, help="Enable list/SG/notifier/IRQ integrity checks")
 @click.option(
     "--zfs-compat",
     is_flag=True,
@@ -311,6 +339,13 @@ def compile_and_install(
     gcov: bool,
     zbtree_debug: bool,
     zfs_debug: bool,
+    ubsan: bool,
+    kcsan: bool,
+    watchdog: bool,
+    fault_inject: bool,
+    mem_init: bool,
+    dma_debug: bool,
+    data_struct_debug: bool,
     zfs_compat: bool,
     nvidia_compat: bool,
     code_debug: bool,
@@ -354,6 +389,13 @@ def compile_and_install(
         gcov=gcov,
         zbtree_debug=zbtree_debug,
         zfs_debug=zfs_debug,
+        ubsan=ubsan,
+        kcsan=kcsan,
+        watchdog=watchdog,
+        fault_inject=fault_inject,
+        mem_init=mem_init,
+        dma_debug=dma_debug,
+        data_struct_debug=data_struct_debug,
         zfs_compat=zfs_compat,
         nvidia_compat=nvidia_compat,
     )
@@ -381,6 +423,13 @@ def compile_and_install(
     is_flag=True,
     help="Enable CONFIG_FRAME_POINTER required by sys-fs/zfs USE=debug",
 )
+@click.option("--ubsan", is_flag=True, help="Enable UBSAN undefined behaviour checks")
+@click.option("--kcsan", is_flag=True, help="Enable KCSAN data-race detector (sampling)")
+@click.option("--watchdog", is_flag=True, help="Enable softlockup/hardlockup/hung-task/WQ watchdogs")
+@click.option("--fault-inject", is_flag=True, help="Enable fault injection framework (slab/page/futex)")
+@click.option("--mem-init", is_flag=True, help="Enable memory init-on-alloc/free and page poisoning")
+@click.option("--dma-debug", is_flag=True, help="Enable DMA API correctness checking")
+@click.option("--data-struct-debug", is_flag=True, help="Enable list/SG/notifier/IRQ integrity checks")
 @click.option(
     "--zfs-compat",
     is_flag=True,
@@ -403,6 +452,13 @@ def _install_kernel(
     gcov: bool,
     zbtree_debug: bool,
     zfs_debug: bool,
+    ubsan: bool,
+    kcsan: bool,
+    watchdog: bool,
+    fault_inject: bool,
+    mem_init: bool,
+    dma_debug: bool,
+    data_struct_debug: bool,
     zfs_compat: bool,
     nvidia_compat: bool,
     verbose_inf: bool,
@@ -432,6 +488,13 @@ def _install_kernel(
         gcov=gcov,
         zbtree_debug=zbtree_debug,
         zfs_debug=zfs_debug,
+        ubsan=ubsan,
+        kcsan=kcsan,
+        watchdog=watchdog,
+        fault_inject=fault_inject,
+        mem_init=mem_init,
+        dma_debug=dma_debug,
+        data_struct_debug=data_struct_debug,
         zfs_compat=zfs_compat,
         nvidia_compat=nvidia_compat,
     )
@@ -471,6 +534,13 @@ def _install_kernel(
     is_flag=True,
     help="Enable CONFIG_FRAME_POINTER required by sys-fs/zfs USE=debug",
 )
+@click.option("--ubsan", is_flag=True, help="Enable UBSAN undefined behaviour checks")
+@click.option("--kcsan", is_flag=True, help="Enable KCSAN data-race detector (sampling)")
+@click.option("--watchdog", is_flag=True, help="Enable softlockup/hardlockup/hung-task/WQ watchdogs")
+@click.option("--fault-inject", is_flag=True, help="Enable fault injection framework (slab/page/futex)")
+@click.option("--mem-init", is_flag=True, help="Enable memory init-on-alloc/free and page poisoning")
+@click.option("--dma-debug", is_flag=True, help="Enable DMA API correctness checking")
+@click.option("--data-struct-debug", is_flag=True, help="Enable list/SG/notifier/IRQ integrity checks")
 @click.option(
     "--zfs-compat",
     is_flag=True,
@@ -496,6 +566,13 @@ def check_config(
     gcov: bool,
     zbtree_debug: bool,
     zfs_debug: bool,
+    ubsan: bool,
+    kcsan: bool,
+    watchdog: bool,
+    fault_inject: bool,
+    mem_init: bool,
+    dma_debug: bool,
+    data_struct_debug: bool,
     zfs_compat: bool,
     nvidia_compat: bool,
     code_debug: bool,
@@ -539,6 +616,13 @@ def check_config(
         "gcov": gcov,
         "zbtree-debug": zbtree_debug,
         "zfs-debug": zfs_debug,
+        "ubsan": ubsan,
+        "kcsan": kcsan,
+        "watchdog": watchdog,
+        "fault-inject": fault_inject,
+        "mem-init": mem_init,
+        "dma-debug": dma_debug,
+        "data-struct-debug": data_struct_debug,
         "zfs-compat": zfs_compat,
         "nvidia-compat": nvidia_compat,
     }
@@ -564,6 +648,13 @@ def check_config(
             gcov=gcov,
             zbtree_debug=zbtree_debug,
             zfs_debug=zfs_debug,
+            ubsan=ubsan,
+            kcsan=kcsan,
+            watchdog=watchdog,
+            fault_inject=fault_inject,
+            mem_init=mem_init,
+            dma_debug=dma_debug,
+            data_struct_debug=data_struct_debug,
             zfs_compat=zfs_compat,
             nvidia_compat=nvidia_compat,
         )  # must be done after nconfig

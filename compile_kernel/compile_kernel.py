@@ -392,6 +392,21 @@ def check_kernel_config_kasan(
         module=False,
         warn=True,
     )  # force kdump instead of continuing in corrupted state
+    _spec_add(
+        spec,
+        "CONFIG_KASAN_STACK",
+        required_state=enable,
+        module=False,
+        warn=True,
+    )
+    # disable the slower outline variant when inline is requested
+    _spec_add(
+        spec,
+        "CONFIG_KASAN_OUTLINE",
+        required_state=False,
+        module=False,
+        warn=True,
+    )
 
 
 def check_kernel_config_kmemleak(
@@ -458,6 +473,20 @@ def check_kernel_config_lockdep(
     _spec_add(
         spec,
         "CONFIG_DEBUG_LOCK_ALLOC",
+        required_state=enable,
+        module=False,
+        warn=True,
+    )
+    _spec_add(
+        spec,
+        "CONFIG_PROVE_RCU",
+        required_state=enable,
+        module=False,
+        warn=True,
+    )
+    _spec_add(
+        spec,
+        "CONFIG_DEBUG_ATOMIC_SLEEP",
         required_state=enable,
         module=False,
         warn=True,
@@ -551,6 +580,293 @@ def check_kernel_config_zbtree_debug(
     _spec_add(
         spec,
         "CONFIG_DEBUG_OBJECTS",
+        required_state=enable,
+        module=False,
+        warn=True,
+    )
+
+
+def check_kernel_config_ubsan(
+    *,
+    spec: ConfigSpec,
+    enable: bool,
+) -> None:
+    """Undefined Behaviour Sanitizer.
+    Catches C UB (OOB, shift, bad enum/bool) at runtime with ~5-15% overhead.
+    UBSAN_TRAP is intentionally omitted — it turns every UB hit into a kernel
+    panic, which is too aggressive for normal use. UBSAN_INTEGER_WRAP is also
+    omitted; it fires on intentional signed wrap in hot paths and is very noisy.
+    """
+    _spec_add(
+        spec,
+        "CONFIG_UBSAN",
+        required_state=enable,
+        module=False,
+        warn=True,
+    )
+    _spec_add(
+        spec,
+        "CONFIG_UBSAN_BOUNDS",
+        required_state=enable,
+        module=False,
+        warn=True,
+    )
+    _spec_add(
+        spec,
+        "CONFIG_UBSAN_SHIFT",
+        required_state=enable,
+        module=False,
+        warn=True,
+    )
+    _spec_add(
+        spec,
+        "CONFIG_UBSAN_BOOL",
+        required_state=enable,
+        module=False,
+        warn=True,
+    )
+    _spec_add(
+        spec,
+        "CONFIG_UBSAN_ENUM",
+        required_state=enable,
+        module=False,
+        warn=True,
+    )
+
+
+def check_kernel_config_kcsan(
+    *,
+    spec: ConfigSpec,
+    enable: bool,
+) -> None:
+    """Kernel Concurrency Sanitizer — sampling data-race detector (6.0+, x86_64).
+    KCSAN_ASSUME_PLAIN_WRITES_ATOMIC suppresses races where only the plain write
+    side is uninstrumented, reducing false positives significantly.
+    Note: mutually exclusive with KASAN in some kernel versions; compat layer
+    should disable KASAN if both are requested.
+    """
+    _spec_add(
+        spec,
+        "CONFIG_KCSAN",
+        required_state=enable,
+        module=False,
+        warn=True,
+    )
+    _spec_add(
+        spec,
+        "CONFIG_KCSAN_ASSUME_PLAIN_WRITES_ATOMIC",
+        required_state=enable,
+        module=False,
+        warn=True,
+    )
+
+
+def check_kernel_config_watchdog(
+    *,
+    spec: ConfigSpec,
+    enable: bool,
+) -> None:
+    """Lockup and hung-task detectors.
+    LOCKUP_DETECTOR: parent Kconfig gate — required for soft/hardlockup.
+    SOFTLOCKUP: CPU stuck in kernel >10s (NMI-safe).
+    HARDLOCKUP: CPU not taking IRQs (NMI watchdog, requires perf PMU).
+    HARDLOCKUP_DETECTOR_PERF: x86 perf-PMU implementation of hardlockup.
+    DETECT_HUNG_TASK: task in D-state >120s.
+    WQ_WATCHDOG: workqueue stall detection.
+    """
+    _spec_add(
+        spec,
+        "CONFIG_LOCKUP_DETECTOR",
+        required_state=enable,
+        module=False,
+        warn=True,
+    )
+    _spec_add(
+        spec,
+        "CONFIG_SOFTLOCKUP_DETECTOR",
+        required_state=enable,
+        module=False,
+        warn=True,
+    )
+    _spec_add(
+        spec,
+        "CONFIG_HARDLOCKUP_DETECTOR",
+        required_state=enable,
+        module=False,
+        warn=True,
+    )
+    _spec_add(
+        spec,
+        "CONFIG_HARDLOCKUP_DETECTOR_PERF",
+        required_state=enable,
+        module=False,
+        warn=True,
+    )
+    _spec_add(
+        spec,
+        "CONFIG_DETECT_HUNG_TASK",
+        required_state=enable,
+        module=False,
+        warn=True,
+    )
+    _spec_add(
+        spec,
+        "CONFIG_WQ_WATCHDOG",
+        required_state=enable,
+        module=False,
+        warn=True,
+    )
+
+
+def check_kernel_config_fault_inject(
+    *,
+    spec: ConfigSpec,
+    enable: bool,
+) -> None:
+    """Fault injection framework.
+    Allows injecting allocation failures into kmalloc and page allocator via
+    debugfs knobs — useful for testing error-path coverage in drivers.
+    DEBUG_FS is required to control injection at runtime.
+    """
+    _spec_add(
+        spec,
+        "CONFIG_FAULT_INJECTION",
+        required_state=enable,
+        module=False,
+        warn=True,
+    )
+    _spec_add(
+        spec,
+        "CONFIG_FAILSLAB",
+        required_state=enable,
+        module=False,
+        warn=True,
+    )
+    _spec_add(
+        spec,
+        "CONFIG_FAIL_PAGE_ALLOC",
+        required_state=enable,
+        module=False,
+        warn=True,
+    )
+    _spec_add(
+        spec,
+        "CONFIG_FAULT_INJECTION_DEBUG_FS",
+        required_state=enable,
+        module=False,
+        warn=True,
+    )
+    _spec_add(
+        spec,
+        "CONFIG_DEBUG_FS",
+        required_state=enable,
+        module=False,
+        warn=True,
+    )
+
+
+def check_kernel_config_mem_init(
+    *,
+    spec: ConfigSpec,
+    enable: bool,
+) -> None:
+    """Memory initialisation and page poisoning.
+    INIT_ON_ALLOC: zero kmalloc/page alloc — catches use of uninit reads.
+    INIT_ON_FREE: zero on free — catches use-after-free reads cheaply.
+    PAGE_POISONING: poison freed pages with 0xAA pattern (catches UAF on access).
+    DEBUG_PAGEALLOC is intentionally omitted: it unmaps every freed page and
+    incurs a TLB flush per free — O(100x) slowdown, impractical outside bisects.
+    """
+    _spec_add(
+        spec,
+        "CONFIG_INIT_ON_ALLOC_DEFAULT_ON",
+        required_state=enable,
+        module=False,
+        warn=True,
+    )
+    _spec_add(
+        spec,
+        "CONFIG_INIT_ON_FREE_DEFAULT_ON",
+        required_state=enable,
+        module=False,
+        warn=True,
+    )
+    _spec_add(
+        spec,
+        "CONFIG_PAGE_POISONING",
+        required_state=enable,
+        module=False,
+        warn=True,
+    )
+
+
+def check_kernel_config_dma_debug(
+    *,
+    spec: ConfigSpec,
+    enable: bool,
+) -> None:
+    """DMA API correctness checking.
+    Catches mapping leaks, double-free, and direction mismatches in DMA users.
+    DMA_API_DEBUG_SG adds extra scatter-gather list validation.
+    """
+    _spec_add(
+        spec,
+        "CONFIG_DMA_API_DEBUG",
+        required_state=enable,
+        module=False,
+        warn=True,
+    )
+    _spec_add(
+        spec,
+        "CONFIG_DMA_API_DEBUG_SG",
+        required_state=enable,
+        module=False,
+        warn=True,
+    )
+
+
+def check_kernel_config_data_struct_debug(
+    *,
+    spec: ConfigSpec,
+    enable: bool,
+) -> None:
+    """Data structure integrity checks.
+    DEBUG_LIST/PLIST: detect list_head corruption (prev/next pointer stomps).
+    DEBUG_SG: validate scatterlist structure on every DMA call.
+    DEBUG_NOTIFIERS: validate notifier chain call order and types.
+    DEBUG_IRQFLAGS: track IRQ enable/disable state for inconsistency detection.
+    """
+    _spec_add(
+        spec,
+        "CONFIG_DEBUG_LIST",
+        required_state=enable,
+        module=False,
+        warn=True,
+    )
+    _spec_add(
+        spec,
+        "CONFIG_DEBUG_PLIST",
+        required_state=enable,
+        module=False,
+        warn=True,
+    )
+    _spec_add(
+        spec,
+        "CONFIG_DEBUG_SG",
+        required_state=enable,
+        module=False,
+        warn=True,
+    )
+    _spec_add(
+        spec,
+        "CONFIG_DEBUG_NOTIFIERS",
+        required_state=enable,
+        module=False,
+        warn=True,
+    )
+    _spec_add(
+        spec,
+        "CONFIG_DEBUG_IRQFLAGS",
         required_state=enable,
         module=False,
         warn=True,
@@ -706,6 +1022,13 @@ def check_kernel_config(
     gcov: bool = False,
     zbtree_debug: bool = False,
     zfs_debug: bool = False,
+    ubsan: bool = False,
+    kcsan: bool = False,
+    watchdog: bool = False,
+    fault_inject: bool = False,
+    mem_init: bool = False,
+    dma_debug: bool = False,
+    data_struct_debug: bool = False,
     zfs_compat: bool = False,
     nvidia_compat: bool = False,
 ):
@@ -1055,6 +1378,48 @@ def check_kernel_config(
     _spec_add(
         spec,
         "CONFIG_SUNRPC_DEBUG",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url=None,
+    )
+
+    # symbol table + stack trace — needed for any meaningful oops/trace
+    _spec_add(
+        spec,
+        "CONFIG_STACKTRACE",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url=None,
+    )
+    _spec_add(
+        spec,
+        "CONFIG_KALLSYMS",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url=None,
+    )
+    _spec_add(
+        spec,
+        "CONFIG_KALLSYMS_ALL",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url=None,
+    )
+    _spec_add(
+        spec,
+        "CONFIG_DEBUG_BUGVERBOSE",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url=None,
+    )
+    _spec_add(
+        spec,
+        "CONFIG_STACKPROTECTOR_STRONG",
         required_state=True,
         module=False,
         warn=warn_only,
@@ -2687,6 +3052,13 @@ def check_kernel_config(
     check_kernel_config_gcov(spec=spec, enable=gcov)
     check_kernel_config_zbtree_debug(spec=spec, enable=zbtree_debug)
     check_kernel_config_zfs_debug(spec=spec, enable=zfs_debug)
+    check_kernel_config_ubsan(spec=spec, enable=ubsan)
+    check_kernel_config_kcsan(spec=spec, enable=kcsan)
+    check_kernel_config_watchdog(spec=spec, enable=watchdog)
+    check_kernel_config_fault_inject(spec=spec, enable=fault_inject)
+    check_kernel_config_mem_init(spec=spec, enable=mem_init)
+    check_kernel_config_dma_debug(spec=spec, enable=dma_debug)
+    check_kernel_config_data_struct_debug(spec=spec, enable=data_struct_debug)
 
     # --- layer 3: compat overrides (win over everything) ---
     if zfs_compat:
@@ -2864,6 +3236,13 @@ def _active_debug_flags(
     gcov: bool,
     zbtree_debug: bool,
     zfs_debug: bool,
+    ubsan: bool,
+    kcsan: bool,
+    watchdog: bool,
+    fault_inject: bool,
+    mem_init: bool,
+    dma_debug: bool,
+    data_struct_debug: bool,
 ) -> list[str]:
     flags = [
         ("kasan", kasan),
@@ -2874,6 +3253,13 @@ def _active_debug_flags(
         ("gcov", gcov),
         ("zbtree-debug", zbtree_debug),
         ("zfs-debug", zfs_debug),
+        ("ubsan", ubsan),
+        ("kcsan", kcsan),
+        ("watchdog", watchdog),
+        ("fault-inject", fault_inject),
+        ("mem-init", mem_init),
+        ("dma-debug", dma_debug),
+        ("data-struct-debug", data_struct_debug),
     ]
     return [name for name, enabled in flags if enabled]
 
@@ -2921,6 +3307,13 @@ def install_compiled_kernel(
     gcov: bool = False,
     zbtree_debug: bool = False,
     zfs_debug: bool = False,
+    ubsan: bool = False,
+    kcsan: bool = False,
+    watchdog: bool = False,
+    fault_inject: bool = False,
+    mem_init: bool = False,
+    dma_debug: bool = False,
+    data_struct_debug: bool = False,
 ):
     with chdir("/usr/src/linux"):
         os.system("make install")
@@ -2945,6 +3338,13 @@ def install_compiled_kernel(
             gcov=gcov,
             zbtree_debug=zbtree_debug,
             zfs_debug=zfs_debug,
+            ubsan=ubsan,
+            kcsan=kcsan,
+            watchdog=watchdog,
+            fault_inject=fault_inject,
+            mem_init=mem_init,
+            dma_debug=dma_debug,
+            data_struct_debug=data_struct_debug,
         )
     )
     hs.Command("grub-mkconfig")("-o", "/boot/grub/grub.cfg")
@@ -2962,6 +3362,13 @@ def configure_kernel(
     gcov: bool = False,
     zbtree_debug: bool = False,
     zfs_debug: bool = False,
+    ubsan: bool = False,
+    kcsan: bool = False,
+    watchdog: bool = False,
+    fault_inject: bool = False,
+    mem_init: bool = False,
+    dma_debug: bool = False,
+    data_struct_debug: bool = False,
     zfs_compat: bool = False,
     nvidia_compat: bool = False,
 ):
@@ -2982,6 +3389,13 @@ def configure_kernel(
         gcov=gcov,
         zbtree_debug=zbtree_debug,
         zfs_debug=zfs_debug,
+        ubsan=ubsan,
+        kcsan=kcsan,
+        watchdog=watchdog,
+        fault_inject=fault_inject,
+        mem_init=mem_init,
+        dma_debug=dma_debug,
+        data_struct_debug=data_struct_debug,
         zfs_compat=zfs_compat,
         nvidia_compat=nvidia_compat,
     )  # must be done after nconfig
@@ -3003,6 +3417,13 @@ def compile_and_install_kernel(
     gcov: bool = False,
     zbtree_debug: bool = False,
     zfs_debug: bool = False,
+    ubsan: bool = False,
+    kcsan: bool = False,
+    watchdog: bool = False,
+    fault_inject: bool = False,
+    mem_init: bool = False,
+    dma_debug: bool = False,
+    data_struct_debug: bool = False,
     zfs_compat: bool = False,
     nvidia_compat: bool = False,
 ):
@@ -3041,6 +3462,13 @@ def compile_and_install_kernel(
             gcov=gcov,
             zbtree_debug=zbtree_debug,
             zfs_debug=zfs_debug,
+            ubsan=ubsan,
+            kcsan=kcsan,
+            watchdog=watchdog,
+            fault_inject=fault_inject,
+            mem_init=mem_init,
+            dma_debug=dma_debug,
+            data_struct_debug=data_struct_debug,
             zfs_compat=zfs_compat,
             nvidia_compat=nvidia_compat,
         )
@@ -3065,6 +3493,13 @@ def compile_and_install_kernel(
         gcov=gcov,
         zbtree_debug=zbtree_debug,
         zfs_debug=zfs_debug,
+        ubsan=ubsan,
+        kcsan=kcsan,
+        watchdog=watchdog,
+        fault_inject=fault_inject,
+        mem_init=mem_init,
+        dma_debug=dma_debug,
+        data_struct_debug=data_struct_debug,
         zfs_compat=zfs_compat,
         nvidia_compat=nvidia_compat,
     )
@@ -3161,6 +3596,13 @@ def compile_and_install_kernel(
         gcov=gcov,
         zbtree_debug=zbtree_debug,
         zfs_debug=zfs_debug,
+        ubsan=ubsan,
+        kcsan=kcsan,
+        watchdog=watchdog,
+        fault_inject=fault_inject,
+        mem_init=mem_init,
+        dma_debug=dma_debug,
+        data_struct_debug=data_struct_debug,
         zfs_compat=zfs_compat,
         nvidia_compat=nvidia_compat,
     )  # must be done after nconfig
@@ -3201,6 +3643,13 @@ def compile_and_install_kernel(
                 gcov=gcov,
                 zbtree_debug=zbtree_debug,
                 zfs_debug=zfs_debug,
+                ubsan=ubsan,
+                kcsan=kcsan,
+                watchdog=watchdog,
+                fault_inject=fault_inject,
+                mem_init=mem_init,
+                dma_debug=dma_debug,
+                data_struct_debug=data_struct_debug,
             )
         )
         hs.Command("grub-mkconfig")("-o", "/boot/grub/grub.cfg")
