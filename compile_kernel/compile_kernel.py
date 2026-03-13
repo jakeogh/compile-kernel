@@ -92,15 +92,15 @@ def _int_spec_add(
 
 
 def _int_spec_apply(
-    spec: IntConfigSpec,
+    ispec: IntConfigSpec,
     path: Path,
     fix: bool,
 ) -> None:
     """Apply integer config values via scripts/config --set-val."""
-    if not spec:
+    if not ispec:
         return
     script_path = Path("/usr/src/linux/scripts/config")
-    for define, value in spec.items():
+    for define, value in ispec.items():
         current = hs.Command(script_path)(
             "--file", path.as_posix(), "--state", define
         ).strip()
