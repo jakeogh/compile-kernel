@@ -7,6 +7,7 @@ import gzip
 import logging
 import os
 import sys
+import tempfile
 import time
 from importlib import resources
 from pathlib import Path
@@ -193,6 +194,30 @@ def read_content_of_kernel_config(path: Path):
         with open(path, encoding="utf8") as _fh:
             content = _fh.read()
     return content
+
+
+def _decompress_config_if_needed(
+    path: Path,
+) -> tuple[Path, tempfile.NamedTemporaryFile | None]:
+    """Return (plain_path, tmp) where tmp is a NamedTemporaryFile to keep alive,
+    or None if the original path is already plain text.
+    scripts/config cannot read gzip-compressed configs directly.
+    """
+    try:
+        with gzip.open(path, "rb") as f:
+            f.read(2)  # probe — raises BadGzipFile if not gzip
+        tmp = tempfile.NamedTemporaryFile(
+            mode="wb",
+            suffix=".config",
+            delete=False,
+        )
+        with gzip.open(path, "rb") as f_in:
+            tmp.write(f_in.read())
+        tmp.flush()
+        tmp.close()
+        return Path(tmp.name), tmp
+    except gzip.BadGzipFile:
+        return path, None
 
 
 def get_set_kernel_config_option(
@@ -1118,6 +1143,7 @@ def check_kernel_config(
     USED_SYMBOL_SET = set()
 
     path = path.resolve()
+    path, _tmp_config = _decompress_config_if_needed(path)
     assert insure_config_exists()
     icp(path, warn_only)
 
@@ -3167,6 +3193,8 @@ def check_kernel_config(
         path=path,
         fix=fix,
     )
+    if _tmp_config is not None:
+        Path(_tmp_config.name).unlink(missing_ok=True)
 
 
 # bpf
