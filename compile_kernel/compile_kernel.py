@@ -77,6 +77,49 @@ def _spec_apply(
         )
 
 
+# Integer-valued config options (e.g. CONFIG_STACK_DEPOT_MAX_ENTRIES).
+# Stored as dict[symbol, int]; last-writer-wins same as ConfigSpec.
+IntConfigSpec = dict[str, int]
+
+
+def _int_spec_add(
+    spec: IntConfigSpec,
+    define: str,
+    value: int,
+) -> None:
+    spec[define] = value
+
+
+def _int_spec_apply(
+    spec: IntConfigSpec,
+    path: Path,
+    fix: bool,
+) -> None:
+    """Apply integer config values via scripts/config --set-val."""
+    if not spec:
+        return
+    script_path = Path("/usr/src/linux/scripts/config")
+    for define, value in spec.items():
+        current = hs.Command(script_path)(
+            "--file", path.as_posix(), "--state", define
+        ).strip()
+        if current == str(value):
+            continue
+        if fix:
+            hs.Command(script_path)(
+                "--file",
+                path.as_posix(),
+                "--set-val",
+                define,
+                str(value),
+            )
+        else:
+            eprint(
+                path.as_posix(),
+                f"WARNING: {define} is {current!r} but should be {value}",
+            )
+
+
 def generate_module_config_dict(path: Path):
     _manual_mappings = {}
 
@@ -1080,6 +1123,7 @@ def check_kernel_config(
 
     # --- build the merged spec in layers ---
     spec: ConfigSpec = {}
+    ispec: IntConfigSpec = {}
 
     # layer 1: production base
     check_kernel_config_nfs(spec=spec, warn_only=warn_only)
@@ -3105,9 +3149,21 @@ def check_kernel_config(
     if nvidia_compat:
         check_kernel_config_nvidia_compat(spec=spec)
 
+    # --- integer config values (last-writer-wins, same layer logic) ---
+    _int_spec_add(
+        ispec,
+        "CONFIG_STACK_DEPOT_MAX_ENTRIES",
+        24,
+    )
+
     # --- apply merged spec — each symbol written exactly once ---
     _spec_apply(
         spec=spec,
+        path=path,
+        fix=fix,
+    )
+    _int_spec_apply(
+        ispec=ispec,
         path=path,
         fix=fix,
     )
