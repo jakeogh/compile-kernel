@@ -2296,6 +2296,15 @@ def check_kernel_config(
         warn=warn_only,
         url="",
     )
+
+    _spec_add(
+        spec,
+        "CONFIG_NF_TABLES",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
     # sshuttle
     _spec_add(
         spec,
@@ -3816,6 +3825,7 @@ def compile_and_install_kernel(
 
     hs.Command("emerge")(
         "sys-kernel/linux-firmware",
+        "-u",
         _out=sys.stdout,
         _err=sys.stderr,
     )
