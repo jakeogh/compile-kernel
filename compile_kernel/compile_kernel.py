@@ -194,6 +194,28 @@ def read_content_of_kernel_config(path: Path):
     return content
 
 
+def _zfs_debug_use_enabled() -> bool:
+    """Return True if debug is in the currently configured USE flags for sys-fs/zfs.
+    Uses the portage Python API with setcpv so package.use overrides are applied,
+    matching exactly what `emerge sys-fs/zfs` would see right now.
+    Returns False if zfs is not in the portage tree or portage is unavailable.
+    """
+    try:
+        import portage
+
+        db = portage.db[portage.root]
+        portdb = db["porttree"].dbapi
+        matches = portdb.match("sys-fs/zfs")
+        if not matches:
+            return False
+        cpv = matches[-1]
+        settings = portage.config(clone=portdb.settings)
+        settings.setcpv(cpv, mydb=portdb)
+        return "debug" in settings.get("USE", "").split()
+    except Exception:
+        return False
+
+
 def _decompress_config_if_needed(
     path: Path,
 ) -> tuple[Path, tempfile.NamedTemporaryFile | None]:
@@ -3159,6 +3181,9 @@ def check_kernel_config(
     )
 
     # --- layer 2: debug group overrides (last-writer-wins over production base) ---
+    # Auto-enable zfs_debug if sys-fs/zfs currently has USE=debug configured,
+    # regardless of whether --zfs-debug was passed on the command line.
+    zfs_debug = zfs_debug or _zfs_debug_use_enabled()
     check_kernel_config_kasan(spec=spec, enable=kasan)
     check_kernel_config_kmemleak(spec=spec, enable=kmemleak)
     check_kernel_config_slub_debug(spec=spec, enable=slub_debug)
