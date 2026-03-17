@@ -9,6 +9,7 @@ import os
 import sys
 import tempfile
 import time
+from dataclasses import dataclass
 from importlib import resources
 from pathlib import Path
 
@@ -26,9 +27,6 @@ from with_chdir import chdir
 logging.basicConfig(level=logging.WARNING)
 
 USED_SYMBOL_SET = set()
-
-
-from dataclasses import dataclass
 
 
 @dataclass
