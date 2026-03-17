@@ -960,7 +960,7 @@ def check_kernel_config_netconsole(
         spec,
         "CONFIG_NETCONSOLE",
         required_state=enable,
-        module=True,
+        module=enable,
         warn=True,
     )
     _spec_add(
