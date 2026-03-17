@@ -431,9 +431,9 @@ def compare_loaded_modules_to_config(
     help="Override LOCKDEP/SLUB_DEBUG_ON/DEBUG_MUTEXES=n so nvidia-drivers builds",
 )
 @click.option(
-    "--skip-module-rebuild",
+    "--pre-module-rebuild",
     is_flag=True,
-    help="Skip reuilding the modules before kernel compile",
+    help="Rebuild the modules once before compiling the kernel and rebuilding the modules again",
 )
 @click_option_code_debug
 @click_add_options(click_global_options)
@@ -466,7 +466,7 @@ def compile_and_install(
     zfs_compat: bool,
     nvidia_compat: bool,
     code_debug: bool,
-    skip_module_rebuild: bool,
+    pre_module_rebuild: bool,
     verbose: bool = False,
 ):
     tty, verbose = tvicgvd(
@@ -517,7 +517,7 @@ def compile_and_install(
         netconsole=netconsole,
         zfs_compat=zfs_compat,
         nvidia_compat=nvidia_compat,
-        skip_module_rebuild=skip_module_rebuild,
+        skip_module_rebuild=not pre_module_rebuild,
     )
     eprint("DONT FORGET TO UMOUNT /boot")
 
