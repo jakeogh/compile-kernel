@@ -126,9 +126,9 @@ def cli(
     help="Enable list/SG/notifier/IRQ integrity checks",
 )
 @click.option(
-    "--netconsole",
+    "--no-netconsole",
     is_flag=True,
-    help="Enable netconsole UDP kernel log (with dynamic reconfiguration)",
+    help="Disable netconsole UDP kernel log (with dynamic reconfiguration)",
 )
 @click.option(
     "--zfs-compat",
@@ -161,7 +161,7 @@ def configure(
     mem_init: bool,
     dma_debug: bool,
     data_struct_debug: bool,
-    netconsole: bool,
+    no_netconsole: bool,
     zfs_compat: bool,
     nvidia_compat: bool,
     code_debug: bool,
@@ -169,6 +169,7 @@ def configure(
     dict_output: bool,
     verbose: bool = False,
 ):
+    netconsole = not no_netconsole
     tty, verbose = tvicgvd(
         ctx=ctx,
         verbose=verbose,
@@ -416,9 +417,9 @@ def compare_loaded_modules_to_config(
     help="Enable list/SG/notifier/IRQ integrity checks",
 )
 @click.option(
-    "--netconsole",
+    "--no-netconsole",
     is_flag=True,
-    help="Enable netconsole UDP kernel log (with dynamic reconfiguration)",
+    help="Disable netconsole UDP kernel log (with dynamic reconfiguration)",
 )
 @click.option(
     "--zfs-compat",
@@ -462,13 +463,14 @@ def compile_and_install(
     mem_init: bool,
     dma_debug: bool,
     data_struct_debug: bool,
-    netconsole: bool,
+    no_netconsole: bool,
     zfs_compat: bool,
     nvidia_compat: bool,
     code_debug: bool,
     pre_module_rebuild: bool,
     verbose: bool = False,
 ):
+    netconsole = not no_netconsole
     tty, verbose = tvicgvd(
         ctx=ctx,
         verbose=verbose,
@@ -599,9 +601,9 @@ def compile_and_install(
     help="Enable list/SG/notifier/IRQ integrity checks",
 )
 @click.option(
-    "--netconsole",
+    "--no-netconsole",
     is_flag=True,
-    help="Enable netconsole UDP kernel log (with dynamic reconfiguration)",
+    help="Disable netconsole UDP kernel log (with dynamic reconfiguration)",
 )
 @click.option(
     "--zfs-compat",
@@ -632,13 +634,14 @@ def _install_kernel(
     mem_init: bool,
     dma_debug: bool,
     data_struct_debug: bool,
-    netconsole: bool,
+    no_netconsole: bool,
     zfs_compat: bool,
     nvidia_compat: bool,
     verbose_inf: bool,
     dict_output: bool,
     verbose: bool = False,
 ):
+    netconsole = not no_netconsole
     tty, verbose = tvicgvd(
         ctx=ctx,
         verbose=verbose,
@@ -765,9 +768,9 @@ def _install_kernel(
     help="Enable list/SG/notifier/IRQ integrity checks",
 )
 @click.option(
-    "--netconsole",
+    "--no-netconsole",
     is_flag=True,
-    help="Enable netconsole UDP kernel log (with dynamic reconfiguration)",
+    help="Disable netconsole UDP kernel log (with dynamic reconfiguration)",
 )
 @click.option(
     "--zfs-compat",
@@ -801,7 +804,7 @@ def check_config(
     mem_init: bool,
     dma_debug: bool,
     data_struct_debug: bool,
-    netconsole: bool,
+    no_netconsole: bool,
     zfs_compat: bool,
     nvidia_compat: bool,
     code_debug: bool,
@@ -809,6 +812,7 @@ def check_config(
     dict_output: bool,
     verbose: bool = False,
 ):
+    netconsole = not no_netconsole
     tty, verbose = tvicgvd(
         ctx=ctx,
         verbose=verbose,
