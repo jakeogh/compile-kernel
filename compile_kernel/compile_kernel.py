@@ -58,6 +58,22 @@ def _spec_add(
     )
 
 
+def _print_managed_config(*, spec: ConfigSpec, ispec: IntConfigSpec) -> None:
+    """Print the final merged set of managed config options to stdout."""
+    col_w = max((len(k) for k in (*spec, *ispec)), default=0) + 2
+    print("managed kernel config options (final merged state):")
+    for define, opt in sorted(spec.items()):
+        if opt.required_state is False:
+            value = "n"
+        elif opt.module:
+            value = "m"
+        else:
+            value = "y"
+        print(f"  {define:<{col_w}}  {value}")
+    for define, value in sorted(ispec.items()):
+        print(f"  {define:<{col_w}}  {value}")
+
+
 def _spec_apply(
     spec: ConfigSpec,
     path: Path,
@@ -202,7 +218,6 @@ def _zfs_debug_use_enabled() -> bool:
     """
     try:
         import portage
-
         db = portage.db[portage.root]
         portdb = db["porttree"].dbapi
         matches = portdb.match("sys-fs/zfs")
@@ -586,6 +601,13 @@ def check_kernel_config_lockdep(
         module=False,
         warn=True,
     )
+    _spec_add(
+        spec,
+        "CONFIG_LOCK_STAT",
+        required_state=enable,
+        module=False,
+        warn=True,
+    )  # lock contention statistics via /proc/lock_stat; selects LOCKDEP
 
 
 def check_kernel_config_debug_objects(
@@ -3213,6 +3235,9 @@ def check_kernel_config(
         "CONFIG_STACK_DEPOT_MAX_ENTRIES",
         24,
     )
+
+    # --- print final merged spec before applying ---
+    _print_managed_config(spec=spec, ispec=ispec)
 
     # --- apply merged spec — each symbol written exactly once ---
     _spec_apply(
