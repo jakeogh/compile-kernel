@@ -133,8 +133,10 @@ def _kconfig_index(src: Path) -> dict[str, dict]:
     {SYMBOL: {type, depends_on, file, line}}.
 
     type ∈ {'bool', 'tristate', 'string', 'int', 'hex', None}.
-    depends_on is the conjunction of every 'depends on' line under the symbol,
-    joined by ' && '.
+    depends_on is the conjunction of every direct `depends on` line under the
+    symbol AND every enclosing `if EXPR` block, joined by ' && '. This matches
+    Kconfig's actual visibility logic (an `if EXPR` wrapper has identical
+    semantics to a `depends on EXPR` on every symbol it contains).
     Cached per-src so subsequent calls are free.
     """
     key = src.resolve().as_posix()
@@ -144,6 +146,8 @@ def _kconfig_index(src: Path) -> dict[str, dict]:
     cfg_re = re.compile(r"^(?:menu)?config\s+([A-Za-z0-9_]+)\s*$")
     type_re = re.compile(r"^(bool|tristate|string|int|hex)\b")
     dep_re = re.compile(r"^depends on\s+(.*?)\s*$")
+    if_re = re.compile(r"^if\s+(.+?)\s*$")
+    endif_re = re.compile(r"^endif\b")
 
     index: dict[str, dict] = {}
     for kfile in src.rglob("Kconfig*"):
@@ -153,32 +157,55 @@ def _kconfig_index(src: Path) -> dict[str, dict]:
             lines = kfile.read_text(encoding="utf8", errors="replace").splitlines()
         except OSError:
             continue
+        if_stack: list[str] = []
         i = 0
         n = len(lines)
         while i < n:
-            m = cfg_re.match(lines[i].rstrip())
+            stripped = lines[i].lstrip().rstrip()
+            ifm = if_re.match(stripped)
+            if ifm:
+                if_stack.append(ifm.group(1))
+                i += 1
+                continue
+            if endif_re.match(stripped):
+                if if_stack:
+                    if_stack.pop()
+                i += 1
+                continue
+            m = cfg_re.match(stripped)
             if not m:
                 i += 1
                 continue
             name = m.group(1)
             type_: str | None = None
-            depends: list[str] = []
+            depends: list[str] = list(if_stack)  # inherit enclosing if-block deps
             j = i + 1
             while j < n:
-                stripped = lines[j].lstrip()
-                if cfg_re.match(stripped.rstrip()):
+                inner = lines[j].lstrip().rstrip()
+                if cfg_re.match(inner):
                     break
-                tm = type_re.match(stripped)
+                # nested if/endif inside the symbol body — uncommon but possible
+                ifm2 = if_re.match(inner)
+                if ifm2:
+                    if_stack.append(ifm2.group(1))
+                    j += 1
+                    continue
+                if endif_re.match(inner):
+                    if if_stack:
+                        if_stack.pop()
+                    j += 1
+                    continue
+                tm = type_re.match(inner)
                 if tm and type_ is None:
                     type_ = tm.group(1)
-                dm = dep_re.match(stripped)
+                dm = dep_re.match(inner)
                 if dm:
                     depends.append(dm.group(1))
                 j += 1
             # Last-writer-wins for duplicate declarations across architectures
             index[name] = {
                 "type": type_,
-                "depends_on": " && ".join(depends) if depends else None,
+                "depends_on": " && ".join(f"({d})" for d in depends) if depends else None,
                 "file": kfile.as_posix(),
                 "line": i + 1,
             }
@@ -2729,6 +2756,33 @@ def check_kernel_config(
         "CONFIG_NETFILTER_ADVANCED",
         required_state=True,
         module=False,
+        warn=warn_only,
+        url="",
+    )
+    # sshuttle — iptables framework (parent menu of IP_NF_*)
+    _spec_add(
+        spec,
+        "CONFIG_IP_NF_IPTABLES",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
+    # sshuttle — gates the `if IP_NF_NAT` block that contains IP_NF_TARGET_REDIRECT
+    _spec_add(
+        spec,
+        "CONFIG_IP_NF_NAT",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
+    # sshuttle — required by NETFILTER_XT_TARGET_HL (IP_NF_MANGLE || IP6_NF_MANGLE || NFT_COMPAT)
+    _spec_add(
+        spec,
+        "CONFIG_IP_NF_MANGLE",
+        required_state=True,
+        module=True,
         warn=warn_only,
         url="",
     )
