@@ -1518,31 +1518,14 @@ def check_kernel_config_zfs_debug(
     enable: bool,
 ) -> None:
     """ZFS debug USE flag requirements.
-    sys-fs/zfs with USE=debug requires CONFIG_FRAME_POINTER.
-
-    CONFIG_FRAME_POINTER on x86 depends on CONFIG_ARCH_WANT_FRAME_POINTERS,
-    which is only selected by CONFIG_UNWINDER_FRAME_POINTER. Setting
-    FRAME_POINTER directly via scripts/config is undone by make oldconfig
-    because the Kconfig dependency is not satisfied.
-
-    Must switch unwinders: enable UNWINDER_FRAME_POINTER (which selects
-    ARCH_WANT_FRAME_POINTERS → FRAME_POINTER) and disable UNWINDER_ORC.
-    The two are mutually exclusive; UNWINDER_ORC is the production default.
+    Historically required CONFIG_FRAME_POINTER (via UNWINDER_FRAME_POINTER).
+    That setting is now part of the production base unconditionally because
+    sys-fs/zfs always benefits from it. This function is kept as a stable
+    callable referenced by the CLI plumbing, but it no longer modifies the
+    spec — touching the unwinder here would clobber the production base
+    (last-writer-wins on the dict).
     """
-    _spec_add(
-        spec,
-        "CONFIG_UNWINDER_FRAME_POINTER",
-        required_state=enable,
-        module=False,
-        warn=True,
-    )
-    _spec_add(
-        spec,
-        "CONFIG_UNWINDER_ORC",
-        required_state=not enable,
-        module=False,
-        warn=True,
-    )
+    return
 
 
 def check_kernel_config(
