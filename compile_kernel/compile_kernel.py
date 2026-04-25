@@ -569,6 +569,7 @@ def check_kernel_config_perf(*, path: Path) -> None:
             ("CONFIG_DEBUG_LOCK_ALLOC", "n", "HIGH", "lock allocation tracking"),
             ("CONFIG_DEBUG_SPINLOCK", "n", "HIGH", "spinlock debug overhead in hot paths"),
             ("CONFIG_DEBUG_MUTEXES", "n", "MED", "mutex debug overhead"),
+            ("CONFIG_DEBUG_RWSEMS", "n", "MED", "rwsem fast-path accounting; threaded read-heavy workloads pay it"),
             ("CONFIG_DEBUG_ATOMIC_SLEEP", "n", "MED", "scheduler hot-path checks"),
             ("CONFIG_PROVE_RCU", "n", "MED", "RCU usage validation"),
             ("CONFIG_DEBUG_OBJECTS", "n", "MED", "object lifecycle tracking"),
@@ -1024,6 +1025,20 @@ def check_kernel_config_lockdep(
         module=False,
         warn=True,
     )
+    _spec_add(
+        spec,
+        "CONFIG_LOCKDEP",
+        required_state=enable,
+        module=False,
+        warn=True,
+    )  # tracked explicitly even though selected by PROVE_LOCKING/DEBUG_LOCK_ALLOC
+    _spec_add(
+        spec,
+        "CONFIG_DEBUG_RWSEMS",
+        required_state=enable,
+        module=False,
+        warn=True,
+    )  # rwsem fast-path accounting; same cost class as DEBUG_SPINLOCK/MUTEXES
 
 
 def check_kernel_config_debug_objects(
@@ -1491,6 +1506,13 @@ def check_kernel_config_zfs_compat_lockdep(
     _spec_add(
         spec,
         "CONFIG_DEBUG_MUTEXES",
+        required_state=False,
+        module=False,
+        warn=True,
+    )
+    _spec_add(
+        spec,
+        "CONFIG_DEBUG_RWSEMS",
         required_state=False,
         module=False,
         warn=True,
@@ -2030,6 +2052,116 @@ def check_kernel_config(
         spec,
         "CONFIG_UNWINDER_FRAME_POINTER",
         required_state=False,
+        module=False,
+        warn=warn_only,
+        url=None,
+    )
+
+    # Debug-group symbol baseline.
+    # Every CONFIG symbol referenced by any check_kernel_config_<group> function
+    # gets an explicit baseline here matching that group's default-disabled state.
+    # Layer 2 group functions override these when their --flag is passed.
+    # Without this baseline, an existing .config carrying a previously-enabled
+    # group's symbols would silently ride forward into the next build.
+    #
+    # Notes:
+    #  - CONFIG_DEBUG_FS is intentionally NOT baselined off — it's referenced by
+    #    --gcov and --fault-inject but is also broadly required elsewhere
+    #    (eBPF, drm-debug, etc).
+    #  - --netconsole defaults ON, so its symbols baseline ON below.
+    _DEBUG_GROUP_BASELINE_OFF = (
+        # --kasan
+        "CONFIG_KASAN",
+        "CONFIG_KASAN_INLINE",
+        "CONFIG_KASAN_OUTLINE",
+        "CONFIG_KASAN_STACK",
+        "CONFIG_KASAN_VMALLOC",
+        "CONFIG_PANIC_ON_OOPS",
+        # --kmemleak
+        "CONFIG_DEBUG_KMEMLEAK",
+        # --slub-debug
+        "CONFIG_SLUB_DEBUG",
+        "CONFIG_SLUB_DEBUG_ON",
+        # --lockdep family
+        "CONFIG_LOCKDEP",
+        "CONFIG_PROVE_LOCKING",
+        "CONFIG_PROVE_RCU",
+        "CONFIG_DEBUG_LOCK_ALLOC",
+        "CONFIG_DEBUG_SPINLOCK",
+        "CONFIG_DEBUG_MUTEXES",
+        "CONFIG_DEBUG_RWSEMS",
+        "CONFIG_DEBUG_ATOMIC_SLEEP",
+        "CONFIG_DEBUG_WW_MUTEX_SLOWPATH",
+        "CONFIG_LOCK_STAT",
+        # --debug-objects
+        "CONFIG_DEBUG_OBJECTS",
+        "CONFIG_DEBUG_OBJECTS_FREE",
+        "CONFIG_DEBUG_OBJECTS_TIMERS",
+        # --gcov (DEBUG_FS deliberately omitted — see note above)
+        "CONFIG_GCOV_KERNEL",
+        "CONFIG_GCOV_FORMAT_AUTODETECT",
+        # --zbtree-debug
+        "CONFIG_KFENCE",
+        # --ubsan
+        "CONFIG_UBSAN",
+        "CONFIG_UBSAN_BOOL",
+        "CONFIG_UBSAN_BOUNDS",
+        "CONFIG_UBSAN_ENUM",
+        "CONFIG_UBSAN_SHIFT",
+        # --kcsan
+        "CONFIG_KCSAN",
+        "CONFIG_KCSAN_ASSUME_PLAIN_WRITES_ATOMIC",
+        # --watchdog
+        "CONFIG_LOCKUP_DETECTOR",
+        "CONFIG_SOFTLOCKUP_DETECTOR",
+        "CONFIG_HARDLOCKUP_DETECTOR",
+        "CONFIG_HARDLOCKUP_DETECTOR_PERF",
+        "CONFIG_DETECT_HUNG_TASK",
+        "CONFIG_WQ_WATCHDOG",
+        # --fault-inject (DEBUG_FS deliberately omitted)
+        "CONFIG_FAULT_INJECTION",
+        "CONFIG_FAULT_INJECTION_DEBUG_FS",
+        "CONFIG_FAILSLAB",
+        "CONFIG_FAIL_PAGE_ALLOC",
+        # --mem-init
+        "CONFIG_INIT_ON_ALLOC_DEFAULT_ON",
+        "CONFIG_INIT_ON_FREE_DEFAULT_ON",
+        "CONFIG_PAGE_POISONING",
+        # --dma-debug
+        "CONFIG_DMA_API_DEBUG",
+        "CONFIG_DMA_API_DEBUG_SG",
+        # --data-struct-debug
+        "CONFIG_DEBUG_LIST",
+        "CONFIG_DEBUG_PLIST",
+        "CONFIG_DEBUG_SG",
+        "CONFIG_DEBUG_NOTIFIERS",
+        "CONFIG_DEBUG_IRQFLAGS",
+    )
+    for _sym in _DEBUG_GROUP_BASELINE_OFF:
+        _spec_add(
+            spec,
+            _sym,
+            required_state=False,
+            module=False,
+            warn=warn_only,
+            url=None,
+        )
+
+    # --netconsole defaults ON; baseline its symbols accordingly.
+    # NETCONSOLE is module-loadable; NETCONSOLE_DYNAMIC is built-in (configfs
+    # interface for runtime reconfiguration).
+    _spec_add(
+        spec,
+        "CONFIG_NETCONSOLE",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url=None,
+    )
+    _spec_add(
+        spec,
+        "CONFIG_NETCONSOLE_DYNAMIC",
+        required_state=True,
         module=False,
         warn=warn_only,
         url=None,
