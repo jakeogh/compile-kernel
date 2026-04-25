@@ -237,10 +237,10 @@ def _filter_spec_for_kernel(
     for define, opt in spec.items():
         meta = _kmeta(define, index)
         if meta is None:
-            icp(f"spec filter: {define} not in this kernel — skipping (likely removed)")
+            eprint(f"spec filter: {define} not in this kernel — skipping (likely removed)")
             continue
         if opt.module and meta["type"] == "bool":
-            icp(f"spec filter: {define} is bool, not tristate — coercing module→y")
+            eprint(f"spec filter: {define} is bool, not tristate — coercing module→y")
             out[define] = ConfigOption(
                 required_state=opt.required_state,
                 module=False,
@@ -3823,7 +3823,7 @@ def check_kernel_config(
     # debug-build of ZFS requires CONFIG_FRAME_POINTER, which is selected by
     # the FP unwinder.
     zfs_debug = zfs_debug or _zfs_debug_use_enabled()
-    icp(f"layer 2: zfs_debug={zfs_debug}")
+    eprint(f"layer 2: zfs_debug={zfs_debug}")
     check_kernel_config_kasan(spec=spec, enable=kasan)
     check_kernel_config_kmemleak(spec=spec, enable=kmemleak)
     check_kernel_config_slub_debug(spec=spec, enable=slub_debug)
@@ -4087,7 +4087,7 @@ def _write_kernel_flags(kver: str, flags: list[str]) -> None:
     KERNEL_FLAGS_DIR.mkdir(parents=True, exist_ok=True)
     flag_file = KERNEL_FLAGS_DIR / kver
     flag_file.write_text(" ".join(flags) + "\n" if flags else "\n", encoding="utf8")
-    icp(f"wrote kernel flags for {kver}: {flags}")
+    eprint(f"wrote kernel flags for {kver}: {flags}")
 
 
 def _read_kernel_flags(kver: str) -> list[str] | None:
@@ -4149,7 +4149,7 @@ def _snapshot_existing_kernel_files(kver: str) -> None:
         while target.exists():
             ts += 1
             target = boot / f"{base_name}.{ts}"
-        icp(f"snapshot: {src} -> {target}")
+        eprint(f"snapshot: {src} -> {target}")
         src.rename(target)
         # record by prefix (vmlinuz, initramfs, System.map, config)
         for prefix in _BOOT_FILE_PREFIXES:
@@ -4176,7 +4176,7 @@ def _snapshot_existing_kernel_files(kver: str) -> None:
                 target.as_posix() if link_str.startswith("/") else target.name
             )
             entry.symlink_to(new_target)
-            icp(f"snapshot: repointed symlink {entry} -> {new_target}")
+            eprint(f"snapshot: repointed symlink {entry} -> {new_target}")
 
     # Write the manifest keyed by the snapshotted vmlinuz basename.
     # Schema: one line per companion, "prefix=snapshotted_basename".
@@ -4187,7 +4187,7 @@ def _snapshot_existing_kernel_files(kver: str) -> None:
             "\n".join(f"{k}={v}" for k, v in sorted(snapshotted.items())) + "\n",
             encoding="utf8",
         )
-        icp(f"snapshot manifest: {manifest}")
+        eprint(f"snapshot manifest: {manifest}")
 
 
 def _read_snapshot_manifest(vmlinuz_basename: str) -> dict[str, str] | None:
@@ -4359,7 +4359,7 @@ def _postprocess_grub_cfg(cfg_path: Path) -> None:
                             + " ".join(new_parts)
                             + m_initrd.group(3)
                         )
-                        icp(f"postprocess: rewrote initrd for {Path(vmlinuz).name} → {snap_initramfs}")
+                        eprint(f"postprocess: rewrote initrd for {Path(vmlinuz).name} → {snap_initramfs}")
         result.append(line)
         i += 1
 
@@ -4432,7 +4432,7 @@ def set_grub_font(size: int = 12) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
     out_pf2 = out_dir / f"compile-kernel-{size}.pf2"
 
-    icp(f"generating {out_pf2} from {ttf_path} at {size}px")
+    eprint(f"generating {out_pf2} from {ttf_path} at {size}px")
     import shutil as _shutil
     if _shutil.which("grub-mkfont") is None:
         raise FileNotFoundError(
@@ -4455,7 +4455,7 @@ def set_grub_font(size: int = 12) -> None:
                      if not (l.strip().startswith("GRUB_FONT=") and not l.strip().startswith("#"))]
         new_lines.append(f'GRUB_FONT="{out_pf2}"')
         grub_defaults.write_text("\n".join(new_lines) + "\n", encoding="utf8")
-        icp(f"GRUB_FONT set to {out_pf2}")
+        eprint(f"GRUB_FONT set to {out_pf2}")
 
     icp("run grub-mkconfig to apply the new font")
 
