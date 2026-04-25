@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf8 -*-
 
 
 from __future__ import annotations
@@ -26,6 +27,7 @@ from compile_kernel import configure_kernel
 from compile_kernel import generate_module_config_dict
 from compile_kernel import get_set_kernel_config_option
 from compile_kernel import install_compiled_kernel
+from compile_kernel import set_grub_font
 
 click_option_code_debug = click.option("--code-debug", is_flag=True)
 
@@ -51,35 +53,15 @@ def cli(
 @cli.command()
 @click.option("--no-fix", is_flag=True)
 @click.option(
-    "--kasan",
-    is_flag=True,
-    help="Enable KASAN/KFENCE memory error detection",
+    "--kasan", is_flag=True, help="Enable KASAN/KFENCE memory error detection"
 )
+@click.option("--kmemleak", is_flag=True, help="Enable kmemleak memory leak detection")
+@click.option("--slub-debug", is_flag=True, help="Enable SLUB allocator debugging")
 @click.option(
-    "--kmemleak",
-    is_flag=True,
-    help="Enable kmemleak memory leak detection",
+    "--lockdep", is_flag=True, help="Enable lockdep lock correctness checking"
 )
-@click.option(
-    "--slub-debug",
-    is_flag=True,
-    help="Enable SLUB allocator debugging",
-)
-@click.option(
-    "--lockdep",
-    is_flag=True,
-    help="Enable lockdep lock correctness checking",
-)
-@click.option(
-    "--debug-objects",
-    is_flag=True,
-    help="Enable object lifecycle debugging",
-)
-@click.option(
-    "--gcov",
-    is_flag=True,
-    help="Enable GCOV kernel coverage",
-)
+@click.option("--debug-objects", is_flag=True, help="Enable object lifecycle debugging")
+@click.option("--gcov", is_flag=True, help="Enable GCOV kernel coverage")
 @click.option(
     "--zbtree-debug",
     is_flag=True,
@@ -89,46 +71,6 @@ def cli(
     "--zfs-debug",
     is_flag=True,
     help="Enable CONFIG_FRAME_POINTER required by sys-fs/zfs USE=debug",
-)
-@click.option(
-    "--ubsan",
-    is_flag=True,
-    help="Enable UBSAN undefined behaviour checks",
-)
-@click.option(
-    "--kcsan",
-    is_flag=True,
-    help="Enable KCSAN data-race detector (sampling)",
-)
-@click.option(
-    "--watchdog",
-    is_flag=True,
-    help="Enable softlockup/hardlockup/hung-task/WQ watchdogs",
-)
-@click.option(
-    "--fault-inject",
-    is_flag=True,
-    help="Enable fault injection framework (slab/page/futex)",
-)
-@click.option(
-    "--mem-init",
-    is_flag=True,
-    help="Enable memory init-on-alloc/free and page poisoning",
-)
-@click.option(
-    "--dma-debug",
-    is_flag=True,
-    help="Enable DMA API correctness checking",
-)
-@click.option(
-    "--data-struct-debug",
-    is_flag=True,
-    help="Enable list/SG/notifier/IRQ integrity checks",
-)
-@click.option(
-    "--no-netconsole",
-    is_flag=True,
-    help="Disable netconsole UDP kernel log (with dynamic reconfiguration)",
 )
 @click.option(
     "--zfs-compat",
@@ -154,14 +96,6 @@ def configure(
     gcov: bool,
     zbtree_debug: bool,
     zfs_debug: bool,
-    ubsan: bool,
-    kcsan: bool,
-    watchdog: bool,
-    fault_inject: bool,
-    mem_init: bool,
-    dma_debug: bool,
-    data_struct_debug: bool,
-    no_netconsole: bool,
     zfs_compat: bool,
     nvidia_compat: bool,
     code_debug: bool,
@@ -169,7 +103,6 @@ def configure(
     dict_output: bool,
     verbose: bool = False,
 ):
-    netconsole = not no_netconsole
     tty, verbose = tvicgvd(
         ctx=ctx,
         verbose=verbose,
@@ -205,14 +138,6 @@ def configure(
         gcov=gcov,
         zbtree_debug=zbtree_debug,
         zfs_debug=zfs_debug,
-        ubsan=ubsan,
-        kcsan=kcsan,
-        watchdog=watchdog,
-        fault_inject=fault_inject,
-        mem_init=mem_init,
-        dma_debug=dma_debug,
-        data_struct_debug=data_struct_debug,
-        netconsole=netconsole,
         zfs_compat=zfs_compat,
         nvidia_compat=nvidia_compat,
     )
@@ -332,45 +257,21 @@ def compare_loaded_modules_to_config(
 
 
 @cli.command()
-@click.option(
-    "--configure",
-    "--config",
-    is_flag=True,
-)
+@click.option("--configure", "--config", is_flag=True)
 @click.option("--force", is_flag=True)
 @click.option("--no-fix", is_flag=True)
 @click.option("--symlink-config", is_flag=True)
 @click.option("--no-check-boot", is_flag=True)
 @click.option(
-    "--kasan",
-    is_flag=True,
-    help="Enable KASAN/KFENCE memory error detection",
+    "--kasan", is_flag=True, help="Enable KASAN/KFENCE memory error detection"
 )
+@click.option("--kmemleak", is_flag=True, help="Enable kmemleak memory leak detection")
+@click.option("--slub-debug", is_flag=True, help="Enable SLUB allocator debugging")
 @click.option(
-    "--kmemleak",
-    is_flag=True,
-    help="Enable kmemleak memory leak detection",
+    "--lockdep", is_flag=True, help="Enable lockdep lock correctness checking"
 )
-@click.option(
-    "--slub-debug",
-    is_flag=True,
-    help="Enable SLUB allocator debugging",
-)
-@click.option(
-    "--lockdep",
-    is_flag=True,
-    help="Enable lockdep lock correctness checking",
-)
-@click.option(
-    "--debug-objects",
-    is_flag=True,
-    help="Enable object lifecycle debugging",
-)
-@click.option(
-    "--gcov",
-    is_flag=True,
-    help="Enable GCOV kernel coverage",
-)
+@click.option("--debug-objects", is_flag=True, help="Enable object lifecycle debugging")
+@click.option("--gcov", is_flag=True, help="Enable GCOV kernel coverage")
 @click.option(
     "--zbtree-debug",
     is_flag=True,
@@ -382,46 +283,6 @@ def compare_loaded_modules_to_config(
     help="Enable CONFIG_FRAME_POINTER required by sys-fs/zfs USE=debug",
 )
 @click.option(
-    "--ubsan",
-    is_flag=True,
-    help="Enable UBSAN undefined behaviour checks",
-)
-@click.option(
-    "--kcsan",
-    is_flag=True,
-    help="Enable KCSAN data-race detector (sampling)",
-)
-@click.option(
-    "--watchdog",
-    is_flag=True,
-    help="Enable softlockup/hardlockup/hung-task/WQ watchdogs",
-)
-@click.option(
-    "--fault-inject",
-    is_flag=True,
-    help="Enable fault injection framework (slab/page/futex)",
-)
-@click.option(
-    "--mem-init",
-    is_flag=True,
-    help="Enable memory init-on-alloc/free and page poisoning",
-)
-@click.option(
-    "--dma-debug",
-    is_flag=True,
-    help="Enable DMA API correctness checking",
-)
-@click.option(
-    "--data-struct-debug",
-    is_flag=True,
-    help="Enable list/SG/notifier/IRQ integrity checks",
-)
-@click.option(
-    "--no-netconsole",
-    is_flag=True,
-    help="Disable netconsole UDP kernel log (with dynamic reconfiguration)",
-)
-@click.option(
     "--zfs-compat",
     is_flag=True,
     help="Override CONFIG_DEBUG_LOCK_ALLOC=n so ZFS builds with --lockdep",
@@ -430,11 +291,6 @@ def compare_loaded_modules_to_config(
     "--nvidia-compat",
     is_flag=True,
     help="Override LOCKDEP/SLUB_DEBUG_ON/DEBUG_MUTEXES=n so nvidia-drivers builds",
-)
-@click.option(
-    "--pre-module-rebuild",
-    is_flag=True,
-    help="Rebuild the modules once before compiling the kernel and rebuilding the modules again",
 )
 @click_option_code_debug
 @click_add_options(click_global_options)
@@ -456,21 +312,11 @@ def compile_and_install(
     gcov: bool,
     zbtree_debug: bool,
     zfs_debug: bool,
-    ubsan: bool,
-    kcsan: bool,
-    watchdog: bool,
-    fault_inject: bool,
-    mem_init: bool,
-    dma_debug: bool,
-    data_struct_debug: bool,
-    no_netconsole: bool,
     zfs_compat: bool,
     nvidia_compat: bool,
     code_debug: bool,
-    pre_module_rebuild: bool,
     verbose: bool = False,
 ):
-    netconsole = not no_netconsole
     tty, verbose = tvicgvd(
         ctx=ctx,
         verbose=verbose,
@@ -509,52 +355,23 @@ def compile_and_install(
         gcov=gcov,
         zbtree_debug=zbtree_debug,
         zfs_debug=zfs_debug,
-        ubsan=ubsan,
-        kcsan=kcsan,
-        watchdog=watchdog,
-        fault_inject=fault_inject,
-        mem_init=mem_init,
-        dma_debug=dma_debug,
-        data_struct_debug=data_struct_debug,
-        netconsole=netconsole,
         zfs_compat=zfs_compat,
         nvidia_compat=nvidia_compat,
-        skip_module_rebuild=not pre_module_rebuild,
     )
     eprint("DONT FORGET TO UMOUNT /boot")
 
 
 @cli.command("install-kernel")
 @click.option(
-    "--kasan",
-    is_flag=True,
-    help="Enable KASAN/KFENCE memory error detection",
+    "--kasan", is_flag=True, help="Enable KASAN/KFENCE memory error detection"
 )
+@click.option("--kmemleak", is_flag=True, help="Enable kmemleak memory leak detection")
+@click.option("--slub-debug", is_flag=True, help="Enable SLUB allocator debugging")
 @click.option(
-    "--kmemleak",
-    is_flag=True,
-    help="Enable kmemleak memory leak detection",
+    "--lockdep", is_flag=True, help="Enable lockdep lock correctness checking"
 )
-@click.option(
-    "--slub-debug",
-    is_flag=True,
-    help="Enable SLUB allocator debugging",
-)
-@click.option(
-    "--lockdep",
-    is_flag=True,
-    help="Enable lockdep lock correctness checking",
-)
-@click.option(
-    "--debug-objects",
-    is_flag=True,
-    help="Enable object lifecycle debugging",
-)
-@click.option(
-    "--gcov",
-    is_flag=True,
-    help="Enable GCOV kernel coverage",
-)
+@click.option("--debug-objects", is_flag=True, help="Enable object lifecycle debugging")
+@click.option("--gcov", is_flag=True, help="Enable GCOV kernel coverage")
 @click.option(
     "--zbtree-debug",
     is_flag=True,
@@ -564,46 +381,6 @@ def compile_and_install(
     "--zfs-debug",
     is_flag=True,
     help="Enable CONFIG_FRAME_POINTER required by sys-fs/zfs USE=debug",
-)
-@click.option(
-    "--ubsan",
-    is_flag=True,
-    help="Enable UBSAN undefined behaviour checks",
-)
-@click.option(
-    "--kcsan",
-    is_flag=True,
-    help="Enable KCSAN data-race detector (sampling)",
-)
-@click.option(
-    "--watchdog",
-    is_flag=True,
-    help="Enable softlockup/hardlockup/hung-task/WQ watchdogs",
-)
-@click.option(
-    "--fault-inject",
-    is_flag=True,
-    help="Enable fault injection framework (slab/page/futex)",
-)
-@click.option(
-    "--mem-init",
-    is_flag=True,
-    help="Enable memory init-on-alloc/free and page poisoning",
-)
-@click.option(
-    "--dma-debug",
-    is_flag=True,
-    help="Enable DMA API correctness checking",
-)
-@click.option(
-    "--data-struct-debug",
-    is_flag=True,
-    help="Enable list/SG/notifier/IRQ integrity checks",
-)
-@click.option(
-    "--no-netconsole",
-    is_flag=True,
-    help="Disable netconsole UDP kernel log (with dynamic reconfiguration)",
 )
 @click.option(
     "--zfs-compat",
@@ -627,21 +404,12 @@ def _install_kernel(
     gcov: bool,
     zbtree_debug: bool,
     zfs_debug: bool,
-    ubsan: bool,
-    kcsan: bool,
-    watchdog: bool,
-    fault_inject: bool,
-    mem_init: bool,
-    dma_debug: bool,
-    data_struct_debug: bool,
-    no_netconsole: bool,
     zfs_compat: bool,
     nvidia_compat: bool,
     verbose_inf: bool,
     dict_output: bool,
     verbose: bool = False,
 ):
-    netconsole = not no_netconsole
     tty, verbose = tvicgvd(
         ctx=ctx,
         verbose=verbose,
@@ -665,14 +433,6 @@ def _install_kernel(
         gcov=gcov,
         zbtree_debug=zbtree_debug,
         zfs_debug=zfs_debug,
-        ubsan=ubsan,
-        kcsan=kcsan,
-        watchdog=watchdog,
-        fault_inject=fault_inject,
-        mem_init=mem_init,
-        dma_debug=dma_debug,
-        data_struct_debug=data_struct_debug,
-        netconsole=netconsole,
         zfs_compat=zfs_compat,
         nvidia_compat=nvidia_compat,
     )
@@ -693,35 +453,15 @@ def _install_kernel(
 )
 @click.option("--fix", is_flag=True)
 @click.option(
-    "--kasan",
-    is_flag=True,
-    help="Enable KASAN/KFENCE memory error detection",
+    "--kasan", is_flag=True, help="Enable KASAN/KFENCE memory error detection"
 )
+@click.option("--kmemleak", is_flag=True, help="Enable kmemleak memory leak detection")
+@click.option("--slub-debug", is_flag=True, help="Enable SLUB allocator debugging")
 @click.option(
-    "--kmemleak",
-    is_flag=True,
-    help="Enable kmemleak memory leak detection",
+    "--lockdep", is_flag=True, help="Enable lockdep lock correctness checking"
 )
-@click.option(
-    "--slub-debug",
-    is_flag=True,
-    help="Enable SLUB allocator debugging",
-)
-@click.option(
-    "--lockdep",
-    is_flag=True,
-    help="Enable lockdep lock correctness checking",
-)
-@click.option(
-    "--debug-objects",
-    is_flag=True,
-    help="Enable object lifecycle debugging",
-)
-@click.option(
-    "--gcov",
-    is_flag=True,
-    help="Enable GCOV kernel coverage",
-)
+@click.option("--debug-objects", is_flag=True, help="Enable object lifecycle debugging")
+@click.option("--gcov", is_flag=True, help="Enable GCOV kernel coverage")
 @click.option(
     "--zbtree-debug",
     is_flag=True,
@@ -731,46 +471,6 @@ def _install_kernel(
     "--zfs-debug",
     is_flag=True,
     help="Enable CONFIG_FRAME_POINTER required by sys-fs/zfs USE=debug",
-)
-@click.option(
-    "--ubsan",
-    is_flag=True,
-    help="Enable UBSAN undefined behaviour checks",
-)
-@click.option(
-    "--kcsan",
-    is_flag=True,
-    help="Enable KCSAN data-race detector (sampling)",
-)
-@click.option(
-    "--watchdog",
-    is_flag=True,
-    help="Enable softlockup/hardlockup/hung-task/WQ watchdogs",
-)
-@click.option(
-    "--fault-inject",
-    is_flag=True,
-    help="Enable fault injection framework (slab/page/futex)",
-)
-@click.option(
-    "--mem-init",
-    is_flag=True,
-    help="Enable memory init-on-alloc/free and page poisoning",
-)
-@click.option(
-    "--dma-debug",
-    is_flag=True,
-    help="Enable DMA API correctness checking",
-)
-@click.option(
-    "--data-struct-debug",
-    is_flag=True,
-    help="Enable list/SG/notifier/IRQ integrity checks",
-)
-@click.option(
-    "--no-netconsole",
-    is_flag=True,
-    help="Disable netconsole UDP kernel log (with dynamic reconfiguration)",
 )
 @click.option(
     "--zfs-compat",
@@ -797,14 +497,6 @@ def check_config(
     gcov: bool,
     zbtree_debug: bool,
     zfs_debug: bool,
-    ubsan: bool,
-    kcsan: bool,
-    watchdog: bool,
-    fault_inject: bool,
-    mem_init: bool,
-    dma_debug: bool,
-    data_struct_debug: bool,
-    no_netconsole: bool,
     zfs_compat: bool,
     nvidia_compat: bool,
     code_debug: bool,
@@ -812,7 +504,6 @@ def check_config(
     dict_output: bool,
     verbose: bool = False,
 ):
-    netconsole = not no_netconsole
     tty, verbose = tvicgvd(
         ctx=ctx,
         verbose=verbose,
@@ -849,14 +540,6 @@ def check_config(
         "gcov": gcov,
         "zbtree-debug": zbtree_debug,
         "zfs-debug": zfs_debug,
-        "ubsan": ubsan,
-        "kcsan": kcsan,
-        "watchdog": watchdog,
-        "fault-inject": fault_inject,
-        "mem-init": mem_init,
-        "dma-debug": dma_debug,
-        "data-struct-debug": data_struct_debug,
-        "netconsole": netconsole,
         "zfs-compat": zfs_compat,
         "nvidia-compat": nvidia_compat,
     }
@@ -882,14 +565,6 @@ def check_config(
             gcov=gcov,
             zbtree_debug=zbtree_debug,
             zfs_debug=zfs_debug,
-            ubsan=ubsan,
-            kcsan=kcsan,
-            watchdog=watchdog,
-            fault_inject=fault_inject,
-            mem_init=mem_init,
-            dma_debug=dma_debug,
-            data_struct_debug=data_struct_debug,
-            netconsole=netconsole,
             zfs_compat=zfs_compat,
             nvidia_compat=nvidia_compat,
         )  # must be done after nconfig
@@ -938,3 +613,37 @@ def diff_config(
             _diffconfig_command.bake(_diffconfig)
             _diffconfig_command.bake(config1, config2)
             _diffconfig_command(_out=sys.stdout, _err=sys.stderr)
+
+
+@cli.command("grub-font")
+@click.option(
+    "--size",
+    type=int,
+    default=12,
+    show_default=True,
+    help="Font size in pixels (stock GRUB unicode.pf2 is 16px)",
+)
+@click_add_options(click_global_options)
+@click.pass_context
+def grub_font(
+    ctx,
+    size: int,
+    verbose_inf: bool,
+    dict_output: bool,
+    verbose: bool = False,
+):
+    tty, verbose = tvicgvd(
+        ctx=ctx,
+        verbose=verbose,
+        verbose_inf=verbose_inf,
+        ic=ic,
+        gvd=gvd,
+    )
+    if not verbose:
+        ic.disable()
+    else:
+        ic.enable()
+    if verbose_inf:
+        gvd.enable()
+
+    set_grub_font(size=size)

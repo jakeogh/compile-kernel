@@ -58,22 +58,6 @@ def _spec_add(
     )
 
 
-def _print_managed_config(*, spec: ConfigSpec, ispec: IntConfigSpec) -> None:
-    """Print the final merged set of managed config options to stdout."""
-    col_w = max((len(k) for k in (*spec, *ispec)), default=0) + 2
-    print("managed kernel config options (final merged state):")
-    for define, opt in sorted(spec.items()):
-        if opt.required_state is False:
-            value = "n"
-        elif opt.module:
-            value = "m"
-        else:
-            value = "y"
-        print(f"  {define:<{col_w}}  {value}")
-    for define, value in sorted(ispec.items()):
-        print(f"  {define:<{col_w}}  {value}")
-
-
 def _spec_apply(
     spec: ConfigSpec,
     path: Path,
@@ -208,27 +192,6 @@ def read_content_of_kernel_config(path: Path):
         with open(path, encoding="utf8") as _fh:
             content = _fh.read()
     return content
-
-
-def _zfs_debug_use_enabled() -> bool:
-    """Return True if debug is in the currently configured USE flags for sys-fs/zfs.
-    Uses the portage Python API with setcpv so package.use overrides are applied,
-    matching exactly what `emerge sys-fs/zfs` would see right now.
-    Returns False if zfs is not in the portage tree or portage is unavailable.
-    """
-    try:
-        import portage
-        db = portage.db[portage.root]
-        portdb = db["porttree"].dbapi
-        matches = portdb.match("sys-fs/zfs")
-        if not matches:
-            return False
-        cpv = matches[-1]
-        settings = portage.config(clone=portdb.settings)
-        settings.setcpv(cpv, mydb=portdb)
-        return "debug" in settings.get("USE", "").split()
-    except Exception:
-        return False
 
 
 def _decompress_config_if_needed(
@@ -601,13 +564,6 @@ def check_kernel_config_lockdep(
         module=False,
         warn=True,
     )
-    _spec_add(
-        spec,
-        "CONFIG_LOCK_STAT",
-        required_state=enable,
-        module=False,
-        warn=True,
-    )  # lock contention statistics via /proc/lock_stat; selects LOCKDEP
 
 
 def check_kernel_config_debug_objects(
@@ -3203,9 +3159,6 @@ def check_kernel_config(
     )
 
     # --- layer 2: debug group overrides (last-writer-wins over production base) ---
-    # Auto-enable zfs_debug if sys-fs/zfs currently has USE=debug configured,
-    # regardless of whether --zfs-debug was passed on the command line.
-    zfs_debug = zfs_debug or _zfs_debug_use_enabled()
     check_kernel_config_kasan(spec=spec, enable=kasan)
     check_kernel_config_kmemleak(spec=spec, enable=kmemleak)
     check_kernel_config_slub_debug(spec=spec, enable=slub_debug)
@@ -3235,9 +3188,6 @@ def check_kernel_config(
         "CONFIG_STACK_DEPOT_MAX_ENTRIES",
         24,
     )
-
-    # --- print final merged spec before applying ---
-    _print_managed_config(spec=spec, ispec=ispec)
 
     # --- apply merged spec — each symbol written exactly once ---
     _spec_apply(
@@ -3454,38 +3404,196 @@ def _active_debug_flags(
     return [name for name, enabled in flags if enabled]
 
 
-def _set_grub_distributor(debug_flags: list[str]) -> None:
-    """Patch GRUB_DISTRIBUTOR in /etc/default/grub to include active debug flags.
-    Idempotent: re-running with different flags updates the line in place.
+KERNEL_FLAGS_DIR = Path("/boot/compile-kernel-flags")
+
+
+def _write_kernel_flags(kver: str, flags: list[str]) -> None:
+    """Write active debug flags for kver to /boot/compile-kernel-flags/{kver}.
+    Empty flags list writes an empty file (clean kernel — no flags).
     """
+    KERNEL_FLAGS_DIR.mkdir(parents=True, exist_ok=True)
+    flag_file = KERNEL_FLAGS_DIR / kver
+    flag_file.write_text(" ".join(flags) + "\n" if flags else "\n", encoding="utf8")
+    icp(f"wrote kernel flags for {kver}: {flags}")
+
+
+def _read_kernel_flags(kver: str) -> list[str] | None:
+    """Return flags list for kver, or None if no record exists."""
+    flag_file = KERNEL_FLAGS_DIR / kver
+    if not flag_file.exists():
+        return None
+    content = flag_file.read_text(encoding="utf8").strip()
+    return content.split() if content else []
+
+
+def _kver_from_vmlinuz(vmlinuz_path: str) -> str:
+    """Extract kver from a vmlinuz path like /boot/vmlinuz-6.19.6-gentoo-x86_64."""
+    name = Path(vmlinuz_path).name
+    # strip vmlinuz- prefix
+    if name.startswith("vmlinuz-"):
+        return name[len("vmlinuz-"):]
+    return name
+
+
+def _postprocess_grub_cfg(cfg_path: Path) -> None:
+    """Rewrite menuentry/submenu titles in grub.cfg to reflect per-kernel flags.
+    For each entry, extract the kver from the linux line, look up its flags
+    file, and rewrite the title: strip any existing [...] bracket, then append
+    the correct one (or nothing for clean kernels).
+    Operates on the already-written cfg_path in place.
+    """
+    import re
+    text = cfg_path.read_text(encoding="utf8")
+    lines = text.splitlines(keepends=True)
+    result: list[str] = []
+
+    # Track the current flags to apply — updated when we see a linux line
+    # within a menuentry block.  We do a two-pass: collect linux→flags mapping
+    # then rewrite titles.  Since titles precede linux lines, we must do it
+    # in two passes.
+
+    # Pass 1: build vmlinuz → flags label mapping
+    flags_map: dict[str, str] = {}  # vmlinuz path → "[flag flag]" or ""
+    for line in lines:
+        m = re.match(r'\s+linux\s+(\S+)', line)
+        if m:
+            vmlinuz = m.group(1)
+            kver = _kver_from_vmlinuz(vmlinuz)
+            flags = _read_kernel_flags(kver)
+            if flags is None:
+                # no record — leave title as generated (don't touch)
+                flags_map[vmlinuz] = None  # type: ignore[assignment]
+            elif flags:
+                flags_map[vmlinuz] = "[" + " ".join(flags) + "]"
+            else:
+                flags_map[vmlinuz] = ""
+
+    # Pass 2: rewrite titles
+    # Strategy: for each menuentry/submenu line, scan forward to find the
+    # linux line in its block to determine which vmlinuz it boots, then
+    # rewrite the title on the menuentry/submenu line itself.
+    # We do a single-pass with a lookahead buffer instead.
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        if re.match(r"\s*(menuentry|submenu)\s+['\"]", line):
+            # Look ahead for the linux line in this block
+            vmlinuz = None
+            depth = 0
+            for j in range(i, min(i + 60, len(lines))):
+                l = lines[j]
+                depth += l.count("{") - l.count("}")
+                m = re.match(r"\s+linux\s+(\S+)", l)
+                if m:
+                    vmlinuz = m.group(1)
+                    break
+                if depth < 0:
+                    break
+
+            if vmlinuz and vmlinuz in flags_map and flags_map[vmlinuz] is not None:
+                label = flags_map[vmlinuz]
+                # Strip existing [...] from title, then append correct label
+                def replace_title(m2: re.Match) -> str:
+                    q = m2.group(1)
+                    title = m2.group(2)
+                    # remove existing bracket group
+                    title = re.sub(r"\s*\[.*?\]", "", title).strip()
+                    if label:
+                        title = title + " " + label
+                    return q + title + q
+
+                line = re.sub(r"(['\"])(.+?)\1", replace_title, line, count=1)
+
+        result.append(line)
+        i += 1
+
+    cfg_path.write_text("".join(result), encoding="utf8")
+    icp("postprocessed grub.cfg with per-kernel flag labels")
+
+
+def _set_grub_distributor() -> None:
+    """Set GRUB_DISTRIBUTOR to plain 'Gentoo' — flags are handled per-kernel
+    by _postprocess_grub_cfg after grub-mkconfig runs."""
     grub_defaults = Path("/etc/default/grub")
     if not grub_defaults.exists():
         return
-
     file_lines = grub_defaults.read_text(encoding="utf8").splitlines()
-    base_name = "Linux"
     new_lines: list[str] = []
     found = False
     for line in file_lines:
         stripped = line.strip()
         if stripped.startswith("GRUB_DISTRIBUTOR=") and not stripped.startswith("#"):
-            raw = stripped[len("GRUB_DISTRIBUTOR=") :].strip('"').strip("'").strip()
-            base_name = raw.split(" [")[0].strip() or "Linux"
             found = True
             continue
         new_lines.append(line)
-
-    suffix = (" [" + " ".join(debug_flags) + "]") if debug_flags else ""
-    distributor_line = 'GRUB_DISTRIBUTOR="' + base_name + suffix + '"'
-
     if found:
-        new_lines.append(distributor_line)
+        new_lines.append('GRUB_DISTRIBUTOR="Gentoo"')
     else:
         new_lines.append("")
-        new_lines.append(distributor_line)
-
+        new_lines.append('GRUB_DISTRIBUTOR="Gentoo"')
     grub_defaults.write_text("\n".join(new_lines) + "\n", encoding="utf8")
-    icp(f"GRUB_DISTRIBUTOR set to: {base_name}{suffix}")
+
+
+def set_grub_font(size: int = 12) -> None:
+    """Generate a compact GRUB font at the given pixel size and configure GRUB to use it.
+
+    Uses grub-mkfont to convert the first available monospace TTF on the system
+    to a .pf2 bitmap font, then sets GRUB_FONT in /etc/default/grub.
+    At 12px on 1080p the menu fits ~160 chars wide vs ~96 at the default 16px.
+
+    Args:
+        size: font size in pixels (default 12; stock GRUB unicode.pf2 is 16).
+    """
+    import glob as _glob
+
+    # Candidate monospace TTFs in preference order
+    candidates = [
+        "/usr/share/fonts/liberation/LiberationMono-Regular.ttf",
+        "/usr/share/fonts/liberation-fonts/LiberationMono-Regular.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationMono-Regular.ttf",
+        "/usr/share/fonts/dejavu/DejaVuSansMono.ttf",
+        "/usr/share/fonts/dejavu-sans-mono/DejaVuSansMono.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf",
+    ]
+    # Also try any glob matches for common patterns
+    candidates += _glob.glob("/usr/share/fonts/**/LiberationMono-Regular.ttf", recursive=True)
+    candidates += _glob.glob("/usr/share/fonts/**/DejaVuSansMono.ttf", recursive=True)
+
+    ttf_path: Path | None = None
+    for candidate in candidates:
+        p = Path(candidate)
+        if p.exists():
+            ttf_path = p
+            break
+
+    if ttf_path is None:
+        raise FileNotFoundError(
+            "No suitable TTF found for grub-mkfont. "
+            "Install media-fonts/liberation-fonts or media-fonts/dejavu."
+        )
+
+    out_dir = Path("/boot/grub/fonts")
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_pf2 = out_dir / f"compile-kernel-{size}.pf2"
+
+    icp(f"generating {out_pf2} from {ttf_path} at {size}px")
+    hs.Command("grub-mkfont")(
+        "--size", str(size),
+        "--output", str(out_pf2),
+        str(ttf_path),
+    )
+
+    # Write GRUB_FONT into /etc/default/grub
+    grub_defaults = Path("/etc/default/grub")
+    if grub_defaults.exists():
+        file_lines = grub_defaults.read_text(encoding="utf8").splitlines()
+        new_lines = [l for l in file_lines
+                     if not (l.strip().startswith("GRUB_FONT=") and not l.strip().startswith("#"))]
+        new_lines.append(f'GRUB_FONT="{out_pf2}"')
+        grub_defaults.write_text("\n".join(new_lines) + "\n", encoding="utf8")
+        icp(f"GRUB_FONT set to {out_pf2}")
+
+    icp("run grub-mkconfig to apply the new font")
 
 
 def install_compiled_kernel(
@@ -3519,7 +3627,9 @@ def install_compiled_kernel(
     genkernel_command(_fg=True)
 
     assert Path("/boot/grub").is_dir()
-    _set_grub_distributor(
+    _kver = Path("/usr/src/linux/include/config/kernel.release").read_text(encoding="utf8").strip()
+    _write_kernel_flags(
+        _kver,
         _active_debug_flags(
             kasan=kasan,
             kmemleak=kmemleak,
@@ -3537,9 +3647,11 @@ def install_compiled_kernel(
             dma_debug=dma_debug,
             data_struct_debug=data_struct_debug,
             netconsole=netconsole,
-        )
+        ),
     )
+    _set_grub_distributor()
     hs.Command("grub-mkconfig")("-o", "/boot/grub/grub.cfg")
+    _postprocess_grub_cfg(Path("/boot/grub/grub.cfg"))
 
 
 def configure_kernel(
@@ -3849,7 +3961,9 @@ def compile_and_install_kernel(
     )
 
     if Path("/boot/grub").is_dir():
-        _set_grub_distributor(
+        _kver = Path("/usr/src/linux/include/config/kernel.release").read_text(encoding="utf8").strip()
+        _write_kernel_flags(
+            _kver,
             _active_debug_flags(
                 kasan=kasan,
                 kmemleak=kmemleak,
@@ -3867,9 +3981,11 @@ def compile_and_install_kernel(
                 dma_debug=dma_debug,
                 data_struct_debug=data_struct_debug,
                 netconsole=netconsole,
-            )
+            ),
         )
+        _set_grub_distributor()
         hs.Command("grub-mkconfig")("-o", "/boot/grub/grub.cfg")
+        _postprocess_grub_cfg(Path("/boot/grub/grub.cfg"))
 
     hs.Command("emerge")(
         "sys-kernel/linux-firmware",
