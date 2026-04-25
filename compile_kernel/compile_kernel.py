@@ -1186,7 +1186,7 @@ def check_kernel_config_netconsole(
     )
 
 
-def check_kernel_config_zfs_compat(
+def check_kernel_config_zfs_compat_lockdep(
     *,
     spec: ConfigSpec,
 ) -> None:
@@ -1343,7 +1343,7 @@ def check_kernel_config(
     dma_debug: bool = False,
     data_struct_debug: bool = False,
     netconsole: bool = True,
-    zfs_compat: bool = False,
+    zfs_compat_lockdep: bool = False,
     nvidia_compat: bool = False,
 ):
     icp(
@@ -1765,20 +1765,21 @@ def check_kernel_config(
     #    fix=fix,
     #    url=None,
     # )
-    # required by sys-fs/zfs-9999
+    # ZFS-friendly default: use the frame-pointer unwinder unconditionally.
+    # CONFIG_UNWINDER_FRAME_POINTER selects ARCH_WANT_FRAME_POINTERS → FRAME_POINTER,
+    # which sys-fs/zfs requires (with or without USE=debug). UNWINDER_ORC and
+    # UNWINDER_FRAME_POINTER are mutually exclusive — must disable ORC explicitly.
     _spec_add(
         spec,
-        "CONFIG_UNWINDER_ORC",
+        "CONFIG_UNWINDER_FRAME_POINTER",
         required_state=True,
         module=False,
         warn=warn_only,
         url=None,
     )
-    # required by sys-fs/zfs-9999
-    # old not required any more, use ORC instead
     _spec_add(
         spec,
-        "CONFIG_UNWINDER_FRAME_POINTER",
+        "CONFIG_UNWINDER_ORC",
         required_state=False,
         module=False,
         warn=warn_only,
@@ -3391,8 +3392,8 @@ def check_kernel_config(
     check_kernel_config_netconsole(spec=spec, enable=netconsole)
 
     # --- layer 3: compat overrides (win over everything) ---
-    if zfs_compat:
-        check_kernel_config_zfs_compat(spec=spec)
+    if zfs_compat_lockdep:
+        check_kernel_config_zfs_compat_lockdep(spec=spec)
     if nvidia_compat:
         check_kernel_config_nvidia_compat(spec=spec)
 
@@ -3958,7 +3959,7 @@ def configure_kernel(
     dma_debug: bool = False,
     data_struct_debug: bool = False,
     netconsole: bool = True,
-    zfs_compat: bool = False,
+    zfs_compat_lockdep: bool = False,
     nvidia_compat: bool = False,
 ):
     if interactive:
@@ -3986,7 +3987,7 @@ def configure_kernel(
         dma_debug=dma_debug,
         data_struct_debug=data_struct_debug,
         netconsole=netconsole,
-        zfs_compat=zfs_compat,
+        zfs_compat_lockdep=zfs_compat_lockdep,
         nvidia_compat=nvidia_compat,
     )  # must be done after nconfig
 
@@ -4016,7 +4017,7 @@ def compile_and_install_kernel(
     dma_debug: bool = False,
     data_struct_debug: bool = False,
     netconsole: bool = True,
-    zfs_compat: bool = False,
+    zfs_compat_lockdep: bool = False,
     nvidia_compat: bool = False,
 ):
     icp()
@@ -4062,7 +4063,7 @@ def compile_and_install_kernel(
             dma_debug=dma_debug,
             data_struct_debug=data_struct_debug,
             netconsole=netconsole,
-            zfs_compat=zfs_compat,
+            zfs_compat_lockdep=zfs_compat_lockdep,
             nvidia_compat=nvidia_compat,
         )
 
@@ -4094,7 +4095,7 @@ def compile_and_install_kernel(
         dma_debug=dma_debug,
         data_struct_debug=data_struct_debug,
         netconsole=netconsole,
-        zfs_compat=zfs_compat,
+        zfs_compat_lockdep=zfs_compat_lockdep,
         nvidia_compat=nvidia_compat,
     )
     # handle a downgrade from -9999 before genkernel calls @module-rebuild
@@ -4203,7 +4204,7 @@ def compile_and_install_kernel(
         dma_debug=dma_debug,
         data_struct_debug=data_struct_debug,
         netconsole=netconsole,
-        zfs_compat=zfs_compat,
+        zfs_compat_lockdep=zfs_compat_lockdep,
         nvidia_compat=nvidia_compat,
     )  # must be done after nconfig
     _snapshot_for_current_source()

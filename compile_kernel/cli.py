@@ -74,9 +74,9 @@ def cli(
     help="Enable CONFIG_FRAME_POINTER required by sys-fs/zfs USE=debug",
 )
 @click.option(
-    "--zfs-compat",
+    "--zfs-compat-lockdep",
     is_flag=True,
-    help="Override CONFIG_DEBUG_LOCK_ALLOC=n so ZFS builds with --lockdep",
+    help="Disable the full lockdep selector chain (PROVE_LOCKING, LOCK_STAT, DEBUG_LOCK_ALLOC, DEBUG_SPINLOCK, DEBUG_MUTEXES, LOCKDEP) so ZFS builds when --lockdep is set",
 )
 @click.option(
     "--nvidia-compat",
@@ -97,7 +97,7 @@ def configure(
     gcov: bool,
     zbtree_debug: bool,
     zfs_debug: bool,
-    zfs_compat: bool,
+    zfs_compat_lockdep: bool,
     nvidia_compat: bool,
     code_debug: bool,
     verbose_inf: bool,
@@ -139,7 +139,7 @@ def configure(
         gcov=gcov,
         zbtree_debug=zbtree_debug,
         zfs_debug=zfs_debug,
-        zfs_compat=zfs_compat,
+        zfs_compat_lockdep=zfs_compat_lockdep,
         nvidia_compat=nvidia_compat,
     )
 
@@ -293,9 +293,9 @@ def compare_loaded_modules_to_config(
 @click.option("--data-struct-debug", is_flag=True, help="Enable list/SG/notifier/IRQ integrity checks")
 @click.option("--disable-netconsole", is_flag=True, help="Disable netconsole UDP kernel log (on by default)")
 @click.option(
-    "--zfs-compat",
+    "--zfs-compat-lockdep",
     is_flag=True,
-    help="Override CONFIG_DEBUG_LOCK_ALLOC=n so ZFS builds with --lockdep",
+    help="Disable the full lockdep selector chain (PROVE_LOCKING, LOCK_STAT, DEBUG_LOCK_ALLOC, DEBUG_SPINLOCK, DEBUG_MUTEXES, LOCKDEP) so ZFS builds when --lockdep is set",
 )
 @click.option(
     "--nvidia-compat",
@@ -331,7 +331,7 @@ def compile_and_install(
     dma_debug: bool,
     data_struct_debug: bool,
     disable_netconsole: bool,
-    zfs_compat: bool,
+    zfs_compat_lockdep: bool,
     nvidia_compat: bool,
     code_debug: bool,
     verbose: bool = False,
@@ -383,7 +383,7 @@ def compile_and_install(
         dma_debug=dma_debug,
         data_struct_debug=data_struct_debug,
         netconsole=not disable_netconsole,
-        zfs_compat=zfs_compat,
+        zfs_compat_lockdep=zfs_compat_lockdep,
         nvidia_compat=nvidia_compat,
     )
     eprint("DONT FORGET TO UMOUNT /boot")
@@ -411,9 +411,9 @@ def compile_and_install(
     help="Enable CONFIG_FRAME_POINTER required by sys-fs/zfs USE=debug",
 )
 @click.option(
-    "--zfs-compat",
+    "--zfs-compat-lockdep",
     is_flag=True,
-    help="Override CONFIG_DEBUG_LOCK_ALLOC=n so ZFS builds with --lockdep",
+    help="Disable the full lockdep selector chain (PROVE_LOCKING, LOCK_STAT, DEBUG_LOCK_ALLOC, DEBUG_SPINLOCK, DEBUG_MUTEXES, LOCKDEP) so ZFS builds when --lockdep is set",
 )
 @click.option(
     "--nvidia-compat",
@@ -432,7 +432,7 @@ def _install_kernel(
     gcov: bool,
     zbtree_debug: bool,
     zfs_debug: bool,
-    zfs_compat: bool,
+    zfs_compat_lockdep: bool,
     nvidia_compat: bool,
     verbose_inf: bool,
     dict_output: bool,
@@ -461,7 +461,7 @@ def _install_kernel(
         gcov=gcov,
         zbtree_debug=zbtree_debug,
         zfs_debug=zfs_debug,
-        zfs_compat=zfs_compat,
+        zfs_compat_lockdep=zfs_compat_lockdep,
         nvidia_compat=nvidia_compat,
     )
 
@@ -501,9 +501,9 @@ def _install_kernel(
     help="Enable CONFIG_FRAME_POINTER required by sys-fs/zfs USE=debug",
 )
 @click.option(
-    "--zfs-compat",
+    "--zfs-compat-lockdep",
     is_flag=True,
-    help="Override CONFIG_DEBUG_LOCK_ALLOC=n so ZFS builds with --lockdep",
+    help="Disable the full lockdep selector chain (PROVE_LOCKING, LOCK_STAT, DEBUG_LOCK_ALLOC, DEBUG_SPINLOCK, DEBUG_MUTEXES, LOCKDEP) so ZFS builds when --lockdep is set",
 )
 @click.option(
     "--nvidia-compat",
@@ -525,7 +525,7 @@ def check_config(
     gcov: bool,
     zbtree_debug: bool,
     zfs_debug: bool,
-    zfs_compat: bool,
+    zfs_compat_lockdep: bool,
     nvidia_compat: bool,
     code_debug: bool,
     verbose_inf: bool,
@@ -568,7 +568,7 @@ def check_config(
         "gcov": gcov,
         "zbtree-debug": zbtree_debug,
         "zfs-debug": zfs_debug,
-        "zfs-compat": zfs_compat,
+        "zfs-compat": zfs_compat_lockdep,
         "nvidia-compat": nvidia_compat,
     }
 
@@ -593,7 +593,7 @@ def check_config(
             gcov=gcov,
             zbtree_debug=zbtree_debug,
             zfs_debug=zfs_debug,
-            zfs_compat=zfs_compat,
+            zfs_compat_lockdep=zfs_compat_lockdep,
             nvidia_compat=nvidia_compat,
         )  # must be done after nconfig
         return
