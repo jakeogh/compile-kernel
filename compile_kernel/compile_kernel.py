@@ -119,6 +119,72 @@ def _int_spec_apply(
             )
 
 
+def _resolve_and_verify_config(
+    *,
+    spec: ConfigSpec,
+    ispec: IntConfigSpec,
+    path: Path,
+) -> None:
+    """Run `make olddefconfig` to propagate Kconfig selects/choice resolution,
+    then verify that every required-True symbol from the spec is actually set.
+
+    scripts/config is text-only — it cannot propagate `select X` from a
+    parent symbol to a child, and it cannot resolve choice blocks. Without
+    this step, settings like CONFIG_UNWINDER_FRAME_POINTER=y exist in .config
+    but the symbols they select (FRAME_POINTER, ARCH_WANT_FRAME_POINTERS) do
+    not appear until make olddefconfig runs.
+    """
+    src = Path("/usr/src/linux")
+    if not (src / "Makefile").exists():
+        eprint("WARNING: /usr/src/linux/Makefile missing — cannot run olddefconfig")
+        return
+
+    icp("running make olddefconfig to propagate selects/choice")
+    result = subprocess.run(
+        ["make", "-C", src.as_posix(), "olddefconfig"],
+        capture_output=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        eprint(
+            "WARNING: make olddefconfig failed:",
+            result.stderr.decode("utf8", errors="replace"),
+        )
+        return
+
+    # Re-parse .config and verify required-True symbols
+    content = path.read_text(encoding="utf8", errors="replace")
+    state: dict[str, str] = {}
+    for line in content.splitlines():
+        line = line.strip()
+        if line.startswith("# CONFIG_") and line.endswith(" is not set"):
+            sym = line[2:].split(" ", 1)[0]
+            state[sym] = "n"
+        elif line.startswith("CONFIG_") and "=" in line:
+            sym, val = line.split("=", 1)
+            state[sym] = val.strip().strip('"')
+
+    missing: list[tuple[str, str, str]] = []
+    for define, opt in spec.items():
+        if not opt.required_state:
+            continue
+        want = "m" if opt.module else "y"
+        got = state.get(define, "absent")
+        if got != want and not (want == "y" and got == "m"):
+            missing.append((define, want, got))
+
+    if missing:
+        eprint("ERROR: the following required symbols did not survive olddefconfig:")
+        for sym, want, got in missing:
+            eprint(f"  {sym}: want={want} got={got}")
+        eprint(
+            "this usually means a select-only or choice-block dependency was "
+            "not satisfied; check the parent symbols in Kconfig"
+        )
+        raise RuntimeError(f"{len(missing)} required config symbol(s) missing after olddefconfig")
+    icp("olddefconfig validated — all required symbols are set")
+
+
 def generate_module_config_dict(path: Path):
     _manual_mappings = {}
 
@@ -3417,6 +3483,10 @@ def check_kernel_config(
     )
     if _tmp_config is not None:
         Path(_tmp_config.name).unlink(missing_ok=True)
+
+    # --- propagate Kconfig selects and validate (only when fixing the live tree) ---
+    if fix and path.resolve() == Path("/usr/src/linux/.config").resolve():
+        _resolve_and_verify_config(spec=spec, ispec=ispec, path=path)
 
 
 # bpf
