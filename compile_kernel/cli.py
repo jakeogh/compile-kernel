@@ -262,6 +262,7 @@ def compare_loaded_modules_to_config(
 @click.option("--no-fix", is_flag=True)
 @click.option("--symlink-config", is_flag=True)
 @click.option("--no-check-boot", is_flag=True)
+@click.option("--skip-module-rebuild", is_flag=True, help="Skip emerge @module-rebuild step")
 @click.option(
     "--kasan", is_flag=True, help="Enable KASAN/KFENCE memory error detection"
 )
@@ -282,6 +283,14 @@ def compare_loaded_modules_to_config(
     is_flag=True,
     help="Enable CONFIG_FRAME_POINTER required by sys-fs/zfs USE=debug",
 )
+@click.option("--ubsan", is_flag=True, help="Enable UBSAN undefined behaviour checks")
+@click.option("--kcsan", is_flag=True, help="Enable KCSAN data-race detector (sampling)")
+@click.option("--watchdog", is_flag=True, help="Enable softlockup/hardlockup/hung-task/WQ watchdogs")
+@click.option("--fault-inject", is_flag=True, help="Enable fault injection framework (slab/page/futex)")
+@click.option("--mem-init", is_flag=True, help="Enable memory init-on-alloc/free and page poisoning")
+@click.option("--dma-debug", is_flag=True, help="Enable DMA API correctness checking")
+@click.option("--data-struct-debug", is_flag=True, help="Enable list/SG/notifier/IRQ integrity checks")
+@click.option("--netconsole", is_flag=True, help="Enable netconsole UDP kernel log (with dynamic reconfiguration)")
 @click.option(
     "--zfs-compat",
     is_flag=True,
@@ -304,6 +313,7 @@ def compile_and_install(
     dict_output: bool,
     force: bool,
     no_check_boot: bool,
+    skip_module_rebuild: bool,
     kasan: bool,
     kmemleak: bool,
     slub_debug: bool,
@@ -312,6 +322,14 @@ def compile_and_install(
     gcov: bool,
     zbtree_debug: bool,
     zfs_debug: bool,
+    ubsan: bool,
+    kcsan: bool,
+    watchdog: bool,
+    fault_inject: bool,
+    mem_init: bool,
+    dma_debug: bool,
+    data_struct_debug: bool,
+    netconsole: bool,
     zfs_compat: bool,
     nvidia_compat: bool,
     code_debug: bool,
@@ -347,6 +365,7 @@ def compile_and_install(
         warn_only=warn_only,
         no_check_boot=no_check_boot,
         symlink_config=symlink_config,
+        skip_module_rebuild=skip_module_rebuild,
         kasan=kasan,
         kmemleak=kmemleak,
         slub_debug=slub_debug,
@@ -355,6 +374,14 @@ def compile_and_install(
         gcov=gcov,
         zbtree_debug=zbtree_debug,
         zfs_debug=zfs_debug,
+        ubsan=ubsan,
+        kcsan=kcsan,
+        watchdog=watchdog,
+        fault_inject=fault_inject,
+        mem_init=mem_init,
+        dma_debug=dma_debug,
+        data_struct_debug=data_struct_debug,
+        netconsole=netconsole,
         zfs_compat=zfs_compat,
         nvidia_compat=nvidia_compat,
     )
