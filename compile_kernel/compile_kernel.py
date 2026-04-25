@@ -417,6 +417,29 @@ def read_content_of_kernel_config(path: Path):
     return content
 
 
+def _zfs_debug_use_enabled() -> bool:
+    """Return True if 'debug' is in sys-fs/zfs's currently configured USE flags.
+
+    Uses the portage Python API with setcpv so package.use overrides apply,
+    matching exactly what `emerge sys-fs/zfs` would see right now.
+    Returns False if zfs is not in the portage tree.
+
+    No exception handling: a broken portage installation should surface
+    its own error rather than be silently ignored.
+    """
+    import portage  # imported lazily — only paid for at zfs_debug auto-detect
+
+    db = portage.db[portage.root]
+    portdb = db["porttree"].dbapi
+    matches = portdb.match("sys-fs/zfs")
+    if not matches:
+        return False
+    cpv = matches[-1]
+    settings = portage.config(clone=portdb.settings)
+    settings.setcpv(cpv, mydb=portdb)
+    return "debug" in settings.get("USE", "").split()
+
+
 def _decompress_config_if_needed(
     path: Path,
 ) -> tuple[Path, tempfile.NamedTemporaryFile | None]:
@@ -1517,15 +1540,35 @@ def check_kernel_config_zfs_debug(
     spec: ConfigSpec,
     enable: bool,
 ) -> None:
-    """ZFS debug USE flag requirements.
-    Historically required CONFIG_FRAME_POINTER (via UNWINDER_FRAME_POINTER).
-    That setting is now part of the production base unconditionally because
-    sys-fs/zfs always benefits from it. This function is kept as a stable
-    callable referenced by the CLI plumbing, but it no longer modifies the
-    spec — touching the unwinder here would clobber the production base
-    (last-writer-wins on the dict).
+    """sys-fs/zfs[debug] requires CONFIG_FRAME_POINTER.
+
+    On x86, FRAME_POINTER is selected only by UNWINDER_FRAME_POINTER (the two
+    user-visible unwinders are mutually exclusive: UNWINDER_ORC and
+    UNWINDER_FRAME_POINTER). Production base sets ORC=y; this function
+    overrides to UNWINDER_FRAME_POINTER=y and ORC=n when enable is True.
+
+    When enable is False this function is a NO-OP — the production base's
+    ORC=y / UNWINDER_FRAME_POINTER=n remain in the spec dict. Writing
+    required_state=False here would still be correct but would also clobber
+    if the production base ever changed; doing nothing is safer and matches
+    the layer-system contract (sub-functions only override when active).
     """
-    return
+    if not enable:
+        return
+    _spec_add(
+        spec,
+        "CONFIG_UNWINDER_FRAME_POINTER",
+        required_state=True,
+        module=False,
+        warn=True,
+    )
+    _spec_add(
+        spec,
+        "CONFIG_UNWINDER_ORC",
+        required_state=False,
+        module=False,
+        warn=True,
+    )
 
 
 def check_kernel_config(
@@ -1971,13 +2014,13 @@ def check_kernel_config(
     #    fix=fix,
     #    url=None,
     # )
-    # ZFS-friendly default: use the frame-pointer unwinder unconditionally.
-    # CONFIG_UNWINDER_FRAME_POINTER selects ARCH_WANT_FRAME_POINTERS → FRAME_POINTER,
-    # which sys-fs/zfs requires (with or without USE=debug). UNWINDER_ORC and
-    # UNWINDER_FRAME_POINTER are mutually exclusive — must disable ORC explicitly.
+    # ORC unwinder by default (kernel's x86_64 default; smaller, faster).
+    # When sys-fs/zfs is configured with USE=debug, check_kernel_config_zfs_debug
+    # (Layer 2) flips this to UNWINDER_FRAME_POINTER. The two are mutually
+    # exclusive, so we assert ORC explicitly here and let Layer 2 override.
     _spec_add(
         spec,
-        "CONFIG_UNWINDER_FRAME_POINTER",
+        "CONFIG_UNWINDER_ORC",
         required_state=True,
         module=False,
         warn=warn_only,
@@ -1985,7 +2028,7 @@ def check_kernel_config(
     )
     _spec_add(
         spec,
-        "CONFIG_UNWINDER_ORC",
+        "CONFIG_UNWINDER_FRAME_POINTER",
         required_state=False,
         module=False,
         warn=warn_only,
@@ -3643,6 +3686,12 @@ def check_kernel_config(
     )
 
     # --- layer 2: debug group overrides (last-writer-wins over production base) ---
+    # Auto-enable zfs_debug if sys-fs/zfs currently has USE=debug configured,
+    # regardless of whether --zfs-debug was passed on the command line. The
+    # debug-build of ZFS requires CONFIG_FRAME_POINTER, which is selected by
+    # the FP unwinder.
+    zfs_debug = zfs_debug or _zfs_debug_use_enabled()
+    icp(f"layer 2: zfs_debug={zfs_debug}")
     check_kernel_config_kasan(spec=spec, enable=kasan)
     check_kernel_config_kmemleak(spec=spec, enable=kmemleak)
     check_kernel_config_slub_debug(spec=spec, enable=slub_debug)
@@ -3958,6 +4007,24 @@ def _snapshot_existing_kernel_files(kver: str) -> None:
             target = boot / f"{base_name}.{ts}"
         icp(f"snapshot: {src} -> {target}")
         src.rename(target)
+        # Re-point any /boot symlinks (e.g. genkernel --symlink's /boot/kernel,
+        # /boot/initramfs) that pointed at the just-renamed file. Without this
+        # fix the symlinks dangle, breaking later boot checks and bootability
+        # of the snapshotted kernel.
+        for entry in boot.iterdir():
+            if not entry.is_symlink():
+                continue
+            link_str = os.readlink(entry)
+            link_basename = Path(link_str).name
+            if link_basename != src.name:
+                continue
+            entry.unlink()
+            # preserve absolute vs relative form of the original link
+            new_target = (
+                target.as_posix() if link_str.startswith("/") else target.name
+            )
+            entry.symlink_to(new_target)
+            icp(f"snapshot: repointed symlink {entry} -> {new_target}")
 
 
 def _snapshot_for_current_source() -> None:
