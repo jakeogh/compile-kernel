@@ -22,6 +22,7 @@ from eprint import eprint
 from globalverbose import gvd
 
 from compile_kernel import check_kernel_config
+from compile_kernel import check_kernel_config_perf
 from compile_kernel import compile_and_install_kernel
 from compile_kernel import configure_kernel
 from compile_kernel import generate_module_config_dict
@@ -290,7 +291,7 @@ def compare_loaded_modules_to_config(
 @click.option("--mem-init", is_flag=True, help="Enable memory init-on-alloc/free and page poisoning")
 @click.option("--dma-debug", is_flag=True, help="Enable DMA API correctness checking")
 @click.option("--data-struct-debug", is_flag=True, help="Enable list/SG/notifier/IRQ integrity checks")
-@click.option("--netconsole", is_flag=True, help="Enable netconsole UDP kernel log (with dynamic reconfiguration)")
+@click.option("--disable-netconsole", is_flag=True, help="Disable netconsole UDP kernel log (on by default)")
 @click.option(
     "--zfs-compat",
     is_flag=True,
@@ -329,7 +330,7 @@ def compile_and_install(
     mem_init: bool,
     dma_debug: bool,
     data_struct_debug: bool,
-    netconsole: bool,
+    disable_netconsole: bool,
     zfs_compat: bool,
     nvidia_compat: bool,
     code_debug: bool,
@@ -381,7 +382,7 @@ def compile_and_install(
         mem_init=mem_init,
         dma_debug=dma_debug,
         data_struct_debug=data_struct_debug,
-        netconsole=netconsole,
+        netconsole=not disable_netconsole,
         zfs_compat=zfs_compat,
         nvidia_compat=nvidia_compat,
     )
@@ -674,3 +675,41 @@ def grub_font(
         gvd.enable()
 
     set_grub_font(size=size)
+
+
+@cli.command("check-config-perf")
+@click.argument(
+    "dotconfigs",
+    type=click.Path(exists=True, dir_okay=False, path_type=Path),
+    nargs=-1,
+)
+@click_add_options(click_global_options)
+@click.pass_context
+def check_config_perf(
+    ctx,
+    dotconfigs: tuple[Path, ...],
+    verbose_inf: bool,
+    dict_output: bool,
+    verbose: bool = False,
+):
+    tty, verbose = tvicgvd(
+        ctx=ctx,
+        verbose=verbose,
+        verbose_inf=verbose_inf,
+        ic=ic,
+        gvd=gvd,
+    )
+    if not verbose:
+        ic.disable()
+    else:
+        ic.enable()
+    if verbose_inf:
+        gvd.enable()
+
+    if not dotconfigs:
+        raise click.UsageError(
+            "at least one DOTCONFIG path is required (e.g. /usr/src/linux/.config or /proc/config.gz)"
+        )
+
+    for config in dotconfigs:
+        check_kernel_config_perf(path=config)

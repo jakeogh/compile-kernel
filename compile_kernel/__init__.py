@@ -3,6 +3,7 @@ isort:skip_file
 """
 
 from .compile_kernel import check_kernel_config as check_kernel_config
+from .compile_kernel import check_kernel_config_perf as check_kernel_config_perf
 from .compile_kernel import configure_kernel as configure_kernel
 from .compile_kernel import generate_module_config_dict as generate_module_config_dict
 from .compile_kernel import get_set_kernel_config_option as get_set_kernel_config_option

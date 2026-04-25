@@ -218,6 +218,158 @@ def _decompress_config_if_needed(
         return path, None
 
 
+def check_kernel_config_perf(*, path: Path) -> None:
+    """Report kernel config options that may impact performance.
+
+    Read-only analysis: walks a list of perf-relevant symbols, compares each
+    to a recommended state, and prints findings grouped by category. Does not
+    modify the config. Recommendations skew toward maximum throughput on a
+    desktop/workstation; tradeoffs (security, latency) are noted in each entry.
+    """
+    path = path.resolve()
+    path, _tmp_config = _decompress_config_if_needed(path)
+    try:
+        content = path.read_text(encoding="utf8", errors="replace")
+    finally:
+        if _tmp_config is not None:
+            # keep temp file alive until after we've read it
+            pass
+
+    # Build {symbol: state} where state is "y", "m", "n", or a value string
+    state: dict[str, str] = {}
+    for line in content.splitlines():
+        line = line.strip()
+        if line.startswith("# CONFIG_") and line.endswith(" is not set"):
+            sym = line[2:].split(" ", 1)[0]
+            state[sym] = "n"
+        elif line.startswith("CONFIG_") and "=" in line:
+            sym, val = line.split("=", 1)
+            state[sym] = val.strip().strip('"')
+
+    def get(sym: str) -> str:
+        return state.get(sym, "?")
+
+    # Each finding: (symbol, want, severity, explanation)
+    # severity: HIGH (big perf swing), MED, LOW (minor or situational), INFO (just FYI)
+    categories: list[tuple[str, list[tuple[str, str, str, str]]]] = [
+        ("Debug overhead (significant cost when enabled)", [
+            ("CONFIG_KASAN", "n", "HIGH", "memory sanitizer ~2-3x slowdown on every load/store"),
+            ("CONFIG_KFENCE", "n", "LOW", "low-rate sampling sanitizer; cheap if KASAN is off"),
+            ("CONFIG_DEBUG_KMEMLEAK", "n", "MED", "scans every alloc/free for unreferenced objects"),
+            ("CONFIG_PROVE_LOCKING", "n", "HIGH", "lockdep instrumentation on every lock op"),
+            ("CONFIG_LOCKDEP", "n", "HIGH", "lock dependency tracking core"),
+            ("CONFIG_DEBUG_LOCK_ALLOC", "n", "HIGH", "lock allocation tracking"),
+            ("CONFIG_DEBUG_SPINLOCK", "n", "HIGH", "spinlock debug overhead in hot paths"),
+            ("CONFIG_DEBUG_MUTEXES", "n", "MED", "mutex debug overhead"),
+            ("CONFIG_DEBUG_ATOMIC_SLEEP", "n", "MED", "scheduler hot-path checks"),
+            ("CONFIG_PROVE_RCU", "n", "MED", "RCU usage validation"),
+            ("CONFIG_DEBUG_OBJECTS", "n", "MED", "object lifecycle tracking"),
+            ("CONFIG_SLUB_DEBUG_ON", "n", "MED", "SLUB debug at runtime (vs SLUB_DEBUG which is off-by-default)"),
+            ("CONFIG_DEBUG_PAGEALLOC", "n", "HIGH", "unmaps every freed page; ~100x slowdown on alloc/free"),
+            ("CONFIG_PAGE_POISONING", "n", "MED", "writes poison pattern on every free"),
+            ("CONFIG_INIT_ON_ALLOC_DEFAULT_ON", "n", "MED", "zeros memory on every alloc"),
+            ("CONFIG_INIT_ON_FREE_DEFAULT_ON", "n", "MED", "zeros memory on every free"),
+            ("CONFIG_KCSAN", "n", "MED", "data race sampling instrumentation"),
+            ("CONFIG_UBSAN", "n", "LOW", "undefined behaviour sanitizer (~5% overhead)"),
+            ("CONFIG_DMA_API_DEBUG", "n", "MED", "DMA API correctness checks on every map/unmap"),
+            ("CONFIG_FUNCTION_TRACER", "n", "MED", "ftrace nop overhead on every function entry"),
+            ("CONFIG_DEBUG_LIST", "n", "LOW", "list_head integrity checks"),
+            ("CONFIG_DEBUG_SG", "n", "LOW", "scatter-gather list checks on every DMA"),
+            ("CONFIG_DEBUG_PREEMPT", "n", "LOW", "preempt count debug"),
+            ("CONFIG_TRACE_IRQFLAGS", "n", "LOW", "IRQ flags state tracking"),
+            ("CONFIG_FAULT_INJECTION", "n", "LOW", "no cost unless triggered, but adds branches"),
+        ]),
+        ("Preemption / latency", [
+            ("CONFIG_PREEMPT_DYNAMIC", "y", "MED", "runtime preempt selection via preempt= cmdline"),
+            ("CONFIG_PREEMPT_NONE", "y", "INFO", "max-throughput server preempt model"),
+            ("CONFIG_HZ_1000", "y", "INFO", "1000Hz tick — better latency, slight throughput cost (vs HZ_300)"),
+            ("CONFIG_NO_HZ_FULL", "y", "MED", "tickless on busy CPUs — reduces interruption of compute"),
+            ("CONFIG_NO_HZ_IDLE", "y", "MED", "tickless when idle — reduces wakeups, saves power"),
+            ("CONFIG_HIGH_RES_TIMERS", "y", "MED", "required for accurate timing"),
+            ("CONFIG_RCU_NOCB_CPU", "y", "MED", "offload RCU callbacks; pairs with NO_HZ_FULL"),
+        ]),
+        ("CPU mitigations (perf vs security tradeoff)", [
+            ("CONFIG_PAGE_TABLE_ISOLATION", "n", "HIGH", "KPTI; ~5-30% syscall cost on Intel — disable only if not vulnerable or accepting risk"),
+            ("CONFIG_MITIGATION_RETPOLINE", "n", "MED", "Spectre v2 mitigation; affects all indirect calls"),
+            ("CONFIG_MITIGATION_RETHUNK", "n", "MED", "AMD/Intel return mitigations"),
+            ("CONFIG_RANDOMIZE_BASE", "n", "LOW", "KASLR; minor TLB cost"),
+            ("CONFIG_RANDOMIZE_MEMORY", "n", "LOW", "memory layout randomization"),
+            ("CONFIG_STACKPROTECTOR_STRONG", "y", "INFO", "modest cost, large security benefit; keep on unless benchmarking"),
+        ]),
+        ("Scheduler", [
+            ("CONFIG_SCHED_AUTOGROUP", "y", "MED", "desktop responsiveness under load"),
+            ("CONFIG_SCHED_MC", "y", "MED", "multi-core load balancing"),
+            ("CONFIG_SCHED_SMT", "y", "MED", "SMT-aware scheduling on hyperthreaded CPUs"),
+            ("CONFIG_SCHED_CLUSTER", "y", "LOW", "cluster-aware scheduling (Intel hybrid, ARM big.LITTLE)"),
+            ("CONFIG_FAIR_GROUP_SCHED", "y", "INFO", "needed for cgroup CPU control"),
+        ]),
+        ("CPU frequency / idle", [
+            ("CONFIG_X86_INTEL_PSTATE", "y", "MED", "modern Intel P-state driver (HWP-aware)"),
+            ("CONFIG_X86_AMD_PSTATE", "y", "MED", "modern AMD P-state driver"),
+            ("CONFIG_CPU_FREQ_DEFAULT_GOV_SCHEDUTIL", "y", "MED", "best-balance default governor; sees scheduler load"),
+            ("CONFIG_CPU_IDLE_GOV_TEO", "y", "LOW", "Timer Events Oriented idle governor — better than menu"),
+        ]),
+        ("Memory management", [
+            ("CONFIG_TRANSPARENT_HUGEPAGE", "y", "MED", "THP support; large perf win for many workloads"),
+            ("CONFIG_TRANSPARENT_HUGEPAGE_MADVISE", "y", "INFO", "default-madvise is safer than always; less RSS bloat"),
+            ("CONFIG_COMPACTION", "y", "MED", "memory defrag for hugepage allocations"),
+            ("CONFIG_NUMA_BALANCING", "y", "MED", "auto-migrate pages to local NUMA node (multi-socket only)"),
+            ("CONFIG_KSM", "y", "INFO", "memory dedup; CPU cost vs RAM savings — workload dependent"),
+            ("CONFIG_ZSWAP", "y", "MED", "compressed swap cache; faster than disk swap under pressure"),
+            ("CONFIG_ZSWAP_DEFAULT_ON", "y", "LOW", "enable zswap by default (else needs cmdline)"),
+        ]),
+        ("I/O", [
+            ("CONFIG_BLK_WBT_MQ", "y", "MED", "writeback throttling — keeps reads responsive under heavy writes"),
+            ("CONFIG_IOSCHED_BFQ", "y", "INFO", "BFQ I/O scheduler available (good for desktop interactive)"),
+            ("CONFIG_MQ_IOSCHED_KYBER", "y", "INFO", "Kyber I/O scheduler (good for fast SSDs)"),
+            ("CONFIG_IO_URING", "y", "MED", "modern async I/O API; major perf win for I/O-bound apps"),
+        ]),
+        ("Networking", [
+            ("CONFIG_NET_RX_BUSY_POLL", "y", "MED", "low-latency packet polling for sockets"),
+            ("CONFIG_TCP_CONG_BBR", "y", "MED", "BBR congestion control; far better than cubic on lossy/long-RTT"),
+            ("CONFIG_BPF_JIT", "y", "MED", "JIT eBPF programs (XDP, tc, seccomp)"),
+            ("CONFIG_BPF_JIT_ALWAYS_ON", "y", "LOW", "force-enable JIT (security: prevents interpreter)"),
+            ("CONFIG_XDP_SOCKETS", "y", "INFO", "AF_XDP for kernel-bypass networking"),
+        ]),
+        ("CPU type / x86 features", [
+            ("CONFIG_GENERIC_CPU", "n", "MED", "generic x86_64; disable to enable -march=native (CONFIG_MNATIVE_*)"),
+            ("CONFIG_X86_X2APIC", "y", "LOW", "x2APIC — required for >255 CPUs, faster on modern hw"),
+            ("CONFIG_X86_FRED", "y", "INFO", "Flexible Return and Event Delivery (Intel, kernel 6.9+)"),
+            ("CONFIG_COMPAT", "n", "LOW", "32-bit userspace support; disable on pure 64-bit systems"),
+            ("CONFIG_IA32_EMULATION", "n", "LOW", "32-bit syscall emulation; disable if no 32-bit binaries"),
+        ]),
+    ]
+
+    print(f"perf-relevant config analysis: {path}")
+    print()
+
+    issue_count = 0
+    for cat_name, checks in categories:
+        cat_findings: list[str] = []
+        for sym, want, sev, why in checks:
+            cur = get(sym)
+            ok = (cur == want) or (want == "y" and cur == "m")
+            if ok and sev == "INFO":
+                continue
+            if ok:
+                continue
+            cat_findings.append(f"  [{sev:4}] {sym:<48} = {cur:<6}  want {want}  — {why}")
+            issue_count += 1
+        if cat_findings:
+            print(f"=== {cat_name} ===")
+            for line in cat_findings:
+                print(line)
+            print()
+
+    if issue_count == 0:
+        print("no perf-relevant deviations found.")
+    else:
+        print(f"{issue_count} perf-relevant deviation(s); review tradeoffs before changing.")
+
+    if _tmp_config is not None:
+        Path(_tmp_config.name).unlink(missing_ok=True)
+
+
 def get_set_kernel_config_option(
     *,
     path: Path,
@@ -1128,7 +1280,7 @@ def check_kernel_config(
     mem_init: bool = False,
     dma_debug: bool = False,
     data_struct_debug: bool = False,
-    netconsole: bool = False,
+    netconsole: bool = True,
     zfs_compat: bool = False,
     nvidia_compat: bool = False,
 ):
@@ -3612,7 +3764,7 @@ def install_compiled_kernel(
     mem_init: bool = False,
     dma_debug: bool = False,
     data_struct_debug: bool = False,
-    netconsole: bool = False,
+    netconsole: bool = True,
 ):
     with chdir("/usr/src/linux"):
         os.system("make install")
@@ -3673,7 +3825,7 @@ def configure_kernel(
     mem_init: bool = False,
     dma_debug: bool = False,
     data_struct_debug: bool = False,
-    netconsole: bool = False,
+    netconsole: bool = True,
     zfs_compat: bool = False,
     nvidia_compat: bool = False,
 ):
@@ -3731,7 +3883,7 @@ def compile_and_install_kernel(
     mem_init: bool = False,
     dma_debug: bool = False,
     data_struct_debug: bool = False,
-    netconsole: bool = False,
+    netconsole: bool = True,
     zfs_compat: bool = False,
     nvidia_compat: bool = False,
 ):
