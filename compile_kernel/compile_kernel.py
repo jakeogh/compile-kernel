@@ -6,6 +6,7 @@ from __future__ import annotations
 import gzip
 import logging
 import os
+import subprocess
 import sys
 import tempfile
 import time
@@ -200,13 +201,15 @@ def _decompress_config_if_needed(
     """Return (plain_path, tmp) where tmp is a NamedTemporaryFile to keep alive,
     or None if the original path is already plain text.
 
-    Handles three input forms:
+    Handles:
       • plain text .config              → returned unchanged
       • gzipped config (e.g. /proc/config.gz) → decompressed to a temp file
-      • vmlinuz/vmlinux/bzImage with CONFIG_IKCONFIG=y → extracted via
-        scripts/extract-ikconfig
+      • bzImage/vmlinuz with CONFIG_IKCONFIG=y → extracted via
+        scripts/extract-ikconfig (also handles ELF vmlinux)
 
-    scripts/config cannot read gzip-compressed or kernel-image inputs directly.
+    Raises:
+      ValueError if the input is unrecognised (neither config nor kernel image).
+      RuntimeError if a kernel image has no embedded IKCONFIG.
     """
     # 1. Try gzip first (covers /proc/config.gz)
     try:
@@ -225,40 +228,54 @@ def _decompress_config_if_needed(
     except gzip.BadGzipFile:
         pass
 
-    # 2. Sniff whether it's already a plain text config
+    # 2. Read enough to sniff
     try:
-        head = path.read_bytes()[:512]
-    except OSError:
+        head = path.read_bytes()[:8192]
+    except OSError as exc:
+        raise ValueError(f"cannot read {path}: {exc}") from exc
+
+    # 3. Plain text kernel config — must contain CONFIG_ tokens within the head
+    if b"CONFIG_" in head:
         return path, None
 
-    looks_like_config = (
-        b"CONFIG_" in head
-        or head.lstrip().startswith(b"#")
-    )
-    if looks_like_config:
-        return path, None
+    # 4. Kernel image detection
+    is_bzimage = len(head) > 0x206 and head[0x202:0x206] == b"HdrS"
+    is_elf = head.startswith(b"\x7fELF")
+    is_kernel_image = is_bzimage or is_elf
 
-    # 3. Looks like a kernel image — try scripts/extract-ikconfig
+    if not is_kernel_image:
+        raise ValueError(
+            f"{path} is neither a kernel config nor a recognised kernel image "
+            f"(no IKCONFIG signature, no bzImage HdrS magic, no ELF header)"
+        )
+
+    # 5. Try scripts/extract-ikconfig
     extract_script = Path("/usr/src/linux/scripts/extract-ikconfig")
     if not extract_script.exists():
-        return path, None
+        raise FileNotFoundError(
+            f"{path} is a kernel image, but {extract_script} is missing — "
+            f"cannot extract embedded config"
+        )
 
-    try:
-        config_bytes = hs.Command(extract_script)(str(path), _err=sys.stderr).stdout
-        if isinstance(config_bytes, str):
-            config_bytes = config_bytes.encode("utf8")
-    except Exception:
-        return path, None
-
-    if b"CONFIG_" not in config_bytes[:4096]:
-        return path, None
+    result = subprocess.run(
+        [str(extract_script), str(path)],
+        capture_output=True,
+        check=False,
+    )
+    if result.returncode != 0 or b"CONFIG_" not in result.stdout[:4096]:
+        stderr_tail = result.stderr.decode("utf8", errors="replace").strip()
+        raise RuntimeError(
+            f"{path} is a kernel image but contains no embedded config "
+            f"(kernel must be built with CONFIG_IKCONFIG=y).\n"
+            f"extract-ikconfig stderr: {stderr_tail}"
+        )
 
     tmp = tempfile.NamedTemporaryFile(
         mode="wb",
         suffix=".config",
         delete=False,
     )
-    tmp.write(config_bytes)
+    tmp.write(result.stdout)
     tmp.flush()
     tmp.close()
     return Path(tmp.name), tmp
