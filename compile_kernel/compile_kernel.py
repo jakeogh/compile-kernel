@@ -3641,12 +3641,73 @@ def _read_kernel_flags(kver: str) -> list[str] | None:
     return content.split() if content else []
 
 
+_BOOT_FILE_PREFIXES = ("vmlinuz", "System.map", "config", "initramfs")
+
+
+def _snapshot_existing_kernel_files(kver: str) -> None:
+    """Rename all existing /boot files for kver to {basename}.{mtime_ts}.
+
+    Captures vmlinuz-{kver}, System.map-{kver}, config-{kver}, and
+    initramfs-{kver}.img — including any existing .old variants — so that
+    every previous compile is preserved with a unique timestamp suffix
+    derived from each file's mtime. After snapshotting, /boot has no
+    {basename}-{kver} or {basename}-{kver}.old entries left, so subsequent
+    `make install` and genkernel will install fresh files cleanly without
+    triggering installkernel's default rename-to-.old behaviour.
+    """
+    boot = Path("/boot")
+    if not boot.is_dir():
+        return
+
+    candidates: list[Path] = []
+    for prefix in _BOOT_FILE_PREFIXES:
+        if prefix == "initramfs":
+            base = f"{prefix}-{kver}.img"
+        else:
+            base = f"{prefix}-{kver}"
+        for name in (base, f"{base}.old"):
+            p = boot / name
+            if p.exists():
+                candidates.append(p)
+
+    for src in candidates:
+        ts = int(src.stat().st_mtime)
+        # strip a trailing ".old" so the timestamped name is canonical
+        base_name = src.name[:-4] if src.name.endswith(".old") else src.name
+        target = boot / f"{base_name}.{ts}"
+        # rebuilds within the same second — bump until unique
+        while target.exists():
+            ts += 1
+            target = boot / f"{base_name}.{ts}"
+        icp(f"snapshot: {src} -> {target}")
+        src.rename(target)
+
+
+def _snapshot_for_current_source() -> None:
+    """Read kver from /usr/src/linux and snapshot existing /boot files for it.
+    No-op if kernel.release is not yet generated (kernel not configured).
+    """
+    kver_file = Path("/usr/src/linux/include/config/kernel.release")
+    if not kver_file.exists():
+        icp("snapshot skipped: include/config/kernel.release not present")
+        return
+    kver = kver_file.read_text(encoding="utf8").strip()
+    _snapshot_existing_kernel_files(kver)
+
+
 def _kver_from_vmlinuz(vmlinuz_path: str) -> str:
     """Extract kver from a vmlinuz path like /boot/vmlinuz-6.19.6-gentoo-x86_64."""
     name = Path(vmlinuz_path).name
     # strip vmlinuz- prefix
     if name.startswith("vmlinuz-"):
-        return name[len("vmlinuz-"):]
+        name = name[len("vmlinuz-"):]
+    # strip trailing .{integer_ts} (snapshot suffix from _snapshot_existing_kernel_files)
+    # so e.g. vmlinuz-6.19.6-gentoo-x86_64.1773443816 maps to 6.19.6-gentoo-x86_64
+    import re as _re
+    name = _re.sub(r"\.\d{9,}$", "", name)
+    # also strip legacy .old suffix for pre-snapshot kernels
+    if name.endswith(".old"):
+        name = name[:-4]
     return name
 
 
@@ -3829,6 +3890,7 @@ def install_compiled_kernel(
     data_struct_debug: bool = False,
     netconsole: bool = True,
 ):
+    _snapshot_for_current_source()
     with chdir("/usr/src/linux"):
         os.system("make install")
 
@@ -4137,6 +4199,7 @@ def compile_and_install_kernel(
         zfs_compat=zfs_compat,
         nvidia_compat=nvidia_compat,
     )  # must be done after nconfig
+    _snapshot_for_current_source()
     genkernel_command = hs.Command("genkernel")
     genkernel_command.bake("all")
     # if configure:
