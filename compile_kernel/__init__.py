@@ -11,3 +11,4 @@ from .compile_kernel import compile_and_install_kernel as compile_and_install_ke
 from .compile_kernel import (
     read_content_of_kernel_config as read_content_of_kernel_config,
 )
+from .compile_kernel import set_grub_font as set_grub_font
