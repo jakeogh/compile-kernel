@@ -199,8 +199,16 @@ def _decompress_config_if_needed(
 ) -> tuple[Path, tempfile.NamedTemporaryFile | None]:
     """Return (plain_path, tmp) where tmp is a NamedTemporaryFile to keep alive,
     or None if the original path is already plain text.
-    scripts/config cannot read gzip-compressed configs directly.
+
+    Handles three input forms:
+      • plain text .config              → returned unchanged
+      • gzipped config (e.g. /proc/config.gz) → decompressed to a temp file
+      • vmlinuz/vmlinux/bzImage with CONFIG_IKCONFIG=y → extracted via
+        scripts/extract-ikconfig
+
+    scripts/config cannot read gzip-compressed or kernel-image inputs directly.
     """
+    # 1. Try gzip first (covers /proc/config.gz)
     try:
         with gzip.open(path, "rb") as f:
             f.read(2)  # probe — raises BadGzipFile if not gzip
@@ -215,7 +223,45 @@ def _decompress_config_if_needed(
         tmp.close()
         return Path(tmp.name), tmp
     except gzip.BadGzipFile:
+        pass
+
+    # 2. Sniff whether it's already a plain text config
+    try:
+        head = path.read_bytes()[:512]
+    except OSError:
         return path, None
+
+    looks_like_config = (
+        b"CONFIG_" in head
+        or head.lstrip().startswith(b"#")
+    )
+    if looks_like_config:
+        return path, None
+
+    # 3. Looks like a kernel image — try scripts/extract-ikconfig
+    extract_script = Path("/usr/src/linux/scripts/extract-ikconfig")
+    if not extract_script.exists():
+        return path, None
+
+    try:
+        config_bytes = hs.Command(extract_script)(str(path), _err=sys.stderr).stdout
+        if isinstance(config_bytes, str):
+            config_bytes = config_bytes.encode("utf8")
+    except Exception:
+        return path, None
+
+    if b"CONFIG_" not in config_bytes[:4096]:
+        return path, None
+
+    tmp = tempfile.NamedTemporaryFile(
+        mode="wb",
+        suffix=".config",
+        delete=False,
+    )
+    tmp.write(config_bytes)
+    tmp.flush()
+    tmp.close()
+    return Path(tmp.name), tmp
 
 
 def check_kernel_config_perf(*, path: Path) -> None:
