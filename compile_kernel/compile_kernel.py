@@ -19,7 +19,6 @@ from asserttool import ic
 from asserttool import icp
 from asserttool import root_user
 from eprint import eprint
-from getdents import files_pathlib
 from globalverbose import gvd
 from pathtool import file_exists_nonzero
 from with_chdir import chdir
@@ -126,7 +125,7 @@ def generate_module_config_dict(path: Path):
     # _manual_mappings["USB_XHCI_PCI"] = ["xhci_pci.o"]
     # _manual_mappings["I2C_I801"] = ["i2c_i801.o"]
 
-    _makefiles = files_pathlib(path, names=["Makefile"])
+    _makefiles = list(Path(path).rglob("Makefile"))
     icp(_makefiles)
     config_dict = {}
     prefix = "obj-$(CONFIG_"

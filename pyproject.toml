@@ -10,7 +10,7 @@ backend-path = [
 
 [project]
 name = "compile_kernel"
-version = "1!0.0.1777077040"
+version = "1!0.0.1777077330"
 description = "Compiles kernels with verified optons"
 authors = [
     { name = "Justin Keogh", email = "github.com@v6y.net" },
@@ -41,7 +41,6 @@ dependencies-git = [
     "click-auto-help @ git+https://git@github.com/jakeogh/click-auto-help",
     "clicktool @ git+https://git@github.com/jakeogh/clicktool",
     "eprint @ git+https://git@github.com/jakeogh/eprint",
-    "getdents @ git+https://git@github.com/jakeogh/getdents",
     "globalverbose @ git+https://git@github.com/jakeogh/globalverbose",
     "pathtool @ git+https://git@github.com/jakeogh/pathtool",
     "hs @ git+https://git@github.com/jakeogh/hs",
