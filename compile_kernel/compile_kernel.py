@@ -2768,6 +2768,33 @@ def check_kernel_config(
         warn=warn_only,
         url="",
     )
+    # sshuttle — legacy iptables backend (gates IP_NF_NAT and IP_NF_MANGLE)
+    _spec_add(
+        spec,
+        "CONFIG_IP_NF_IPTABLES_LEGACY",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
+    # sshuttle — connection tracking (required by IP_NF_NAT)
+    _spec_add(
+        spec,
+        "CONFIG_NF_CONNTRACK",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
+    # sshuttle — xtables framework (required by NETFILTER_XT_TARGET_HL)
+    _spec_add(
+        spec,
+        "CONFIG_NETFILTER_XTABLES",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
     # sshuttle — gates the `if IP_NF_NAT` block that contains IP_NF_TARGET_REDIRECT
     _spec_add(
         spec,
