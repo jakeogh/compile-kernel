@@ -2786,10 +2786,19 @@ def check_kernel_config(
         warn=warn_only,
         url="",
     )
-    # sshuttle — xtables framework (required by NETFILTER_XT_TARGET_HL)
+    # sshuttle — xtables framework (selected =y by many built-in features; cannot be =m)
     _spec_add(
         spec,
         "CONFIG_NETFILTER_XTABLES",
+        required_state=True,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
+    # sshuttle — legacy xtables backend (gates IP_NF_IPTABLES_LEGACY)
+    _spec_add(
+        spec,
+        "CONFIG_NETFILTER_XTABLES_LEGACY",
         required_state=True,
         module=True,
         warn=warn_only,
