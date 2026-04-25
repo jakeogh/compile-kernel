@@ -6,6 +6,7 @@ from __future__ import annotations
 import gzip
 import logging
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -50,6 +51,11 @@ def _spec_add(
     warn: bool,
     url: str | None = None,
 ) -> None:
+    if not define.startswith("CONFIG_"):
+        raise ValueError(
+            f"_spec_add: {define!r} must start with 'CONFIG_' "
+            f"(verifier looks up keys by their full CONFIG_X name)"
+        )
     spec[define] = ConfigOption(
         required_state=required_state,
         module=module,
@@ -119,6 +125,106 @@ def _int_spec_apply(
             )
 
 
+_KCONFIG_INDEX_CACHE: dict[str, dict[str, dict]] = {}
+
+
+def _kconfig_index(src: Path) -> dict[str, dict]:
+    """Walk every Kconfig file under `src` once and return a dict
+    {SYMBOL: {type, depends_on, file, line}}.
+
+    type ∈ {'bool', 'tristate', 'string', 'int', 'hex', None}.
+    depends_on is the conjunction of every 'depends on' line under the symbol,
+    joined by ' && '.
+    Cached per-src so subsequent calls are free.
+    """
+    key = src.resolve().as_posix()
+    if key in _KCONFIG_INDEX_CACHE:
+        return _KCONFIG_INDEX_CACHE[key]
+
+    cfg_re = re.compile(r"^(?:menu)?config\s+([A-Za-z0-9_]+)\s*$")
+    type_re = re.compile(r"^(bool|tristate|string|int|hex)\b")
+    dep_re = re.compile(r"^depends on\s+(.*?)\s*$")
+
+    index: dict[str, dict] = {}
+    for kfile in src.rglob("Kconfig*"):
+        if not kfile.is_file():
+            continue
+        try:
+            lines = kfile.read_text(encoding="utf8", errors="replace").splitlines()
+        except OSError:
+            continue
+        i = 0
+        n = len(lines)
+        while i < n:
+            m = cfg_re.match(lines[i].rstrip())
+            if not m:
+                i += 1
+                continue
+            name = m.group(1)
+            type_: str | None = None
+            depends: list[str] = []
+            j = i + 1
+            while j < n:
+                stripped = lines[j].lstrip()
+                if cfg_re.match(stripped.rstrip()):
+                    break
+                tm = type_re.match(stripped)
+                if tm and type_ is None:
+                    type_ = tm.group(1)
+                dm = dep_re.match(stripped)
+                if dm:
+                    depends.append(dm.group(1))
+                j += 1
+            # Last-writer-wins for duplicate declarations across architectures
+            index[name] = {
+                "type": type_,
+                "depends_on": " && ".join(depends) if depends else None,
+                "file": kfile.as_posix(),
+                "line": i + 1,
+            }
+            i = j
+
+    _KCONFIG_INDEX_CACHE[key] = index
+    return index
+
+
+def _kmeta(define: str, index: dict[str, dict]) -> dict | None:
+    name = define[len("CONFIG_"):] if define.startswith("CONFIG_") else define
+    return index.get(name)
+
+
+def _filter_spec_for_kernel(
+    spec: ConfigSpec,
+    src: Path,
+) -> ConfigSpec:
+    """Pre-process spec against the live kernel's Kconfig:
+      • drop entries whose symbol no longer exists (removed in this version)
+      • coerce module=True → module=False when Kconfig says the symbol is bool
+    Returns a new dict; the input is not modified.
+    """
+    if not (src / "Kconfig").exists():
+        return spec  # nothing to filter against
+
+    index = _kconfig_index(src)
+    out: ConfigSpec = {}
+    for define, opt in spec.items():
+        meta = _kmeta(define, index)
+        if meta is None:
+            icp(f"spec filter: {define} not in this kernel — skipping (likely removed)")
+            continue
+        if opt.module and meta["type"] == "bool":
+            icp(f"spec filter: {define} is bool, not tristate — coercing module→y")
+            out[define] = ConfigOption(
+                required_state=opt.required_state,
+                module=False,
+                warn=opt.warn,
+                url=opt.url,
+            )
+            continue
+        out[define] = opt
+    return out
+
+
 def _resolve_and_verify_config(
     *,
     spec: ConfigSpec,
@@ -174,15 +280,39 @@ def _resolve_and_verify_config(
             missing.append((define, want, got))
 
     if missing:
-        eprint("ERROR: the following required symbols did not survive olddefconfig:")
+        index = _kconfig_index(src)
+        eprint("WARNING: the following required symbols did not survive olddefconfig:")
         for sym, want, got in missing:
-            eprint(f"  {sym}: want={want} got={got}")
+            meta = _kmeta(sym, index)
+            if meta is None:
+                eprint(f"  {sym}: not in Kconfig (removed?) — prune from spec")
+            elif got == "absent" and meta.get("depends_on"):
+                eprint(
+                    f"  {sym}: hidden by unmet dependency — depends on: "
+                    f"{meta['depends_on']}  (defined at {meta['file']}:{meta['line']})"
+                )
+                eprint(
+                    f"      → enable each parent symbol in the spec, then re-run"
+                )
+            elif got == "y" and want == "m" and meta.get("type") == "bool":
+                eprint(
+                    f"  {sym}: spec wants =m but Kconfig declares it as bool "
+                    f"— pre-filter should have coerced this; possible bug"
+                )
+            else:
+                eprint(
+                    f"  {sym}: want={want} got={got} "
+                    f"(type={meta.get('type')}, depends_on={meta.get('depends_on')})"
+                )
         eprint(
-            "this usually means a select-only or choice-block dependency was "
-            "not satisfied; check the parent symbols in Kconfig"
+            "fix each entry above (prune, enable parents, or correct the spec), "
+            "then re-run."
         )
-        raise RuntimeError(f"{len(missing)} required config symbol(s) missing after olddefconfig")
-    icp("olddefconfig validated — all required symbols are set")
+        raise RuntimeError(
+            f"{len(missing)} required config symbol(s) missing after olddefconfig"
+        )
+    else:
+        icp("olddefconfig validated — all required symbols are set")
 
 
 def generate_module_config_dict(path: Path):
@@ -2399,7 +2529,7 @@ def check_kernel_config(
 
     _spec_add(
         spec,
-        "HID_WACOM",
+        "CONFIG_HID_WACOM",
         required_state=True,
         module=True,
         warn=warn_only,
@@ -3469,6 +3599,10 @@ def check_kernel_config(
         "CONFIG_STACK_DEPOT_MAX_ENTRIES",
         24,
     )
+
+    # --- pre-filter spec against the live kernel's Kconfig (when relevant) ---
+    if path.resolve() == Path("/usr/src/linux/.config").resolve():
+        spec = _filter_spec_for_kernel(spec, Path("/usr/src/linux"))
 
     # --- apply merged spec — each symbol written exactly once ---
     _spec_apply(
