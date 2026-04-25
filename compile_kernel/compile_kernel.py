@@ -3853,6 +3853,14 @@ def set_grub_font(size: int = 12) -> None:
     out_pf2 = out_dir / f"compile-kernel-{size}.pf2"
 
     icp(f"generating {out_pf2} from {ttf_path} at {size}px")
+    import shutil as _shutil
+    if _shutil.which("grub-mkfont") is None:
+        raise FileNotFoundError(
+            "grub-mkfont not found in PATH.\n"
+            "On Gentoo this is provided by sys-boot/grub built with USE=fonts.\n"
+            "Fix: add 'sys-boot/grub fonts' to /etc/portage/package.use, then\n"
+            "     emerge -1 sys-boot/grub"
+        )
     hs.Command("grub-mkfont")(
         "--size", str(size),
         "--output", str(out_pf2),
