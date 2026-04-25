@@ -3856,8 +3856,8 @@ def set_grub_font(size: int = 12) -> None:
     if _shutil.which("grub-mkfont") is None:
         raise FileNotFoundError(
             "grub-mkfont not found in PATH.\n"
-            "On Gentoo this is provided by sys-boot/grub built with USE=fonts.\n"
-            "Fix: add 'sys-boot/grub fonts' to /etc/portage/package.use, then\n"
+            "On Gentoo this is provided by sys-boot/grub built with USE=truetype.\n"
+            "Fix: add 'sys-boot/grub truetype' to /etc/portage/package.use, then\n"
             "     emerge -1 sys-boot/grub"
         )
     hs.Command("grub-mkfont")(
