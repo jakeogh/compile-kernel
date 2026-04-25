@@ -263,7 +263,7 @@ def compare_loaded_modules_to_config(
 @click.option("--no-fix", is_flag=True)
 @click.option("--symlink-config", is_flag=True)
 @click.option("--no-check-boot", is_flag=True)
-@click.option("--skip-module-rebuild", is_flag=True, help="Skip emerge @module-rebuild step")
+@click.option("--pre-module-rebuild", is_flag=True, help="Run emerge @module-rebuild before kernel compile (genkernel's post-build callback already handles this; only useful if pre-build modules need updating)")
 @click.option(
     "--kasan", is_flag=True, help="Enable KASAN/KFENCE memory error detection"
 )
@@ -314,7 +314,7 @@ def compile_and_install(
     dict_output: bool,
     force: bool,
     no_check_boot: bool,
-    skip_module_rebuild: bool,
+    pre_module_rebuild: bool,
     kasan: bool,
     kmemleak: bool,
     slub_debug: bool,
@@ -366,7 +366,7 @@ def compile_and_install(
         warn_only=warn_only,
         no_check_boot=no_check_boot,
         symlink_config=symlink_config,
-        skip_module_rebuild=skip_module_rebuild,
+        pre_module_rebuild=pre_module_rebuild,
         kasan=kasan,
         kmemleak=kmemleak,
         slub_debug=slub_debug,

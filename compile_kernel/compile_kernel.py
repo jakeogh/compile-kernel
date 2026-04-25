@@ -3999,7 +3999,7 @@ def compile_and_install_kernel(
     warn_only: bool,
     no_check_boot: bool,
     symlink_config: bool,
-    skip_module_rebuild: bool,
+    pre_module_rebuild: bool,
     kasan: bool = False,
     kmemleak: bool = False,
     slub_debug: bool = False,
@@ -4134,7 +4134,7 @@ def compile_and_install_kernel(
         )
 
     if not unconfigured_kernel:
-        if not skip_module_rebuild:
+        if pre_module_rebuild:
             icp("attempting emerge @module-rebuild")
             try:
                 hs.Command("emerge")(
