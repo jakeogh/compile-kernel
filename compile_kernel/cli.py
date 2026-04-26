@@ -74,6 +74,11 @@ def cli(
     help="Enable CONFIG_FRAME_POINTER required by sys-fs/zfs USE=debug",
 )
 @click.option(
+    "--lock-stat",
+    is_flag=True,
+    help="Enable CONFIG_LOCK_STAT for lock contention profiling (~10-20% cost; lighter than --lockdep)",
+)
+@click.option(
     "--harden",
     is_flag=True,
     help="Enable CPU mitigations and KASLR (off by default for perf)",
@@ -112,6 +117,7 @@ def configure(
     gcov: bool,
     zbtree_debug: bool,
     zfs_debug: bool,
+    lock_stat: bool,
     harden: bool,
     ia32: bool,
     bpftrace: bool,
@@ -157,6 +163,7 @@ def configure(
         gcov=gcov,
         zbtree_debug=zbtree_debug,
         zfs_debug=zfs_debug,
+        lock_stat=lock_stat,
         harden=harden,
         ia32=ia32,
         bpftrace=bpftrace,
@@ -314,6 +321,11 @@ def compare_loaded_modules_to_config(
 @click.option("--data-struct-debug", is_flag=True, help="Enable list/SG/notifier/IRQ integrity checks")
 @click.option("--disable-netconsole", is_flag=True, help="Disable netconsole UDP kernel log (on by default)")
 @click.option(
+    "--lock-stat",
+    is_flag=True,
+    help="Enable CONFIG_LOCK_STAT for lock contention profiling (~10-20% cost; lighter than --lockdep)",
+)
+@click.option(
     "--harden",
     is_flag=True,
     help="Enable CPU mitigations and KASLR (off by default for perf)",
@@ -367,6 +379,7 @@ def compile_and_install(
     dma_debug: bool,
     data_struct_debug: bool,
     disable_netconsole: bool,
+    lock_stat: bool,
     harden: bool,
     ia32: bool,
     bpftrace: bool,
@@ -422,6 +435,7 @@ def compile_and_install(
         dma_debug=dma_debug,
         data_struct_debug=data_struct_debug,
         netconsole=not disable_netconsole,
+        lock_stat=lock_stat,
         harden=harden,
         ia32=ia32,
         bpftrace=bpftrace,
@@ -451,6 +465,11 @@ def compile_and_install(
     "--zfs-debug",
     is_flag=True,
     help="Enable CONFIG_FRAME_POINTER required by sys-fs/zfs USE=debug",
+)
+@click.option(
+    "--lock-stat",
+    is_flag=True,
+    help="Enable CONFIG_LOCK_STAT for lock contention profiling (~10-20% cost; lighter than --lockdep)",
 )
 @click.option(
     "--harden",
@@ -489,6 +508,7 @@ def _install_kernel(
     gcov: bool,
     zbtree_debug: bool,
     zfs_debug: bool,
+    lock_stat: bool,
     harden: bool,
     ia32: bool,
     bpftrace: bool,
@@ -521,6 +541,7 @@ def _install_kernel(
         gcov=gcov,
         zbtree_debug=zbtree_debug,
         zfs_debug=zfs_debug,
+        lock_stat=lock_stat,
         harden=harden,
         ia32=ia32,
         bpftrace=bpftrace,
@@ -564,6 +585,11 @@ def _install_kernel(
     help="Enable CONFIG_FRAME_POINTER required by sys-fs/zfs USE=debug",
 )
 @click.option(
+    "--lock-stat",
+    is_flag=True,
+    help="Enable CONFIG_LOCK_STAT for lock contention profiling (~10-20% cost; lighter than --lockdep)",
+)
+@click.option(
     "--harden",
     is_flag=True,
     help="Enable CPU mitigations and KASLR (off by default for perf)",
@@ -603,6 +629,7 @@ def check_config(
     gcov: bool,
     zbtree_debug: bool,
     zfs_debug: bool,
+    lock_stat: bool,
     harden: bool,
     ia32: bool,
     bpftrace: bool,
@@ -649,6 +676,7 @@ def check_config(
         "gcov": gcov,
         "zbtree-debug": zbtree_debug,
         "zfs-debug": zfs_debug,
+        "lock-stat": lock_stat,
         "harden": harden,
         "ia32": ia32,
         "bpftrace": bpftrace,
@@ -677,6 +705,7 @@ def check_config(
             gcov=gcov,
             zbtree_debug=zbtree_debug,
             zfs_debug=zfs_debug,
+            lock_stat=lock_stat,
             harden=harden,
             ia32=ia32,
             bpftrace=bpftrace,
