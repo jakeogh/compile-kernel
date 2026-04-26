@@ -74,6 +74,21 @@ def cli(
     help="Enable CONFIG_FRAME_POINTER required by sys-fs/zfs USE=debug",
 )
 @click.option(
+    "--harden",
+    is_flag=True,
+    help="Enable CPU mitigations and KASLR (off by default for perf)",
+)
+@click.option(
+    "--ia32",
+    is_flag=True,
+    help="Enable COMPAT and IA32_EMULATION for 32-bit binaries (off by default)",
+)
+@click.option(
+    "--bpftrace",
+    is_flag=True,
+    help="Enable BTF + FTRACE_SYSCALLS required by dev-debug/bpftrace",
+)
+@click.option(
     "--zfs-compat-lockdep",
     is_flag=True,
     help="Disable the full lockdep selector chain (PROVE_LOCKING, LOCK_STAT, DEBUG_LOCK_ALLOC, DEBUG_SPINLOCK, DEBUG_MUTEXES, LOCKDEP) so ZFS builds when --lockdep is set",
@@ -97,6 +112,9 @@ def configure(
     gcov: bool,
     zbtree_debug: bool,
     zfs_debug: bool,
+    harden: bool,
+    ia32: bool,
+    bpftrace: bool,
     zfs_compat_lockdep: bool,
     nvidia_compat: bool,
     code_debug: bool,
@@ -139,6 +157,9 @@ def configure(
         gcov=gcov,
         zbtree_debug=zbtree_debug,
         zfs_debug=zfs_debug,
+        harden=harden,
+        ia32=ia32,
+        bpftrace=bpftrace,
         zfs_compat_lockdep=zfs_compat_lockdep,
         nvidia_compat=nvidia_compat,
     )
@@ -293,6 +314,21 @@ def compare_loaded_modules_to_config(
 @click.option("--data-struct-debug", is_flag=True, help="Enable list/SG/notifier/IRQ integrity checks")
 @click.option("--disable-netconsole", is_flag=True, help="Disable netconsole UDP kernel log (on by default)")
 @click.option(
+    "--harden",
+    is_flag=True,
+    help="Enable CPU mitigations and KASLR (off by default for perf)",
+)
+@click.option(
+    "--ia32",
+    is_flag=True,
+    help="Enable COMPAT and IA32_EMULATION for 32-bit binaries (off by default)",
+)
+@click.option(
+    "--bpftrace",
+    is_flag=True,
+    help="Enable BTF + FTRACE_SYSCALLS required by dev-debug/bpftrace",
+)
+@click.option(
     "--zfs-compat-lockdep",
     is_flag=True,
     help="Disable the full lockdep selector chain (PROVE_LOCKING, LOCK_STAT, DEBUG_LOCK_ALLOC, DEBUG_SPINLOCK, DEBUG_MUTEXES, LOCKDEP) so ZFS builds when --lockdep is set",
@@ -331,6 +367,9 @@ def compile_and_install(
     dma_debug: bool,
     data_struct_debug: bool,
     disable_netconsole: bool,
+    harden: bool,
+    ia32: bool,
+    bpftrace: bool,
     zfs_compat_lockdep: bool,
     nvidia_compat: bool,
     code_debug: bool,
@@ -383,6 +422,9 @@ def compile_and_install(
         dma_debug=dma_debug,
         data_struct_debug=data_struct_debug,
         netconsole=not disable_netconsole,
+        harden=harden,
+        ia32=ia32,
+        bpftrace=bpftrace,
         zfs_compat_lockdep=zfs_compat_lockdep,
         nvidia_compat=nvidia_compat,
     )
@@ -411,6 +453,21 @@ def compile_and_install(
     help="Enable CONFIG_FRAME_POINTER required by sys-fs/zfs USE=debug",
 )
 @click.option(
+    "--harden",
+    is_flag=True,
+    help="Enable CPU mitigations and KASLR (off by default for perf)",
+)
+@click.option(
+    "--ia32",
+    is_flag=True,
+    help="Enable COMPAT and IA32_EMULATION for 32-bit binaries (off by default)",
+)
+@click.option(
+    "--bpftrace",
+    is_flag=True,
+    help="Enable BTF + FTRACE_SYSCALLS required by dev-debug/bpftrace",
+)
+@click.option(
     "--zfs-compat-lockdep",
     is_flag=True,
     help="Disable the full lockdep selector chain (PROVE_LOCKING, LOCK_STAT, DEBUG_LOCK_ALLOC, DEBUG_SPINLOCK, DEBUG_MUTEXES, LOCKDEP) so ZFS builds when --lockdep is set",
@@ -432,6 +489,9 @@ def _install_kernel(
     gcov: bool,
     zbtree_debug: bool,
     zfs_debug: bool,
+    harden: bool,
+    ia32: bool,
+    bpftrace: bool,
     zfs_compat_lockdep: bool,
     nvidia_compat: bool,
     verbose_inf: bool,
@@ -461,6 +521,9 @@ def _install_kernel(
         gcov=gcov,
         zbtree_debug=zbtree_debug,
         zfs_debug=zfs_debug,
+        harden=harden,
+        ia32=ia32,
+        bpftrace=bpftrace,
         zfs_compat_lockdep=zfs_compat_lockdep,
         nvidia_compat=nvidia_compat,
     )
@@ -501,6 +564,21 @@ def _install_kernel(
     help="Enable CONFIG_FRAME_POINTER required by sys-fs/zfs USE=debug",
 )
 @click.option(
+    "--harden",
+    is_flag=True,
+    help="Enable CPU mitigations and KASLR (off by default for perf)",
+)
+@click.option(
+    "--ia32",
+    is_flag=True,
+    help="Enable COMPAT and IA32_EMULATION for 32-bit binaries (off by default)",
+)
+@click.option(
+    "--bpftrace",
+    is_flag=True,
+    help="Enable BTF + FTRACE_SYSCALLS required by dev-debug/bpftrace",
+)
+@click.option(
     "--zfs-compat-lockdep",
     is_flag=True,
     help="Disable the full lockdep selector chain (PROVE_LOCKING, LOCK_STAT, DEBUG_LOCK_ALLOC, DEBUG_SPINLOCK, DEBUG_MUTEXES, LOCKDEP) so ZFS builds when --lockdep is set",
@@ -525,6 +603,9 @@ def check_config(
     gcov: bool,
     zbtree_debug: bool,
     zfs_debug: bool,
+    harden: bool,
+    ia32: bool,
+    bpftrace: bool,
     zfs_compat_lockdep: bool,
     nvidia_compat: bool,
     code_debug: bool,
@@ -568,6 +649,9 @@ def check_config(
         "gcov": gcov,
         "zbtree-debug": zbtree_debug,
         "zfs-debug": zfs_debug,
+        "harden": harden,
+        "ia32": ia32,
+        "bpftrace": bpftrace,
         "zfs-compat": zfs_compat_lockdep,
         "nvidia-compat": nvidia_compat,
     }
@@ -593,6 +677,9 @@ def check_config(
             gcov=gcov,
             zbtree_debug=zbtree_debug,
             zfs_debug=zfs_debug,
+            harden=harden,
+            ia32=ia32,
+            bpftrace=bpftrace,
             zfs_compat_lockdep=zfs_compat_lockdep,
             nvidia_compat=nvidia_compat,
         )  # must be done after nconfig

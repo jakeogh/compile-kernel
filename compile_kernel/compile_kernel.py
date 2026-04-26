@@ -1657,6 +1657,28 @@ def check_kernel_config_ia32(
     _spec_add(spec, "CONFIG_IA32_EMULATION", required_state=True, module=False, warn=True)
 
 
+def check_kernel_config_bpftrace(
+    *,
+    spec: ConfigSpec,
+    enable: bool,
+) -> None:
+    """dev-debug/bpftrace requirements:
+        CONFIG_DEBUG_INFO_BTF=y          — BTF type info embedded in vmlinux
+        CONFIG_DEBUG_INFO_BTF_MODULES=y  — BTF for modules (kernel 5.11+)
+        CONFIG_FTRACE_SYSCALLS=y         — syscall tracepoints used by uprobes/kfunc
+
+    Costs are mostly disk/build-time (BTF generation needs pahole, adds ~5-10MB
+    to vmlinux) — runtime cost is negligible. NO-OP when enable is False
+    (production base keeps these off so bpftrace builds fail loudly without
+    --bpftrace, indicating they need to be enabled).
+    """
+    if not enable:
+        return
+    _spec_add(spec, "CONFIG_DEBUG_INFO_BTF", required_state=True, module=False, warn=True)
+    _spec_add(spec, "CONFIG_DEBUG_INFO_BTF_MODULES", required_state=True, module=False, warn=True)
+    _spec_add(spec, "CONFIG_FTRACE_SYSCALLS", required_state=True, module=False, warn=True)
+
+
 def check_kernel_config_zfs_compat_lockdep(
     *,
     spec: ConfigSpec,
@@ -1826,6 +1848,7 @@ def check_kernel_config(
     netconsole: bool = True,
     harden: bool = False,
     ia32: bool = False,
+    bpftrace: bool = False,
     zfs_compat_lockdep: bool = False,
     nvidia_compat: bool = False,
 ):
@@ -2348,6 +2371,10 @@ def check_kernel_config(
         "CONFIG_DEBUG_SG",
         "CONFIG_DEBUG_NOTIFIERS",
         "CONFIG_DEBUG_IRQFLAGS",
+        # --bpftrace (BTF + syscall tracepoints; build-time cost only)
+        "CONFIG_DEBUG_INFO_BTF",
+        "CONFIG_DEBUG_INFO_BTF_MODULES",
+        "CONFIG_FTRACE_SYSCALLS",
     )
     for _sym in _DEBUG_GROUP_BASELINE_OFF:
         _spec_add(
@@ -4193,6 +4220,7 @@ def check_kernel_config(
     check_kernel_config_netconsole(spec=spec, enable=netconsole)
     check_kernel_config_harden(spec=spec, enable=harden)
     check_kernel_config_ia32(spec=spec, enable=ia32)
+    check_kernel_config_bpftrace(spec=spec, enable=bpftrace)
 
     # --- layer 3: compat overrides (win over everything) ---
     if zfs_compat_lockdep:
@@ -4415,6 +4443,7 @@ def _active_debug_flags(
     netconsole: bool,
     harden: bool,
     ia32: bool,
+    bpftrace: bool,
 ) -> list[str]:
     flags = [
         ("kasan", kasan),
@@ -4435,6 +4464,7 @@ def _active_debug_flags(
         ("netconsole", netconsole),
         ("harden", harden),
         ("ia32", ia32),
+        ("bpftrace", bpftrace),
     ]
     return [name for name, enabled in flags if enabled]
 
@@ -4920,6 +4950,7 @@ def install_compiled_kernel(
     netconsole: bool = True,
     harden: bool = False,
     ia32: bool = False,
+    bpftrace: bool = False,
 ):
     _snapshot_for_current_source()
     with chdir("/usr/src/linux"):
@@ -4957,6 +4988,7 @@ def install_compiled_kernel(
             netconsole=netconsole,
             harden=harden,
             ia32=ia32,
+            bpftrace=bpftrace,
         ),
     )
     _set_grub_distributor()
@@ -4986,6 +5018,7 @@ def configure_kernel(
     netconsole: bool = True,
     harden: bool = False,
     ia32: bool = False,
+    bpftrace: bool = False,
     zfs_compat_lockdep: bool = False,
     nvidia_compat: bool = False,
 ):
@@ -5016,6 +5049,7 @@ def configure_kernel(
         netconsole=netconsole,
         harden=harden,
         ia32=ia32,
+        bpftrace=bpftrace,
         zfs_compat_lockdep=zfs_compat_lockdep,
         nvidia_compat=nvidia_compat,
     )  # must be done after nconfig
@@ -5048,6 +5082,7 @@ def compile_and_install_kernel(
     netconsole: bool = True,
     harden: bool = False,
     ia32: bool = False,
+    bpftrace: bool = False,
     zfs_compat_lockdep: bool = False,
     nvidia_compat: bool = False,
 ):
@@ -5096,6 +5131,7 @@ def compile_and_install_kernel(
             netconsole=netconsole,
             harden=harden,
             ia32=ia32,
+            bpftrace=bpftrace,
             zfs_compat_lockdep=zfs_compat_lockdep,
             nvidia_compat=nvidia_compat,
         )
@@ -5130,6 +5166,7 @@ def compile_and_install_kernel(
         netconsole=netconsole,
         harden=harden,
         ia32=ia32,
+        bpftrace=bpftrace,
         zfs_compat_lockdep=zfs_compat_lockdep,
         nvidia_compat=nvidia_compat,
     )
@@ -5241,6 +5278,7 @@ def compile_and_install_kernel(
         netconsole=netconsole,
         harden=harden,
         ia32=ia32,
+        bpftrace=bpftrace,
         zfs_compat_lockdep=zfs_compat_lockdep,
         nvidia_compat=nvidia_compat,
     )  # must be done after nconfig
@@ -5306,6 +5344,7 @@ def compile_and_install_kernel(
                 netconsole=netconsole,
                 harden=harden,
                 ia32=ia32,
+                bpftrace=bpftrace,
             ),
         )
         _set_grub_distributor()
