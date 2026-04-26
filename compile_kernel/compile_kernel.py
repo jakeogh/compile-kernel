@@ -2474,6 +2474,11 @@ def check_kernel_config(
               warn=warn_only, url=None)
     _spec_add(spec, "CONFIG_RCU_NOCB_CPU", required_state=True, module=False,
               warn=warn_only, url=None)
+    # RCU_NOCB_CPU depends on (TREE_RCU) && (RCU_EXPERT || NO_HZ_FULL).
+    # NO_HZ_FULL is off, so RCU_EXPERT must be on to make RCU_NOCB_CPU
+    # reachable in the menu.
+    _spec_add(spec, "CONFIG_RCU_EXPERT", required_state=True, module=False,
+              warn=warn_only, url=None)
 
     # Scheduler.
     for _sym in (
@@ -2517,6 +2522,9 @@ def check_kernel_config(
               warn=warn_only, url=None)
 
     # I/O.
+    # BLK_WBT_MQ depends on BLK_WBT — assert the parent first.
+    _spec_add(spec, "CONFIG_BLK_WBT", required_state=True, module=False,
+              warn=warn_only, url=None)
     _spec_add(spec, "CONFIG_BLK_WBT_MQ", required_state=True, module=False,
               warn=warn_only, url=None)
     _spec_add(spec, "CONFIG_IOSCHED_BFQ", required_state=True, module=False,
@@ -2607,15 +2615,6 @@ def check_kernel_config(
     _spec_add(
         spec,
         "CONFIG_MTRR_SANITIZER",
-        required_state=True,
-        module=False,
-        warn=warn_only,
-        url="",
-    )
-    # speculative execution
-    _spec_add(
-        spec,
-        "CONFIG_MITIGATION_SLS",
         required_state=True,
         module=False,
         warn=warn_only,
@@ -4002,11 +4001,36 @@ def check_kernel_config(
         warn=warn_only,
         url="",
     )
-    # performance
+    # performance: SCHEDUTIL is the chosen default (set elsewhere); explicitly
+    # disable the other choice members so olddefconfig doesn't pick one.
     _spec_add(
         spec,
         "CONFIG_CPU_FREQ_DEFAULT_GOV_PERFORMANCE",
-        required_state=True,
+        required_state=False,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
+    _spec_add(
+        spec,
+        "CONFIG_CPU_FREQ_DEFAULT_GOV_POWERSAVE",
+        required_state=False,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
+    _spec_add(
+        spec,
+        "CONFIG_CPU_FREQ_DEFAULT_GOV_ONDEMAND",
+        required_state=False,
+        module=False,
+        warn=warn_only,
+        url="",
+    )
+    _spec_add(
+        spec,
+        "CONFIG_CPU_FREQ_DEFAULT_GOV_CONSERVATIVE",
+        required_state=False,
         module=False,
         warn=warn_only,
         url="",
