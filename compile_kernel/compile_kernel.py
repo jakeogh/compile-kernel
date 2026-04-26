@@ -417,6 +417,160 @@ def read_content_of_kernel_config(path: Path):
     return content
 
 
+def _detect_cpu_march_symbol() -> str:
+    """Inspect /proc/cpuinfo and return the most specific CONFIG_M* march
+    symbol the running CPU should be compiled for, or "CONFIG_GENERIC_CPU"
+    if no specific match is found.
+
+    Intel: family/model lookup against the canonical decoder ring.
+    AMD: family/model + ISA hints (avx512_vnni, avx512vbmi2 etc.) to
+        distinguish Zen2/Zen3/Zen4/Zen5.
+    Anything we don't recognise falls back to GENERIC_CPU.
+    """
+    try:
+        info = Path("/proc/cpuinfo").read_text(encoding="utf8", errors="replace")
+    except OSError:
+        return "CONFIG_GENERIC_CPU"
+
+    vendor = ""
+    family = -1
+    model = -1
+    flags: set[str] = set()
+    for line in info.splitlines():
+        key, _, val = line.partition(":")
+        key = key.strip()
+        val = val.strip()
+        if key == "vendor_id" and not vendor:
+            vendor = val
+        elif key == "cpu family" and family < 0:
+            family = int(val) if val.isdigit() else -1
+        elif key == "model" and model < 0:
+            model = int(val) if val.isdigit() else -1
+        elif key == "flags" and not flags:
+            flags = set(val.split())
+        if vendor and family >= 0 and model >= 0 and flags:
+            break
+
+    if vendor == "GenuineIntel" and family == 6:
+        # Intel family-6 model decode table (low byte of CPUID DisplayModel)
+        # Source: arch/x86/include/asm/intel-family.h plus historical data.
+        intel_table = {
+            # Core 2
+            0x0F: "CONFIG_MCORE2", 0x16: "CONFIG_MCORE2", 0x17: "CONFIG_MCORE2",
+            0x1D: "CONFIG_MCORE2",
+            # Nehalem / Westmere
+            0x1A: "CONFIG_MNEHALEM", 0x1E: "CONFIG_MNEHALEM",
+            0x1F: "CONFIG_MNEHALEM", 0x2E: "CONFIG_MNEHALEM",
+            0x25: "CONFIG_MWESTMERE", 0x2C: "CONFIG_MWESTMERE",
+            0x2F: "CONFIG_MWESTMERE",
+            # Sandy / Ivy Bridge
+            0x2A: "CONFIG_MSANDYBRIDGE", 0x2D: "CONFIG_MSANDYBRIDGE",
+            0x3A: "CONFIG_MIVYBRIDGE", 0x3E: "CONFIG_MIVYBRIDGE",
+            # Haswell
+            0x3C: "CONFIG_MHASWELL", 0x3F: "CONFIG_MHASWELL",
+            0x45: "CONFIG_MHASWELL", 0x46: "CONFIG_MHASWELL",
+            # Broadwell
+            0x3D: "CONFIG_MBROADWELL", 0x47: "CONFIG_MBROADWELL",
+            0x4F: "CONFIG_MBROADWELL", 0x56: "CONFIG_MBROADWELL",
+            # Skylake / Kaby Lake / Coffee Lake / Comet Lake (client)
+            0x4E: "CONFIG_MSKYLAKE", 0x5E: "CONFIG_MSKYLAKE",
+            0x8E: "CONFIG_MSKYLAKE", 0x9E: "CONFIG_MSKYLAKE",
+            0xA5: "CONFIG_MSKYLAKE", 0xA6: "CONFIG_MSKYLAKE",
+            # Skylake-X / Cascade Lake / Cooper Lake (server, AVX-512)
+            0x55: "CONFIG_MSKYLAKEX",
+            # Cannon Lake
+            0x66: "CONFIG_MCANNONLAKE",
+            # Ice Lake
+            0x6A: "CONFIG_MICELAKESERVER", 0x6C: "CONFIG_MICELAKESERVER",
+            0x7E: "CONFIG_MICELAKE", 0x7D: "CONFIG_MICELAKE",
+            # Tiger Lake
+            0x8C: "CONFIG_MTIGERLAKE", 0x8D: "CONFIG_MTIGERLAKE",
+            # Rocket Lake
+            0xA7: "CONFIG_MROCKETLAKE",
+            # Alder Lake / Raptor Lake / Meteor Lake (hybrid)
+            0x97: "CONFIG_MALDERLAKE", 0x9A: "CONFIG_MALDERLAKE",
+            0xB7: "CONFIG_MRAPTORLAKE", 0xBA: "CONFIG_MRAPTORLAKE",
+            0xBF: "CONFIG_MRAPTORLAKE",
+            0xAA: "CONFIG_MMETEORLAKE", 0xAC: "CONFIG_MMETEORLAKE",
+            # Sapphire Rapids / Emerald Rapids (server)
+            0x8F: "CONFIG_MSAPPHIRERAPIDS", 0xCF: "CONFIG_MEMERALDRAPIDS",
+            # Atom / Goldmont / Tremont
+            0x37: "CONFIG_MATOM", 0x4A: "CONFIG_MATOM", 0x4D: "CONFIG_MATOM",
+            0x5A: "CONFIG_MATOM", 0x5D: "CONFIG_MATOM",
+            0x5C: "CONFIG_MGOLDMONT", 0x5F: "CONFIG_MGOLDMONT",
+            0x7A: "CONFIG_MGOLDMONTPLUS",
+            0x86: "CONFIG_MTREMONT", 0x96: "CONFIG_MTREMONT",
+            0x9C: "CONFIG_MTREMONT",
+        }
+        if model in intel_table:
+            return intel_table[model]
+        return "CONFIG_GENERIC_CPU"
+
+    if vendor == "AuthenticAMD":
+        # AMD: family + ISA hints — model numbers reuse across families so
+        # ISA flags are the most reliable disambiguator for Zen generations.
+        if family == 0x19:  # Zen 3 / Zen 4
+            # Zen 4 introduced AVX-512 (avx512f, avx512vbmi2, avx512_vnni etc).
+            if "avx512f" in flags:
+                return "CONFIG_MZEN4"
+            return "CONFIG_MZEN3"
+        if family == 0x1A:  # Zen 5
+            return "CONFIG_MZEN5"
+        if family == 0x17:  # Zen / Zen+ / Zen 2
+            # Zen 2 introduced CLWB and rdpru; bare Zen has neither.
+            if "clwb" in flags:
+                return "CONFIG_MZEN2"
+            return "CONFIG_MZEN"
+        if family == 0x15:  # Bulldozer family
+            # 15h models 0x60-0x6F = Excavator, 0x30-0x3F = Steamroller,
+            # 0x10-0x1F = Piledriver, 0x00-0x0F = Bulldozer
+            if 0x60 <= model <= 0x7F:
+                return "CONFIG_MEXCAVATOR"
+            if 0x30 <= model <= 0x3F:
+                return "CONFIG_MSTEAMROLLER"
+            if 0x10 <= model <= 0x1F:
+                return "CONFIG_MPILEDRIVER"
+            return "CONFIG_MBULLDOZER"
+        if family == 0x16:  # Jaguar / Puma
+            return "CONFIG_MJAGUAR"
+        if family == 0x14:  # Bobcat
+            return "CONFIG_MBOBCAT"
+        if family == 0x10:  # K10 (Barcelona/Phenom/Magny-Cours)
+            return "CONFIG_MK10"
+        if family == 0xF:   # K8 (Athlon64/Opteron/Turion)
+            return "CONFIG_MK8"
+        return "CONFIG_GENERIC_CPU"
+
+    return "CONFIG_GENERIC_CPU"
+
+
+# All x86 march choice members — used to mass-disable the ones we're not picking.
+_X86_MARCH_CHOICE_SYMBOLS = (
+    "CONFIG_M486SSE2", "CONFIG_M586", "CONFIG_M586TSC", "CONFIG_M586MMX",
+    "CONFIG_M686", "CONFIG_MPENTIUMII", "CONFIG_MPENTIUMIII",
+    "CONFIG_MPENTIUMM", "CONFIG_MPENTIUM4", "CONFIG_MK6", "CONFIG_MK7",
+    "CONFIG_MK8", "CONFIG_MK8SSE3", "CONFIG_MK10", "CONFIG_MBARCELONA",
+    "CONFIG_MBOBCAT", "CONFIG_MJAGUAR", "CONFIG_MBULLDOZER",
+    "CONFIG_MPILEDRIVER", "CONFIG_MSTEAMROLLER", "CONFIG_MEXCAVATOR",
+    "CONFIG_MZEN", "CONFIG_MZEN2", "CONFIG_MZEN3", "CONFIG_MZEN4",
+    "CONFIG_MZEN5",
+    "CONFIG_MCRUSOE", "CONFIG_MEFFICEON", "CONFIG_MWINCHIPC6",
+    "CONFIG_MWINCHIP3D", "CONFIG_MCYRIXIII", "CONFIG_MVIAC3_2",
+    "CONFIG_MVIAC7", "CONFIG_MGEODEGX1", "CONFIG_MGEODE_LX",
+    "CONFIG_MELAN", "CONFIG_MATOM", "CONFIG_MGOLDMONT",
+    "CONFIG_MGOLDMONTPLUS", "CONFIG_MTREMONT",
+    "CONFIG_MCORE2", "CONFIG_MNEHALEM", "CONFIG_MWESTMERE",
+    "CONFIG_MSILVERMONT", "CONFIG_MSANDYBRIDGE", "CONFIG_MIVYBRIDGE",
+    "CONFIG_MHASWELL", "CONFIG_MBROADWELL", "CONFIG_MSKYLAKE",
+    "CONFIG_MSKYLAKEX", "CONFIG_MCANNONLAKE", "CONFIG_MICELAKE",
+    "CONFIG_MICELAKESERVER", "CONFIG_MTIGERLAKE", "CONFIG_MROCKETLAKE",
+    "CONFIG_MALDERLAKE", "CONFIG_MRAPTORLAKE", "CONFIG_MMETEORLAKE",
+    "CONFIG_MSAPPHIRERAPIDS", "CONFIG_MEMERALDRAPIDS",
+    "CONFIG_MNATIVE_INTEL", "CONFIG_MNATIVE_AMD",
+    "CONFIG_GENERIC_CPU",
+)
+
+
 def _zfs_debug_use_enabled() -> bool:
     """Return True if 'debug' is in sys-fs/zfs's currently configured USE flags.
 
@@ -590,12 +744,11 @@ def check_kernel_config_perf(*, path: Path) -> None:
         ]),
         ("Preemption / latency", [
             ("CONFIG_PREEMPT_DYNAMIC", "y", "MED", "runtime preempt selection via preempt= cmdline"),
-            ("CONFIG_PREEMPT_NONE", "y", "INFO", "max-throughput server preempt model"),
-            ("CONFIG_HZ_1000", "y", "INFO", "1000Hz tick — better latency, slight throughput cost (vs HZ_300)"),
-            ("CONFIG_NO_HZ_FULL", "y", "MED", "tickless on busy CPUs — reduces interruption of compute"),
+            ("CONFIG_PREEMPT_VOLUNTARY", "y", "INFO", "voluntary preempt — best interactive default"),
+            ("CONFIG_HZ_1000", "y", "INFO", "1000Hz tick — best interactive responsiveness"),
             ("CONFIG_NO_HZ_IDLE", "y", "MED", "tickless when idle — reduces wakeups, saves power"),
             ("CONFIG_HIGH_RES_TIMERS", "y", "MED", "required for accurate timing"),
-            ("CONFIG_RCU_NOCB_CPU", "y", "MED", "offload RCU callbacks; pairs with NO_HZ_FULL"),
+            ("CONFIG_RCU_NOCB_CPU", "y", "MED", "offload RCU callbacks to dedicated kthreads"),
         ]),
         ("CPU mitigations (perf vs security tradeoff)", [
             ("CONFIG_PAGE_TABLE_ISOLATION", "n", "HIGH", "KPTI; ~5-30% syscall cost on Intel — disable only if not vulnerable or accepting risk"),
@@ -623,7 +776,6 @@ def check_kernel_config_perf(*, path: Path) -> None:
             ("CONFIG_TRANSPARENT_HUGEPAGE_MADVISE", "y", "INFO", "default-madvise is safer than always; less RSS bloat"),
             ("CONFIG_COMPACTION", "y", "MED", "memory defrag for hugepage allocations"),
             ("CONFIG_NUMA_BALANCING", "y", "MED", "auto-migrate pages to local NUMA node (multi-socket only)"),
-            ("CONFIG_KSM", "y", "INFO", "memory dedup; CPU cost vs RAM savings — workload dependent"),
             ("CONFIG_ZSWAP", "y", "MED", "compressed swap cache; faster than disk swap under pressure"),
             ("CONFIG_ZSWAP_DEFAULT_ON", "y", "LOW", "enable zswap by default (else needs cmdline)"),
         ]),
@@ -640,14 +792,28 @@ def check_kernel_config_perf(*, path: Path) -> None:
             ("CONFIG_BPF_JIT_ALWAYS_ON", "y", "LOW", "force-enable JIT (security: prevents interpreter)"),
             ("CONFIG_XDP_SOCKETS", "y", "INFO", "AF_XDP for kernel-bypass networking"),
         ]),
-        ("CPU type / x86 features", [
-            ("CONFIG_GENERIC_CPU", "n", "MED", "generic x86_64; disable to enable -march=native (CONFIG_MNATIVE_*)"),
+        ("x86 features", [
             ("CONFIG_X86_X2APIC", "y", "LOW", "x2APIC — required for >255 CPUs, faster on modern hw"),
             ("CONFIG_X86_FRED", "y", "INFO", "Flexible Return and Event Delivery (Intel, kernel 6.9+)"),
-            ("CONFIG_COMPAT", "n", "LOW", "32-bit userspace support; disable on pure 64-bit systems"),
-            ("CONFIG_IA32_EMULATION", "n", "LOW", "32-bit syscall emulation; disable if no 32-bit binaries"),
+            ("CONFIG_COMPAT", "n", "LOW", "32-bit userspace support; off by default — flip with --ia32"),
+            ("CONFIG_IA32_EMULATION", "n", "LOW", "32-bit syscall emulation; off by default — flip with --ia32"),
         ]),
     ]
+
+    # Programmatic CPU march check: detect what we should be using and check
+    # that exactly that symbol is enabled (and GENERIC_CPU is not).
+    expected_march = _detect_cpu_march_symbol()
+    march_state = state.get(expected_march, "absent")
+    if march_state != "y":
+        print("=== CPU march ===")
+        print(f"  [HIGH] {expected_march:<48} = {march_state:<6}  want y  — autodetected for this CPU")
+        print()
+        issue_count += 1
+    if expected_march != "CONFIG_GENERIC_CPU" and state.get("CONFIG_GENERIC_CPU") == "y":
+        print("=== CPU march ===")
+        print(f"  [HIGH] CONFIG_GENERIC_CPU                              = y       want n  — masks specific march, costs 5-15%")
+        print()
+        issue_count += 1
 
     print(f"perf-relevant config analysis: {path}")
     print()
@@ -1447,6 +1613,50 @@ def check_kernel_config_netconsole(
     )
 
 
+def check_kernel_config_harden(
+    *,
+    spec: ConfigSpec,
+    enable: bool,
+) -> None:
+    """Hardening: re-enable mitigations and KASLR that the production base
+    leaves off for performance. NO-OP when enable is False (production base
+    has them off already).
+
+    Mitigations covered: KPTI (Meltdown), retpoline + rethunk (Spectre v2),
+    SLS (Straight-Line-Speculation), SRSO (AMD speculative RAS),
+    GDS_FORCE (Intel Gather Data Sampling), KASLR base + memory.
+    """
+    if not enable:
+        return
+    for sym in (
+        "CONFIG_PAGE_TABLE_ISOLATION",
+        "CONFIG_MITIGATION_RETPOLINE",
+        "CONFIG_MITIGATION_RETHUNK",
+        "CONFIG_MITIGATION_SLS",
+        "CONFIG_MITIGATION_SRSO",
+        "CONFIG_MITIGATION_GDS_FORCE",
+        "CONFIG_RANDOMIZE_BASE",
+        "CONFIG_RANDOMIZE_MEMORY",
+        "CONFIG_CPU_MITIGATIONS",
+    ):
+        _spec_add(spec, sym, required_state=True, module=False, warn=True)
+
+
+def check_kernel_config_ia32(
+    *,
+    spec: ConfigSpec,
+    enable: bool,
+) -> None:
+    """32-bit emulation: enable COMPAT and IA32_EMULATION so 32-bit binaries
+    (Wine, old Steam games, proprietary blobs) can run. Off by default for
+    a small syscall-path perf win on pure 64-bit systems.
+    """
+    if not enable:
+        return
+    _spec_add(spec, "CONFIG_COMPAT", required_state=True, module=False, warn=True)
+    _spec_add(spec, "CONFIG_IA32_EMULATION", required_state=True, module=False, warn=True)
+
+
 def check_kernel_config_zfs_compat_lockdep(
     *,
     spec: ConfigSpec,
@@ -1614,6 +1824,8 @@ def check_kernel_config(
     dma_debug: bool = False,
     data_struct_debug: bool = False,
     netconsole: bool = True,
+    harden: bool = False,
+    ia32: bool = False,
     zfs_compat_lockdep: bool = False,
     nvidia_compat: bool = False,
 ):
@@ -2166,6 +2378,145 @@ def check_kernel_config(
         warn=warn_only,
         url=None,
     )
+
+    # ──────────────────────────────────────────────────────────────────────
+    # Performance defaults — picked to make `check-config-perf` pass with no
+    # CLI flags. Each block is a coherent group; flip the corresponding
+    # --harden / --ia32 / etc. flag to deviate.
+    # ──────────────────────────────────────────────────────────────────────
+
+    # CPU march — pick the most specific symbol we can detect, disable the
+    # rest of the choice. Without this every kernel build would default to
+    # CONFIG_GENERIC_CPU and we'd lose 5–15% on hot paths.
+    _picked_march = _detect_cpu_march_symbol()
+    eprint(f"production base: detected CPU march → {_picked_march}")
+    for _march_sym in _X86_MARCH_CHOICE_SYMBOLS:
+        _spec_add(
+            spec, _march_sym,
+            required_state=(_march_sym == _picked_march),
+            module=False, warn=warn_only, url=None,
+        )
+
+    # CPU mitigations — OFF by default; --harden flips them on.
+    for _sym in (
+        "CONFIG_PAGE_TABLE_ISOLATION",
+        "CONFIG_MITIGATION_RETPOLINE",
+        "CONFIG_MITIGATION_RETHUNK",
+        "CONFIG_MITIGATION_SLS",
+        "CONFIG_MITIGATION_SRSO",
+        "CONFIG_MITIGATION_GDS_FORCE",
+        "CONFIG_RANDOMIZE_BASE",
+        "CONFIG_RANDOMIZE_MEMORY",
+        "CONFIG_CPU_MITIGATIONS",
+    ):
+        _spec_add(spec, _sym, required_state=False, module=False, warn=warn_only, url=None)
+    # STACKPROTECTOR_STRONG: cheap, leave on regardless of --harden.
+    _spec_add(spec, "CONFIG_STACKPROTECTOR_STRONG", required_state=True,
+              module=False, warn=warn_only, url=None)
+
+    # 32-bit emulation — OFF by default; --ia32 flips on.
+    _spec_add(spec, "CONFIG_COMPAT", required_state=False, module=False,
+              warn=warn_only, url=None)
+    _spec_add(spec, "CONFIG_IA32_EMULATION", required_state=False, module=False,
+              warn=warn_only, url=None)
+
+    # Preemption — DYNAMIC with VOLUNTARY default for best interactive feel
+    # without rebuild. Mutually exclusive with NONE/PREEMPT/RT.
+    _spec_add(spec, "CONFIG_PREEMPT_DYNAMIC", required_state=True, module=False,
+              warn=warn_only, url=None)
+    _spec_add(spec, "CONFIG_PREEMPT_VOLUNTARY", required_state=True, module=False,
+              warn=warn_only, url=None)
+    _spec_add(spec, "CONFIG_PREEMPT_NONE", required_state=False, module=False,
+              warn=warn_only, url=None)
+    _spec_add(spec, "CONFIG_PREEMPT", required_state=False, module=False,
+              warn=warn_only, url=None)
+    _spec_add(spec, "CONFIG_PREEMPT_RT", required_state=False, module=False,
+              warn=warn_only, url=None)
+
+    # Timer — 1000Hz, NO_HZ_IDLE (tickless when idle).  NO_HZ_FULL is
+    # specialist territory and explicitly off.
+    _spec_add(spec, "CONFIG_HZ_1000", required_state=True, module=False,
+              warn=warn_only, url=None)
+    for _sym in ("CONFIG_HZ_100", "CONFIG_HZ_250", "CONFIG_HZ_300"):
+        _spec_add(spec, _sym, required_state=False, module=False, warn=warn_only, url=None)
+    _spec_add(spec, "CONFIG_NO_HZ_IDLE", required_state=True, module=False,
+              warn=warn_only, url=None)
+    _spec_add(spec, "CONFIG_NO_HZ_FULL", required_state=False, module=False,
+              warn=warn_only, url=None)
+    _spec_add(spec, "CONFIG_HIGH_RES_TIMERS", required_state=True, module=False,
+              warn=warn_only, url=None)
+    _spec_add(spec, "CONFIG_RCU_NOCB_CPU", required_state=True, module=False,
+              warn=warn_only, url=None)
+
+    # Scheduler.
+    for _sym in (
+        "CONFIG_SCHED_AUTOGROUP",
+        "CONFIG_SCHED_MC",
+        "CONFIG_SCHED_SMT",
+        "CONFIG_SCHED_CLUSTER",
+        "CONFIG_FAIR_GROUP_SCHED",
+    ):
+        _spec_add(spec, _sym, required_state=True, module=False, warn=warn_only, url=None)
+
+    # CPU freq + idle.
+    for _sym in (
+        "CONFIG_X86_INTEL_PSTATE",
+        "CONFIG_X86_AMD_PSTATE",
+        "CONFIG_CPU_FREQ_DEFAULT_GOV_SCHEDUTIL",
+        "CONFIG_CPU_IDLE_GOV_TEO",
+    ):
+        _spec_add(spec, _sym, required_state=True, module=False, warn=warn_only, url=None)
+    _spec_add(spec, "CONFIG_CPU_IDLE_GOV_MENU", required_state=False, module=False,
+              warn=warn_only, url=None)
+
+    # Memory management.
+    _spec_add(spec, "CONFIG_TRANSPARENT_HUGEPAGE", required_state=True,
+              module=False, warn=warn_only, url=None)
+    _spec_add(spec, "CONFIG_TRANSPARENT_HUGEPAGE_MADVISE", required_state=True,
+              module=False, warn=warn_only, url=None)
+    _spec_add(spec, "CONFIG_TRANSPARENT_HUGEPAGE_ALWAYS", required_state=False,
+              module=False, warn=warn_only, url=None)
+    _spec_add(spec, "CONFIG_COMPACTION", required_state=True, module=False,
+              warn=warn_only, url=None)
+    _spec_add(spec, "CONFIG_NUMA_BALANCING", required_state=True, module=False,
+              warn=warn_only, url=None)
+    _spec_add(spec, "CONFIG_ZSWAP", required_state=True, module=False,
+              warn=warn_only, url=None)
+    _spec_add(spec, "CONFIG_ZSWAP_DEFAULT_ON", required_state=True, module=False,
+              warn=warn_only, url=None)
+    # KSM — workstation default off (CPU cost vs RAM savings; only worth it
+    # on VM hosts running many similar guests).
+    _spec_add(spec, "CONFIG_KSM", required_state=False, module=False,
+              warn=warn_only, url=None)
+
+    # I/O.
+    _spec_add(spec, "CONFIG_BLK_WBT_MQ", required_state=True, module=False,
+              warn=warn_only, url=None)
+    _spec_add(spec, "CONFIG_IOSCHED_BFQ", required_state=True, module=False,
+              warn=warn_only, url=None)
+    _spec_add(spec, "CONFIG_MQ_IOSCHED_KYBER", required_state=True, module=False,
+              warn=warn_only, url=None)
+    _spec_add(spec, "CONFIG_IO_URING", required_state=True, module=False,
+              warn=warn_only, url=None)
+
+    # Networking — BBR is built-in (no module) so it's always available; some
+    # distros ship it as a module but built-in is one less rmod risk.
+    _spec_add(spec, "CONFIG_NET_RX_BUSY_POLL", required_state=True, module=False,
+              warn=warn_only, url=None)
+    _spec_add(spec, "CONFIG_TCP_CONG_BBR", required_state=True, module=False,
+              warn=warn_only, url=None)
+    _spec_add(spec, "CONFIG_BPF_JIT", required_state=True, module=False,
+              warn=warn_only, url=None)
+    _spec_add(spec, "CONFIG_BPF_JIT_ALWAYS_ON", required_state=True, module=False,
+              warn=warn_only, url=None)
+    _spec_add(spec, "CONFIG_XDP_SOCKETS", required_state=True, module=False,
+              warn=warn_only, url=None)
+
+    # x86 features.
+    _spec_add(spec, "CONFIG_X86_X2APIC", required_state=True, module=False,
+              warn=warn_only, url=None)
+    _spec_add(spec, "CONFIG_X86_FRED", required_state=True, module=False,
+              warn=warn_only, url=None)
 
     ## not sure what this was for
     # verify_kernel_config_setting(
@@ -3840,6 +4191,8 @@ def check_kernel_config(
     check_kernel_config_dma_debug(spec=spec, enable=dma_debug)
     check_kernel_config_data_struct_debug(spec=spec, enable=data_struct_debug)
     check_kernel_config_netconsole(spec=spec, enable=netconsole)
+    check_kernel_config_harden(spec=spec, enable=harden)
+    check_kernel_config_ia32(spec=spec, enable=ia32)
 
     # --- layer 3: compat overrides (win over everything) ---
     if zfs_compat_lockdep:
@@ -3852,6 +4205,11 @@ def check_kernel_config(
         ispec,
         "CONFIG_STACK_DEPOT_MAX_ENTRIES",
         24,
+    )
+    _int_spec_add(
+        ispec,
+        "CONFIG_HZ",
+        1000,
     )
 
     # --- pre-filter spec against the live kernel's Kconfig (when relevant) ---
@@ -4055,6 +4413,8 @@ def _active_debug_flags(
     dma_debug: bool,
     data_struct_debug: bool,
     netconsole: bool,
+    harden: bool,
+    ia32: bool,
 ) -> list[str]:
     flags = [
         ("kasan", kasan),
@@ -4073,6 +4433,8 @@ def _active_debug_flags(
         ("dma-debug", dma_debug),
         ("data-struct-debug", data_struct_debug),
         ("netconsole", netconsole),
+        ("harden", harden),
+        ("ia32", ia32),
     ]
     return [name for name, enabled in flags if enabled]
 
@@ -4181,6 +4543,35 @@ def _snapshot_existing_kernel_files(kver: str) -> None:
     # Write the manifest keyed by the snapshotted vmlinuz basename.
     # Schema: one line per companion, "prefix=snapshotted_basename".
     if "vmlinuz" in snapshotted:
+        # Fill in any companion that wasn't snapshotted in THIS call by finding
+        # the most recent prior snapshot for the same kver. This handles the
+        # very common case where vmlinuz and initramfs were renamed in
+        # different compile-and-install runs (initramfs gets snapshotted by
+        # the second `make install` while vmlinuz gets snapshotted by the
+        # third — they end up with different timestamp suffixes).
+        for prefix in _BOOT_FILE_PREFIXES:
+            if prefix in snapshotted:
+                continue
+            if prefix == "initramfs":
+                base = f"{prefix}-{kver}.img"
+            else:
+                base = f"{prefix}-{kver}"
+            # 1) canonical name still present (rare: this would mean we didn't
+            #    snapshot it for some reason — e.g. it was newly written between
+            #    candidate-collection and now). Prefer it if so.
+            canonical = boot / base
+            if canonical.exists():
+                snapshotted[prefix] = canonical.name
+                continue
+            # 2) most recent prior snapshot {base}.{ts} that exists on disk
+            siblings = sorted(
+                boot.glob(f"{base}.[0-9]*"),
+                key=lambda p: p.stat().st_mtime,
+                reverse=True,
+            )
+            if siblings:
+                snapshotted[prefix] = siblings[0].name
+
         _SNAPSHOT_MANIFEST_DIR.mkdir(parents=True, exist_ok=True)
         manifest = _SNAPSHOT_MANIFEST_DIR / snapshotted["vmlinuz"]
         manifest.write_text(
@@ -4195,6 +4586,11 @@ def _read_snapshot_manifest(vmlinuz_basename: str) -> dict[str, str] | None:
     The manifest pairs each vmlinuz snapshot with its companion files so that
     GRUB postprocess can rewrite initrd lines to the correct snapshotted
     initramfs (and not the freshly-built one with the canonical name).
+
+    For legacy manifests (pre-mtime-pairing fix) that lack the initramfs
+    entry, transparently fill it in by picking the snapshotted initramfs
+    with mtime closest to (but not exceeding) the vmlinuz snapshot mtime.
+    The recovered manifest is rewritten to disk so the fix is sticky.
     """
     manifest = _SNAPSHOT_MANIFEST_DIR / vmlinuz_basename
     if not manifest.exists():
@@ -4206,6 +4602,39 @@ def _read_snapshot_manifest(vmlinuz_basename: str) -> dict[str, str] | None:
             continue
         k, v = line.split("=", 1)
         out[k] = v
+
+    # Legacy manifest recovery: missing initramfs → guess by mtime pairing.
+    if "vmlinuz" in out and "initramfs" not in out:
+        boot = Path("/boot")
+        vmlinuz_path = boot / out["vmlinuz"]
+        if vmlinuz_path.exists():
+            kver = _kver_from_vmlinuz(out["vmlinuz"])
+            target_mtime = vmlinuz_path.stat().st_mtime
+            # collect every initramfs snapshot for this kver that's older than
+            # or close to the vmlinuz mtime (within 1 day either way), pick
+            # the closest match. If none qualify, use the canonical initramfs
+            # if it exists.
+            candidates: list[tuple[float, Path]] = []
+            for cand in boot.glob(f"initramfs-{kver}.img.[0-9]*"):
+                if not cand.is_file():
+                    continue
+                candidates.append((abs(cand.stat().st_mtime - target_mtime), cand))
+            canonical = boot / f"initramfs-{kver}.img"
+            if canonical.exists():
+                candidates.append(
+                    (abs(canonical.stat().st_mtime - target_mtime), canonical)
+                )
+            if candidates:
+                candidates.sort(key=lambda t: t[0])
+                out["initramfs"] = candidates[0][1].name
+                # persist the repair
+                manifest.write_text(
+                    "\n".join(f"{k}={v}" for k, v in sorted(out.items())) + "\n",
+                    encoding="utf8",
+                )
+                eprint(
+                    f"snapshot manifest repaired: {manifest.name} initramfs={out['initramfs']}"
+                )
     return out
 
 
@@ -4349,10 +4778,22 @@ def _postprocess_grub_cfg(cfg_path: Path) -> None:
                     snap_path = f"/boot/{snap_initramfs}"
                     body = m_initrd.group(2)
                     parts = body.split()
+                    # Replace canonical reference with snapshot path.
                     new_parts = [
                         snap_path if p == canonical else p
                         for p in parts
                     ]
+                    # Append snapshot path if no initramfs reference exists.
+                    # (grub-mkconfig sometimes emits only microcode initrds
+                    # for snapshotted kernels because the canonical
+                    # /boot/initramfs-{kver}.img is the NEW build, not the
+                    # snapshot's matching initramfs.)
+                    has_initramfs_ref = any(
+                        Path(p).name.startswith(f"initramfs-{kver}")
+                        for p in new_parts
+                    )
+                    if not has_initramfs_ref:
+                        new_parts.append(snap_path)
                     if new_parts != parts:
                         line = (
                             m_initrd.group(1)
@@ -4364,7 +4805,7 @@ def _postprocess_grub_cfg(cfg_path: Path) -> None:
         i += 1
 
     cfg_path.write_text("".join(result), encoding="utf8")
-    icp("postprocessed grub.cfg with per-kernel flag labels and snapshot initrds")
+    eprint("postprocessed grub.cfg with per-kernel flag labels and snapshot initrds")
 
 
 def _set_grub_distributor() -> None:
@@ -4477,6 +4918,8 @@ def install_compiled_kernel(
     dma_debug: bool = False,
     data_struct_debug: bool = False,
     netconsole: bool = True,
+    harden: bool = False,
+    ia32: bool = False,
 ):
     _snapshot_for_current_source()
     with chdir("/usr/src/linux"):
@@ -4512,6 +4955,8 @@ def install_compiled_kernel(
             dma_debug=dma_debug,
             data_struct_debug=data_struct_debug,
             netconsole=netconsole,
+            harden=harden,
+            ia32=ia32,
         ),
     )
     _set_grub_distributor()
@@ -4539,6 +4984,8 @@ def configure_kernel(
     dma_debug: bool = False,
     data_struct_debug: bool = False,
     netconsole: bool = True,
+    harden: bool = False,
+    ia32: bool = False,
     zfs_compat_lockdep: bool = False,
     nvidia_compat: bool = False,
 ):
@@ -4567,6 +5014,8 @@ def configure_kernel(
         dma_debug=dma_debug,
         data_struct_debug=data_struct_debug,
         netconsole=netconsole,
+        harden=harden,
+        ia32=ia32,
         zfs_compat_lockdep=zfs_compat_lockdep,
         nvidia_compat=nvidia_compat,
     )  # must be done after nconfig
@@ -4597,6 +5046,8 @@ def compile_and_install_kernel(
     dma_debug: bool = False,
     data_struct_debug: bool = False,
     netconsole: bool = True,
+    harden: bool = False,
+    ia32: bool = False,
     zfs_compat_lockdep: bool = False,
     nvidia_compat: bool = False,
 ):
@@ -4643,6 +5094,8 @@ def compile_and_install_kernel(
             dma_debug=dma_debug,
             data_struct_debug=data_struct_debug,
             netconsole=netconsole,
+            harden=harden,
+            ia32=ia32,
             zfs_compat_lockdep=zfs_compat_lockdep,
             nvidia_compat=nvidia_compat,
         )
@@ -4675,6 +5128,8 @@ def compile_and_install_kernel(
         dma_debug=dma_debug,
         data_struct_debug=data_struct_debug,
         netconsole=netconsole,
+        harden=harden,
+        ia32=ia32,
         zfs_compat_lockdep=zfs_compat_lockdep,
         nvidia_compat=nvidia_compat,
     )
@@ -4784,6 +5239,8 @@ def compile_and_install_kernel(
         dma_debug=dma_debug,
         data_struct_debug=data_struct_debug,
         netconsole=netconsole,
+        harden=harden,
+        ia32=ia32,
         zfs_compat_lockdep=zfs_compat_lockdep,
         nvidia_compat=nvidia_compat,
     )  # must be done after nconfig
@@ -4847,6 +5304,8 @@ def compile_and_install_kernel(
                 dma_debug=dma_debug,
                 data_struct_debug=data_struct_debug,
                 netconsole=netconsole,
+                harden=harden,
+                ia32=ia32,
             ),
         )
         _set_grub_distributor()
