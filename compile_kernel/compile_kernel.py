@@ -3456,6 +3456,15 @@ def check_kernel_config(
         warn=warn_only,
         url="",
     )
+    # iptables -j CHECKSUM ... support (libvirt/dhcp etc.)
+    _spec_add(
+        spec,
+        "CONFIG_NETFILTER_XT_TARGET_CHECKSUM",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
     # old outdated option
     _spec_add(
         spec,
