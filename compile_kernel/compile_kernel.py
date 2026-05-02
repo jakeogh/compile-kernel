@@ -1230,6 +1230,44 @@ def check_kernel_config_lock_stat(
     _spec_add(spec, "CONFIG_LOCK_STAT", required_state=True, module=False, warn=True)
 
 
+def check_kernel_config_perf_profile(
+    *,
+    spec: ConfigSpec,
+    enable: bool,
+) -> None:
+    """Enable kernel options for `perf record --call-graph=dwarf` style
+    profiling with full kernel + userspace stack resolution.
+
+    Symbols:
+        KALLSYMS_ALL=y       — include data symbols, not just code, in
+                               /proc/kallsyms (perf can name globals).
+        DEBUG_INFO=y         — emit DWARF in vmlinux/modules.
+        DEBUG_INFO_DWARF5=y  — DWARF5; selects DEBUG_INFO. Newer + smaller
+                               than DWARF4. Toolchain support is universal
+                               at this point (gcc 11+, clang 14+).
+        FRAME_POINTER=y      — reliable kernel stack walking; selected via
+                               UNWINDER_FRAME_POINTER (UNWINDER_ORC must
+                               be off, mutually exclusive choice).
+
+    Cost: ~10-30% larger vmlinux + modules on disk; small (<5%) build-time
+    impact; runtime cost negligible. Do NOT enable for production unless
+    you're profiling — debug-info bloat alone is reason to leave off.
+
+    Note this overlaps with --bpftrace (DEBUG_INFO) and --zfs-debug
+    (FRAME_POINTER). Last-writer-wins on the spec dict, but all three
+    groups want these symbols on, so order doesn't matter when combining.
+    NO-OP when enable is False.
+    """
+    if not enable:
+        return
+    _spec_add(spec, "CONFIG_KALLSYMS_ALL", required_state=True, module=False, warn=True)
+    _spec_add(spec, "CONFIG_DEBUG_INFO", required_state=True, module=False, warn=True)
+    _spec_add(spec, "CONFIG_DEBUG_INFO_DWARF5", required_state=True, module=False, warn=True)
+    # Switch unwinder to frame-pointer for reliable kernel stack walks.
+    _spec_add(spec, "CONFIG_UNWINDER_FRAME_POINTER", required_state=True, module=False, warn=True)
+    _spec_add(spec, "CONFIG_UNWINDER_ORC", required_state=False, module=False, warn=True)
+
+
 def check_kernel_config_debug_objects(
     *,
     spec: ConfigSpec,
@@ -1870,6 +1908,7 @@ def check_kernel_config(
     data_struct_debug: bool = False,
     netconsole: bool = True,
     lock_stat: bool = False,
+    perf_profile: bool = False,
     harden: bool = False,
     ia32: bool = False,
     bpftrace: bool = False,
@@ -3408,6 +3447,15 @@ def check_kernel_config(
         warn=warn_only,
         url="",
     )
+    # iptables -m comment ... support
+    _spec_add(
+        spec,
+        "CONFIG_NETFILTER_XT_MATCH_COMMENT",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
     # old outdated option
     _spec_add(
         spec,
@@ -4267,6 +4315,7 @@ def check_kernel_config(
     check_kernel_config_data_struct_debug(spec=spec, enable=data_struct_debug)
     check_kernel_config_netconsole(spec=spec, enable=netconsole)
     check_kernel_config_lock_stat(spec=spec, enable=lock_stat)
+    check_kernel_config_perf_profile(spec=spec, enable=perf_profile)
     check_kernel_config_harden(spec=spec, enable=harden)
     check_kernel_config_ia32(spec=spec, enable=ia32)
     check_kernel_config_bpftrace(spec=spec, enable=bpftrace)
@@ -4491,6 +4540,7 @@ def _active_debug_flags(
     data_struct_debug: bool,
     netconsole: bool,
     lock_stat: bool,
+    perf_profile: bool,
     harden: bool,
     ia32: bool,
     bpftrace: bool,
@@ -4501,6 +4551,7 @@ def _active_debug_flags(
         ("slub-debug", slub_debug),
         ("lockdep", lockdep),
         ("lock-stat", lock_stat),
+        ("perf-profile", perf_profile),
         ("debug-objects", debug_objects),
         ("gcov", gcov),
         ("zbtree-debug", zbtree_debug),
@@ -4955,6 +5006,7 @@ def install_compiled_kernel(
     data_struct_debug: bool = False,
     netconsole: bool = True,
     lock_stat: bool = False,
+    perf_profile: bool = False,
     harden: bool = False,
     ia32: bool = False,
     bpftrace: bool = False,
@@ -4994,6 +5046,7 @@ def install_compiled_kernel(
             data_struct_debug=data_struct_debug,
             netconsole=netconsole,
             lock_stat=lock_stat,
+            perf_profile=perf_profile,
             harden=harden,
             ia32=ia32,
             bpftrace=bpftrace,
@@ -5025,6 +5078,7 @@ def configure_kernel(
     data_struct_debug: bool = False,
     netconsole: bool = True,
     lock_stat: bool = False,
+    perf_profile: bool = False,
     harden: bool = False,
     ia32: bool = False,
     bpftrace: bool = False,
@@ -5057,6 +5111,7 @@ def configure_kernel(
         data_struct_debug=data_struct_debug,
         netconsole=netconsole,
         lock_stat=lock_stat,
+        perf_profile=perf_profile,
         harden=harden,
         ia32=ia32,
         bpftrace=bpftrace,
@@ -5091,6 +5146,7 @@ def compile_and_install_kernel(
     data_struct_debug: bool = False,
     netconsole: bool = True,
     lock_stat: bool = False,
+    perf_profile: bool = False,
     harden: bool = False,
     ia32: bool = False,
     bpftrace: bool = False,
@@ -5141,6 +5197,7 @@ def compile_and_install_kernel(
             data_struct_debug=data_struct_debug,
             netconsole=netconsole,
             lock_stat=lock_stat,
+            perf_profile=perf_profile,
             harden=harden,
             ia32=ia32,
             bpftrace=bpftrace,
@@ -5177,6 +5234,7 @@ def compile_and_install_kernel(
         data_struct_debug=data_struct_debug,
         netconsole=netconsole,
         lock_stat=lock_stat,
+        perf_profile=perf_profile,
         harden=harden,
         ia32=ia32,
         bpftrace=bpftrace,
@@ -5290,6 +5348,7 @@ def compile_and_install_kernel(
         data_struct_debug=data_struct_debug,
         netconsole=netconsole,
         lock_stat=lock_stat,
+        perf_profile=perf_profile,
         harden=harden,
         ia32=ia32,
         bpftrace=bpftrace,
@@ -5357,6 +5416,7 @@ def compile_and_install_kernel(
                 data_struct_debug=data_struct_debug,
                 netconsole=netconsole,
                 lock_stat=lock_stat,
+                perf_profile=perf_profile,
                 harden=harden,
                 ia32=ia32,
                 bpftrace=bpftrace,

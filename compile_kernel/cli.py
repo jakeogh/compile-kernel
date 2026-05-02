@@ -79,6 +79,11 @@ def cli(
     help="Enable CONFIG_LOCK_STAT for lock contention profiling (~10-20% cost; lighter than --lockdep)",
 )
 @click.option(
+    "--perf-profile",
+    is_flag=True,
+    help="Enable KALLSYMS_ALL+DEBUG_INFO_DWARF5+FRAME_POINTER for perf record --call-graph=dwarf",
+)
+@click.option(
     "--harden",
     is_flag=True,
     help="Enable CPU mitigations and KASLR (off by default for perf)",
@@ -118,6 +123,7 @@ def configure(
     zbtree_debug: bool,
     zfs_debug: bool,
     lock_stat: bool,
+    perf_profile: bool,
     harden: bool,
     ia32: bool,
     bpftrace: bool,
@@ -164,6 +170,7 @@ def configure(
         zbtree_debug=zbtree_debug,
         zfs_debug=zfs_debug,
         lock_stat=lock_stat,
+        perf_profile=perf_profile,
         harden=harden,
         ia32=ia32,
         bpftrace=bpftrace,
@@ -326,6 +333,11 @@ def compare_loaded_modules_to_config(
     help="Enable CONFIG_LOCK_STAT for lock contention profiling (~10-20% cost; lighter than --lockdep)",
 )
 @click.option(
+    "--perf-profile",
+    is_flag=True,
+    help="Enable KALLSYMS_ALL+DEBUG_INFO_DWARF5+FRAME_POINTER for perf record --call-graph=dwarf",
+)
+@click.option(
     "--harden",
     is_flag=True,
     help="Enable CPU mitigations and KASLR (off by default for perf)",
@@ -380,6 +392,7 @@ def compile_and_install(
     data_struct_debug: bool,
     disable_netconsole: bool,
     lock_stat: bool,
+    perf_profile: bool,
     harden: bool,
     ia32: bool,
     bpftrace: bool,
@@ -436,6 +449,7 @@ def compile_and_install(
         data_struct_debug=data_struct_debug,
         netconsole=not disable_netconsole,
         lock_stat=lock_stat,
+        perf_profile=perf_profile,
         harden=harden,
         ia32=ia32,
         bpftrace=bpftrace,
@@ -470,6 +484,11 @@ def compile_and_install(
     "--lock-stat",
     is_flag=True,
     help="Enable CONFIG_LOCK_STAT for lock contention profiling (~10-20% cost; lighter than --lockdep)",
+)
+@click.option(
+    "--perf-profile",
+    is_flag=True,
+    help="Enable KALLSYMS_ALL+DEBUG_INFO_DWARF5+FRAME_POINTER for perf record --call-graph=dwarf",
 )
 @click.option(
     "--harden",
@@ -509,6 +528,7 @@ def _install_kernel(
     zbtree_debug: bool,
     zfs_debug: bool,
     lock_stat: bool,
+    perf_profile: bool,
     harden: bool,
     ia32: bool,
     bpftrace: bool,
@@ -542,6 +562,7 @@ def _install_kernel(
         zbtree_debug=zbtree_debug,
         zfs_debug=zfs_debug,
         lock_stat=lock_stat,
+        perf_profile=perf_profile,
         harden=harden,
         ia32=ia32,
         bpftrace=bpftrace,
@@ -590,6 +611,11 @@ def _install_kernel(
     help="Enable CONFIG_LOCK_STAT for lock contention profiling (~10-20% cost; lighter than --lockdep)",
 )
 @click.option(
+    "--perf-profile",
+    is_flag=True,
+    help="Enable KALLSYMS_ALL+DEBUG_INFO_DWARF5+FRAME_POINTER for perf record --call-graph=dwarf",
+)
+@click.option(
     "--harden",
     is_flag=True,
     help="Enable CPU mitigations and KASLR (off by default for perf)",
@@ -630,6 +656,7 @@ def check_config(
     zbtree_debug: bool,
     zfs_debug: bool,
     lock_stat: bool,
+    perf_profile: bool,
     harden: bool,
     ia32: bool,
     bpftrace: bool,
@@ -677,6 +704,7 @@ def check_config(
         "zbtree-debug": zbtree_debug,
         "zfs-debug": zfs_debug,
         "lock-stat": lock_stat,
+        "perf-profile": perf_profile,
         "harden": harden,
         "ia32": ia32,
         "bpftrace": bpftrace,
@@ -706,6 +734,7 @@ def check_config(
             zbtree_debug=zbtree_debug,
             zfs_debug=zfs_debug,
             lock_stat=lock_stat,
+            perf_profile=perf_profile,
             harden=harden,
             ia32=ia32,
             bpftrace=bpftrace,
