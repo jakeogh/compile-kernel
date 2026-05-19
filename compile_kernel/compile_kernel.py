@@ -3359,6 +3359,23 @@ def check_kernel_config(
             warn=warn_only,
             url="",
         )
+    # libvirt traffic-control: NET_CLS_U32 classifier + NET_ACT_CSUM action.
+    # NET_SCHED gates the whole TC subsystem; NET_CLS_ACT gates tc actions.
+    for _tc_sym in (
+        "CONFIG_NET_SCHED",
+        "CONFIG_NET_CLS",
+        "CONFIG_NET_CLS_ACT",
+        "CONFIG_NET_CLS_U32",
+        "CONFIG_NET_ACT_CSUM",
+    ):
+        _spec_add(
+            spec,
+            _tc_sym,
+            required_state=True,
+            module=True,
+            warn=warn_only,
+            url="",
+        )
     # sshuttle
     _spec_add(
         spec,
