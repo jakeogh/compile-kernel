@@ -3339,6 +3339,26 @@ def check_kernel_config(
         warn=warn_only,
         url="",
     )
+    # libvirt nftables backend
+    for _nft_sym in (
+        "CONFIG_NF_TABLES_INET",
+        "CONFIG_NF_TABLES_NETDEV",
+        "CONFIG_NF_TABLES_IPV4",
+        "CONFIG_NF_TABLES_IPV6",
+        "CONFIG_NF_TABLES_ARP",
+        "CONFIG_NF_TABLES_BRIDGE",
+        "CONFIG_NFT_NAT",
+        "CONFIG_NFT_MASQ",
+        "CONFIG_NFT_CHAIN_NAT",
+    ):
+        _spec_add(
+            spec,
+            _nft_sym,
+            required_state=True,
+            module=True,
+            warn=warn_only,
+            url="",
+        )
     # sshuttle
     _spec_add(
         spec,
