@@ -3410,6 +3410,21 @@ def check_kernel_config(
             warn=warn_only,
             url="",
         )
+    # NFT parents that aren't auto-selected:
+    #   NFT_QUEUE        → needs NETFILTER_NETLINK_QUEUE
+    #   NFT_FLOW_OFFLOAD → needs NF_FLOW_TABLE (NF_CONNTRACK already managed)
+    for _parent in (
+        "CONFIG_NETFILTER_NETLINK_QUEUE",
+        "CONFIG_NF_FLOW_TABLE",
+    ):
+        _spec_add(
+            spec,
+            _parent,
+            required_state=True,
+            module=True,
+            warn=warn_only,
+            url="",
+        )
     # sshuttle
     _spec_add(
         spec,
