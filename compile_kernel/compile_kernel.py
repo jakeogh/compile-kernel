@@ -3350,6 +3350,40 @@ def check_kernel_config(
         "CONFIG_NFT_NAT",
         "CONFIG_NFT_MASQ",
         "CONFIG_NFT_CHAIN_NAT",
+        # rejects
+        "CONFIG_NFT_REJECT",
+        "CONFIG_NFT_REJECT_IPV4",
+        "CONFIG_NFT_REJECT_IPV6",
+        "CONFIG_NFT_REJECT_INET",
+        # observability / accounting
+        "CONFIG_NFT_COUNTER",
+        "CONFIG_NFT_CT",
+        "CONFIG_NFT_LOG",
+        "CONFIG_NFT_LIMIT",
+        "CONFIG_NFT_QUOTA",
+        "CONFIG_NFT_CONNLIMIT",
+        # routing/forwarding lookups
+        "CONFIG_NFT_FIB",
+        "CONFIG_NFT_FIB_IPV4",
+        "CONFIG_NFT_FIB_IPV6",
+        "CONFIG_NFT_FIB_INET",
+        # packet manipulation / steering
+        "CONFIG_NFT_QUEUE",
+        "CONFIG_NFT_NUMGEN",
+        "CONFIG_NFT_HASH",
+        "CONFIG_NFT_SOCKET",
+        "CONFIG_NFT_TPROXY",
+        "CONFIG_NFT_DUP_IPV4",
+        "CONFIG_NFT_DUP_IPV6",
+        "CONFIG_NFT_REDIR",
+        "CONFIG_NFT_FLOW_OFFLOAD",
+        # objects / advanced
+        "CONFIG_NFT_OBJREF",
+        "CONFIG_NFT_TUNNEL",
+        "CONFIG_NFT_XFRM",
+        "CONFIG_NFT_SYNPROXY",
+        "CONFIG_NFT_OSF",
+        "CONFIG_NFT_COMPAT",
     ):
         _spec_add(
             spec,
