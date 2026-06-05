@@ -1740,6 +1740,63 @@ def check_kernel_config_bpftrace(
     _spec_add(spec, "CONFIG_FTRACE_SYSCALLS", required_state=True, module=False, warn=True)
 
 
+def check_kernel_config_docker(
+    *,
+    spec: ConfigSpec,
+    enable: bool,
+) -> None:
+    """Container-runtime requirements (Docker / Podman / containerd / runc).
+
+    Covers: namespacing helpers (VETH, BRIDGE_NETFILTER, BRIDGE_VLAN_FILTERING,
+    VXLAN, IPVLAN, MACVLAN, DUMMY), iptables rules Docker installs at boot
+    (IP_NF_RAW, IP_NF_TARGET_MASQUERADE, NETFILTER_XT_MATCH_IPVS), kube/IPVS
+    load-balancer (IP_VS + NFCT + TCP/UDP/RR), conntrack helpers (TFTP),
+    IPsec ESP (overlay-network encryption), cgroup-level controls
+    (CGROUP_BPF, BLK_DEV_THROTTLING, CFS_BANDWIDTH).
+
+    Bool symbols (CGROUP_BPF, BLK_DEV_THROTTLING, CFS_BANDWIDTH,
+    BRIDGE_NETFILTER, BRIDGE_VLAN_FILTERING) get coerced to =y by the
+    filter; tristate symbols land =m as requested.
+
+    OVERLAY_FS is in production base — always built regardless of --docker.
+
+    NO-OP when enable is False.
+    """
+    if not enable:
+        return
+    for sym in (
+        # Virtual / tunnel interfaces
+        "CONFIG_VETH",
+        "CONFIG_VXLAN",
+        "CONFIG_IPVLAN",
+        "CONFIG_MACVLAN",
+        "CONFIG_DUMMY",
+        # Bridge + filtering
+        "CONFIG_BRIDGE_NETFILTER",
+        "CONFIG_BRIDGE_VLAN_FILTERING",
+        # iptables targets/matches Docker installs
+        "CONFIG_IP_NF_RAW",
+        "CONFIG_IP_NF_TARGET_MASQUERADE",
+        "CONFIG_NETFILTER_XT_MATCH_IPVS",
+        # IPVS (kube-proxy ipvs mode + Docker swarm)
+        "CONFIG_IP_VS",
+        "CONFIG_IP_VS_NFCT",
+        "CONFIG_IP_VS_PROTO_TCP",
+        "CONFIG_IP_VS_PROTO_UDP",
+        "CONFIG_IP_VS_RR",
+        # Conntrack helpers
+        "CONFIG_NF_NAT_TFTP",
+        "CONFIG_NF_CONNTRACK_TFTP",
+        # IPsec for overlay-network encryption
+        "CONFIG_INET_ESP",
+        # cgroup-level controls Docker uses
+        "CONFIG_CGROUP_BPF",
+        "CONFIG_BLK_DEV_THROTTLING",
+        "CONFIG_CFS_BANDWIDTH",
+    ):
+        _spec_add(spec, sym, required_state=True, module=True, warn=True)
+
+
 def check_kernel_config_zfs_compat_lockdep(
     *,
     spec: ConfigSpec,
@@ -1912,6 +1969,7 @@ def check_kernel_config(
     harden: bool = False,
     ia32: bool = False,
     bpftrace: bool = False,
+    docker: bool = False,
     zfs_compat_lockdep: bool = False,
     nvidia_compat: bool = False,
 ):
@@ -3551,6 +3609,17 @@ def check_kernel_config(
         warn=warn_only,
         url="",
     )
+    # OverlayFS — used by Docker/Podman, distrobox, layered container images,
+    # and just-by-hand bind-mount overlays. Module form is fine; nothing in
+    # the boot path needs it before initramfs.
+    _spec_add(
+        spec,
+        "CONFIG_OVERLAY_FS",
+        required_state=True,
+        module=True,
+        warn=warn_only,
+        url="",
+    )
     # old outdated option
     _spec_add(
         spec,
@@ -4414,6 +4483,7 @@ def check_kernel_config(
     check_kernel_config_harden(spec=spec, enable=harden)
     check_kernel_config_ia32(spec=spec, enable=ia32)
     check_kernel_config_bpftrace(spec=spec, enable=bpftrace)
+    check_kernel_config_docker(spec=spec, enable=docker)
 
     # --- layer 3: compat overrides (win over everything) ---
     if zfs_compat_lockdep:
@@ -4639,6 +4709,7 @@ def _active_debug_flags(
     harden: bool,
     ia32: bool,
     bpftrace: bool,
+    docker: bool,
 ) -> list[str]:
     flags = [
         ("kasan", kasan),
@@ -4662,6 +4733,7 @@ def _active_debug_flags(
         ("harden", harden),
         ("ia32", ia32),
         ("bpftrace", bpftrace),
+        ("docker", docker),
     ]
     return [name for name, enabled in flags if enabled]
 
@@ -5105,6 +5177,7 @@ def install_compiled_kernel(
     harden: bool = False,
     ia32: bool = False,
     bpftrace: bool = False,
+    docker: bool = False,
 ):
     _snapshot_for_current_source()
     with chdir("/usr/src/linux"):
@@ -5145,6 +5218,7 @@ def install_compiled_kernel(
             harden=harden,
             ia32=ia32,
             bpftrace=bpftrace,
+            docker=docker,
         ),
     )
     _set_grub_distributor()
@@ -5177,6 +5251,7 @@ def configure_kernel(
     harden: bool = False,
     ia32: bool = False,
     bpftrace: bool = False,
+    docker: bool = False,
     zfs_compat_lockdep: bool = False,
     nvidia_compat: bool = False,
 ):
@@ -5210,6 +5285,7 @@ def configure_kernel(
         harden=harden,
         ia32=ia32,
         bpftrace=bpftrace,
+        docker=docker,
         zfs_compat_lockdep=zfs_compat_lockdep,
         nvidia_compat=nvidia_compat,
     )  # must be done after nconfig
@@ -5245,6 +5321,7 @@ def compile_and_install_kernel(
     harden: bool = False,
     ia32: bool = False,
     bpftrace: bool = False,
+    docker: bool = False,
     zfs_compat_lockdep: bool = False,
     nvidia_compat: bool = False,
 ):
@@ -5296,6 +5373,7 @@ def compile_and_install_kernel(
             harden=harden,
             ia32=ia32,
             bpftrace=bpftrace,
+            docker=docker,
             zfs_compat_lockdep=zfs_compat_lockdep,
             nvidia_compat=nvidia_compat,
         )
@@ -5333,6 +5411,7 @@ def compile_and_install_kernel(
         harden=harden,
         ia32=ia32,
         bpftrace=bpftrace,
+        docker=docker,
         zfs_compat_lockdep=zfs_compat_lockdep,
         nvidia_compat=nvidia_compat,
     )
@@ -5447,6 +5526,7 @@ def compile_and_install_kernel(
         harden=harden,
         ia32=ia32,
         bpftrace=bpftrace,
+        docker=docker,
         zfs_compat_lockdep=zfs_compat_lockdep,
         nvidia_compat=nvidia_compat,
     )  # must be done after nconfig
@@ -5515,6 +5595,7 @@ def compile_and_install_kernel(
                 harden=harden,
                 ia32=ia32,
                 bpftrace=bpftrace,
+                docker=docker,
             ),
         )
         _set_grub_distributor()
