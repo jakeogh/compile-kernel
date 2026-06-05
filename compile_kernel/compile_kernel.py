@@ -7,6 +7,7 @@ import gzip
 import logging
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -4605,6 +4606,78 @@ def boot_is_correct(
     return True
 
 
+def _module_rebuild_with_nvidia_fallback(
+    *,
+    nvidia_group: str = "video-nvidia",
+    fallback_group: str = "video-nouveau",
+) -> None:
+    """Rebuild out-of-tree kernel modules with empirical nvidia handling.
+
+    Every call starts optimistically by selecting `nvidia_group` via
+    portage-manager and trying to rebuild x11-drivers/nvidia-drivers
+    against the current kernel sources. If that build fails, switch
+    portage-manager to `fallback_group` (which the user has configured
+    to mask nvidia-drivers and set VIDEO_CARDS appropriately) and
+    continue. Then run `emerge zfs @module-rebuild` for the remaining
+    modules.
+
+    Idempotent across kernel rebuilds: a future kernel that nvidia
+    likes will naturally end up back on nvidia without manual action.
+
+    Falls back to a bare `emerge zfs @module-rebuild` if portage-manager
+    isn't installed or the two video groups aren't both present.
+    """
+    pm = shutil.which("portage-manager")
+    groups_dir = Path("/etc/portage-manager/groups")
+    have_groups = (
+        pm is not None
+        and (groups_dir / nvidia_group).is_dir()
+        and (groups_dir / fallback_group).is_dir()
+    )
+
+    if not have_groups:
+        if pm is None:
+            icp("portage-manager not installed; bare emerge zfs @module-rebuild")
+        else:
+            icp(
+                f"video groups not both configured "
+                f"({groups_dir / nvidia_group}, {groups_dir / fallback_group}); "
+                f"bare emerge zfs @module-rebuild"
+            )
+        hs.Command("emerge")(
+            "zfs", "@module-rebuild", _out=sys.stdout, _err=sys.stderr
+        )
+        return
+
+    icp(f"selecting {nvidia_group} optimistically")
+    hs.Command(pm)(
+        "video", "set", nvidia_group, "--sync",
+        _out=sys.stdout, _err=sys.stderr,
+    )
+
+    icp("attempting to rebuild x11-drivers/nvidia-drivers against new kernel")
+    try:
+        hs.Command("emerge")(
+            "-1", "--quiet-build=y", "x11-drivers/nvidia-drivers",
+            _out=sys.stdout, _err=sys.stderr,
+        )
+        icp("nvidia-drivers built successfully; staying on nvidia")
+    except hs.ErrorReturnCode:
+        icp(
+            f"nvidia-drivers failed against this kernel; "
+            f"switching to {fallback_group}"
+        )
+        hs.Command(pm)(
+            "video", "set", fallback_group, "--sync",
+            _out=sys.stdout, _err=sys.stderr,
+        )
+
+    icp("running emerge zfs @module-rebuild for remaining modules")
+    hs.Command("emerge")(
+        "zfs", "@module-rebuild", _out=sys.stdout, _err=sys.stderr
+    )
+
+
 def gcc_check():
     #'gcc --version | head -n1 | grep -oP "\d+\.\d+(\.\d+)?" | head -n1 | cut -d. -f1'
     _gcc_version_string_command = hs.Command("gcc")
@@ -5453,19 +5526,15 @@ def compile_and_install_kernel(
 
     if not unconfigured_kernel:
         if pre_module_rebuild:
-            icp("attempting emerge @module-rebuild")
+            icp("attempting pre-compile module rebuild (with nvidia fallback)")
             try:
-                hs.Command("emerge")(
-                    "@module-rebuild",
-                    _out=sys.stdout,
-                    _err=sys.stderr,
-                )
+                _module_rebuild_with_nvidia_fallback()
             except hs.ErrorReturnCode_1 as e:
                 unconfigured_kernel = True  # todo, get conditions from above
                 if not unconfigured_kernel:
                     raise e
                 icp(
-                    "NOTE: kernel is unconfigured, skipping `emerge @module-rebuild` before kernel compile"
+                    "NOTE: kernel is unconfigured, skipping pre-compile module rebuild"
                 )
 
     # might fail if gcc was upgraded and the kernel hasnt been recompiled yet
@@ -5539,7 +5608,9 @@ def compile_and_install_kernel(
     genkernel_command.bake("--no-mrproper")
     genkernel_command.bake("--symlink")
     # genkernel_command.bake("--luks")
-    genkernel_command.bake("--module-rebuild")
+    # module rebuild handled by _module_rebuild_with_nvidia_fallback() below,
+    # not by genkernel's --module-rebuild / --callback= mechanisms (which
+    # can't react to a nvidia-drivers build failure).
     genkernel_command.bake("--all-ramdisk-modules")
     genkernel_command.bake("--firmware")
     genkernel_command.bake("--microcode=all")
@@ -5547,11 +5618,11 @@ def compile_and_install_kernel(
     genkernel_command.bake('--makeopts="-j12"')
     # genkernel_command.bake("--no-busybox")
     # genkernel_command.bake("--no-keymap")
-    genkernel_command.bake("--callback=/usr/bin/emerge zfs @module-rebuild")
-    # --callback="/usr/bin/emerge zfs sci-libs/linux-gpib sci-libs/linux-gpib-modules @module-rebuild"
     # --zfs
     icp(genkernel_command)
     genkernel_command(_fg=True)
+
+    _module_rebuild_with_nvidia_fallback()
 
     hs.Command("rc-update")(
         "add",
