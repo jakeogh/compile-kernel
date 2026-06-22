@@ -4190,12 +4190,27 @@ def check_kernel_config(
         warn=warn_only,
         url="",
     )
-    # performance
+    # runtime-toggleable scheduler stats; static-branch NOPs when collection
+    # is off (sysctl kernel.sched_schedstats defaults to 0). vmlinux grows
+    # ~10-20 KB; runtime cost essentially zero unless explicitly enabled at
+    # runtime, at which point /proc/schedstat + /proc/<pid>/sched come alive.
     _spec_add(
         spec,
         "CONFIG_SCHEDSTATS",
-        required_state=False,
+        required_state=True,
         module=False,
+        warn=warn_only,
+        url="",
+    )
+    # KUnit framework as a loadable module — costs nothing in vmlinux, the
+    # framework only loads if explicitly modprobed (or pulled in by a test
+    # module). Lets us write & run in-kernel tests for the zblob/zbtree/
+    # zaphash/zbtreev modules without rebuilding the kernel first.
+    _spec_add(
+        spec,
+        "CONFIG_KUNIT",
+        required_state=True,
+        module=True,
         warn=warn_only,
         url="",
     )
