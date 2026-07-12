@@ -572,37 +572,34 @@ _X86_MARCH_CHOICE_SYMBOLS = (
 )
 
 
-def _sync_zfs_debug_use_flag(*, want_debug: bool) -> None:
-    """Ensure sys-fs/zfs's `debug` USE flag matches want_debug.
+def _zfs_debug_use_enabled() -> bool:
+    """Return True if sys-fs/zfs resolves to USE=debug right now.
 
-    compile-kernel is authoritative for this flag: --zfs-debug on the CLI
-    turns USE=debug on for sys-fs/zfs, and its absence turns it off. This
-    keeps kernel-side FRAME_POINTER in lockstep with the debug-build of
-    ZFS itself — no more mismatched builds where the kernel has debug
-    unwinders but zfs doesn't (or vice versa).
+    Uses portage's own resolver (config.setcpv) — the same mechanism
+    emerge uses — so every package.use file, package.use directory,
+    wildcard atom, profile default, and make.conf USE is honoured
+    exactly as `emerge -pv sys-fs/zfs` would resolve them. No parsing
+    of emerge's human-readable output, no assumptions about file sort
+    order: this is the ground truth.
 
-    Writes /etc/portage/package.use/compile-kernel-zfs-debug with an
-    explicit `debug` or `-debug` line and a header identifying the file
-    as compile-kernel managed. portage-manager's orphan-removal ignores
-    files without the portage-manager header, so this file survives
-    portage-manager sync passes untouched.
+    Returns False if sys-fs/zfs is not in the tree (nothing to build a
+    debug module against).
 
-    Idempotent: no write if the desired state already matches.
+    compile-kernel does NOT write this flag. The USE flag is the source
+    of truth; compile-kernel reads it and makes the kernel config agree
+    (debug build of zfs needs CONFIG_FRAME_POINTER via the FP unwinder).
+    The --zfs-debug CLI flag can additionally force it on.
     """
-    dest = Path("/etc/portage/package.use/compile-kernel-zfs-debug")
-    dest.parent.mkdir(parents=True, exist_ok=True)
-    flag = "debug" if want_debug else "-debug"
-    header = (
-        "# compile-kernel managed: derived from --zfs-debug CLI flag; "
-        "do not edit\n"
-    )
-    content = f"{header}sys-fs/zfs {flag}\n"
+    import portage  # imported lazily — only paid for at detect time
 
-    if dest.exists() and dest.read_text() == content:
-        icp(f"sys-fs/zfs USE={flag} already in place at {dest}")
-        return
-    dest.write_text(content)
-    icp(f"synced sys-fs/zfs USE={flag} → {dest}")
+    portdb = portage.db[portage.root]["porttree"].dbapi
+    matches = portdb.match("sys-fs/zfs")
+    if not matches:
+        return False
+    cpv = matches[-1]
+    settings = portage.config(clone=portdb.settings)
+    settings.setcpv(cpv, mydb=portdb)
+    return "debug" in settings["USE"].split()
 
 
 def _decompress_config_if_needed(
@@ -4482,10 +4479,13 @@ def check_kernel_config(
     )
 
     # --- layer 2: debug group overrides (last-writer-wins over production base) ---
-    # zfs_debug is CLI-authoritative: the flag drives both the kernel-side
-    # unwinder choice AND the sys-fs/zfs USE=debug flag (see
-    # _sync_zfs_debug_use_flag).  No auto-detect from portage — the flag is
-    # the single source of truth.
+    # zfs_debug comes from EITHER the --zfs-debug CLI flag OR sys-fs/zfs
+    # currently resolving to USE=debug (read via portage's own resolver,
+    # the ground truth). A debug build of ZFS requires CONFIG_FRAME_POINTER,
+    # selected by the FP unwinder — so when zfs is USE=debug we must build
+    # the kernel with FP or genkernel's zfs emerge fails pkg_setup's
+    # CONFIG_CHECK. compile-kernel does not write the USE flag; it reads it.
+    zfs_debug = zfs_debug or _zfs_debug_use_enabled()
     eprint(f"layer 2: zfs_debug={zfs_debug}")
     check_kernel_config_kasan(spec=spec, enable=kasan)
     check_kernel_config_kmemleak(spec=spec, enable=kmemleak)
@@ -5371,7 +5371,6 @@ def configure_kernel(
     zfs_compat_lockdep: bool = False,
     nvidia_compat: bool = False,
 ):
-    _sync_zfs_debug_use_flag(want_debug=zfs_debug)
     if interactive:
         with chdir(
             "/usr/src/linux",
@@ -5445,8 +5444,6 @@ def compile_and_install_kernel(
     icp()
     if not root_user():
         raise ValueError("you must be root")
-
-    _sync_zfs_debug_use_flag(want_debug=zfs_debug)
 
     unconfigured_kernel = None
 
