@@ -13,6 +13,9 @@ import sys
 import tempfile
 import time
 from dataclasses import dataclass
+from dataclasses import field
+from dataclasses import fields
+from dataclasses import replace
 from importlib import resources
 from pathlib import Path
 
@@ -29,6 +32,83 @@ from with_chdir import chdir
 logging.basicConfig(level=logging.WARNING)
 
 USED_SYMBOL_SET = set()
+
+
+# Debug/feature groups selected per build. One object replaces the 24 parallel
+# bools that used to be threaded through every function; this is what makes
+# building several differently-configured kernels in one invocation tractable.
+@dataclass(frozen=True)
+class KernelFlags:
+    kasan: bool = False
+    kmemleak: bool = False
+    slub_debug: bool = False
+    lockdep: bool = False
+    lock_stat: bool = False
+    perf_profile: bool = False
+    debug_objects: bool = False
+    gcov: bool = False
+    zbtree_debug: bool = False
+    zfs_debug: bool = False
+    ubsan: bool = False
+    kcsan: bool = False
+    watchdog: bool = False
+    fault_inject: bool = False
+    mem_init: bool = False
+    dma_debug: bool = False
+    data_struct_debug: bool = False
+    netconsole: bool = True
+    harden: bool = False
+    ia32: bool = False
+    bpftrace: bool = False
+    docker: bool = False
+    # layer-3 compat overrides: config-time only, not part of the build's identity
+    zfs_compat_lockdep: bool = False
+    nvidia_compat: bool = False
+
+    def labels(self) -> list[str]:
+        """Names of enabled groups, for the per-kernel flags file and the
+        grub menu label. Compat overrides are excluded: they describe how
+        the config was coerced, not what the kernel does."""
+        return [
+            f.name.replace("_", "-")
+            for f in fields(self)
+            if getattr(self, f.name) and f.name not in _COMPAT_FIELDS
+        ]
+
+    def cmdline(self) -> list[str]:
+        """Boot params this build needs to make its compiled-in machinery
+        actually do anything. Several debug facilities are compiled in but
+        dormant until a boot param arms them; without these a kernel built
+        with the flag looks identical at runtime to one without it."""
+        params: list[str] = []
+        if self.slub_debug or self.zbtree_debug:
+            # SLUB_DEBUG=y only compiles the machinery in. F=sanity checks,
+            # Z=redzones, P=poison, U=alloc/free stack traces (needs
+            # CONFIG_STACKTRACE, which production base always sets).
+            params.append("slub_debug=FZPU")
+        if self.kmemleak:
+            # DEBUG_KMEMLEAK_DEFAULT_OFF=y is the Kconfig default
+            params.append("kmemleak=on")
+        if self.mem_init:
+            # PAGE_POISONING is compiled-in-but-dormant without this
+            params.append("page_poison=on")
+            if self.slub_debug or self.zbtree_debug:
+                # INIT_ON_FREE_DEFAULT_ON zeroes freed memory, erasing the
+                # SLUB poison pattern before anything can check it. Turn it
+                # off so slub_debug=...P can detect use-after-free.
+                params.append("init_on_free=0")
+        return params
+
+
+_COMPAT_FIELDS = frozenset({"zfs_compat_lockdep", "nvidia_compat"})
+
+
+@dataclass(frozen=True)
+class KernelBuild:
+    """One kernel to produce: a flag set plus the variant name that keeps its
+    artifacts from colliding with any other build of the same source."""
+    flags: KernelFlags
+    variant: str | None = None
 
 
 @dataclass
@@ -2039,30 +2119,7 @@ def check_kernel_config(
     path: Path,
     fix: bool,
     warn_only: bool,
-    kasan: bool = False,
-    kmemleak: bool = False,
-    slub_debug: bool = False,
-    lockdep: bool = False,
-    debug_objects: bool = False,
-    gcov: bool = False,
-    zbtree_debug: bool = False,
-    zfs_debug: bool = False,
-    ubsan: bool = False,
-    kcsan: bool = False,
-    watchdog: bool = False,
-    fault_inject: bool = False,
-    mem_init: bool = False,
-    dma_debug: bool = False,
-    data_struct_debug: bool = False,
-    netconsole: bool = True,
-    lock_stat: bool = False,
-    perf_profile: bool = False,
-    harden: bool = False,
-    ia32: bool = False,
-    bpftrace: bool = False,
-    docker: bool = False,
-    zfs_compat_lockdep: bool = False,
-    nvidia_compat: bool = False,
+    flags: KernelFlags,
     variant: str | None = None,
 ):
     icp(
@@ -4570,35 +4627,36 @@ def check_kernel_config(
     # selected by the FP unwinder — so when zfs is USE=debug we must build
     # the kernel with FP or genkernel's zfs emerge fails pkg_setup's
     # CONFIG_CHECK. compile-kernel does not write the USE flag; it reads it.
-    zfs_debug = zfs_debug or _zfs_debug_use_enabled()
-    eprint(f"layer 2: zfs_debug={zfs_debug}")
-    check_kernel_config_kasan(spec=spec, enable=kasan)
-    check_kernel_config_kmemleak(spec=spec, enable=kmemleak)
-    check_kernel_config_slub_debug(spec=spec, enable=slub_debug)
-    check_kernel_config_lockdep(spec=spec, enable=lockdep)
-    check_kernel_config_debug_objects(spec=spec, enable=debug_objects)
-    check_kernel_config_gcov(spec=spec, enable=gcov)
-    check_kernel_config_zbtree_debug(spec=spec, enable=zbtree_debug)
-    check_kernel_config_zfs_debug(spec=spec, enable=zfs_debug)
-    check_kernel_config_ubsan(spec=spec, enable=ubsan)
-    check_kernel_config_kcsan(spec=spec, enable=kcsan)
-    check_kernel_config_watchdog(spec=spec, enable=watchdog)
-    check_kernel_config_fault_inject(spec=spec, enable=fault_inject)
-    check_kernel_config_mem_init(spec=spec, enable=mem_init)
-    check_kernel_config_dma_debug(spec=spec, enable=dma_debug)
-    check_kernel_config_data_struct_debug(spec=spec, enable=data_struct_debug)
-    check_kernel_config_netconsole(spec=spec, enable=netconsole)
-    check_kernel_config_lock_stat(spec=spec, enable=lock_stat)
-    check_kernel_config_perf_profile(spec=spec, enable=perf_profile)
-    check_kernel_config_harden(spec=spec, enable=harden)
-    check_kernel_config_ia32(spec=spec, enable=ia32)
-    check_kernel_config_bpftrace(spec=spec, enable=bpftrace)
-    check_kernel_config_docker(spec=spec, enable=docker)
+    if not flags.zfs_debug and _zfs_debug_use_enabled():
+        flags = replace(flags, zfs_debug=True)
+    eprint(f"layer 2: zfs_debug={flags.zfs_debug}")
+    check_kernel_config_kasan(spec=spec, enable=flags.kasan)
+    check_kernel_config_kmemleak(spec=spec, enable=flags.kmemleak)
+    check_kernel_config_slub_debug(spec=spec, enable=flags.slub_debug)
+    check_kernel_config_lockdep(spec=spec, enable=flags.lockdep)
+    check_kernel_config_debug_objects(spec=spec, enable=flags.debug_objects)
+    check_kernel_config_gcov(spec=spec, enable=flags.gcov)
+    check_kernel_config_zbtree_debug(spec=spec, enable=flags.zbtree_debug)
+    check_kernel_config_zfs_debug(spec=spec, enable=flags.zfs_debug)
+    check_kernel_config_ubsan(spec=spec, enable=flags.ubsan)
+    check_kernel_config_kcsan(spec=spec, enable=flags.kcsan)
+    check_kernel_config_watchdog(spec=spec, enable=flags.watchdog)
+    check_kernel_config_fault_inject(spec=spec, enable=flags.fault_inject)
+    check_kernel_config_mem_init(spec=spec, enable=flags.mem_init)
+    check_kernel_config_dma_debug(spec=spec, enable=flags.dma_debug)
+    check_kernel_config_data_struct_debug(spec=spec, enable=flags.data_struct_debug)
+    check_kernel_config_netconsole(spec=spec, enable=flags.netconsole)
+    check_kernel_config_lock_stat(spec=spec, enable=flags.lock_stat)
+    check_kernel_config_perf_profile(spec=spec, enable=flags.perf_profile)
+    check_kernel_config_harden(spec=spec, enable=flags.harden)
+    check_kernel_config_ia32(spec=spec, enable=flags.ia32)
+    check_kernel_config_bpftrace(spec=spec, enable=flags.bpftrace)
+    check_kernel_config_docker(spec=spec, enable=flags.docker)
 
     # --- layer 3: compat overrides (win over everything) ---
-    if zfs_compat_lockdep:
+    if flags.zfs_compat_lockdep:
         check_kernel_config_zfs_compat_lockdep(spec=spec)
-    if nvidia_compat:
+    if flags.nvidia_compat:
         check_kernel_config_nvidia_compat(spec=spec)
 
     # --- integer config values (last-writer-wins, same layer logic) ---
@@ -4850,69 +4908,17 @@ def gcc_check():
         hs.Command("make")("clean")
 
 
-def _active_debug_flags(
-    *,
-    kasan: bool,
-    kmemleak: bool,
-    slub_debug: bool,
-    lockdep: bool,
-    debug_objects: bool,
-    gcov: bool,
-    zbtree_debug: bool,
-    zfs_debug: bool,
-    ubsan: bool,
-    kcsan: bool,
-    watchdog: bool,
-    fault_inject: bool,
-    mem_init: bool,
-    dma_debug: bool,
-    data_struct_debug: bool,
-    netconsole: bool,
-    lock_stat: bool,
-    perf_profile: bool,
-    harden: bool,
-    ia32: bool,
-    bpftrace: bool,
-    docker: bool,
-) -> list[str]:
-    flags = [
-        ("kasan", kasan),
-        ("kmemleak", kmemleak),
-        ("slub-debug", slub_debug),
-        ("lockdep", lockdep),
-        ("lock-stat", lock_stat),
-        ("perf-profile", perf_profile),
-        ("debug-objects", debug_objects),
-        ("gcov", gcov),
-        ("zbtree-debug", zbtree_debug),
-        ("zfs-debug", zfs_debug),
-        ("ubsan", ubsan),
-        ("kcsan", kcsan),
-        ("watchdog", watchdog),
-        ("fault-inject", fault_inject),
-        ("mem-init", mem_init),
-        ("dma-debug", dma_debug),
-        ("data-struct-debug", data_struct_debug),
-        ("netconsole", netconsole),
-        ("harden", harden),
-        ("ia32", ia32),
-        ("bpftrace", bpftrace),
-        ("docker", docker),
-    ]
-    return [name for name, enabled in flags if enabled]
-
-
 KERNEL_FLAGS_DIR = Path("/boot/compile-kernel-flags")
 
 
-def _write_kernel_flags(kver: str, flags: list[str]) -> None:
-    """Write active debug flags for kver to /boot/compile-kernel-flags/{kver}.
-    Empty flags list writes an empty file (clean kernel — no flags).
+def _write_kernel_flags(kver: str, labels: list[str]) -> None:
+    """Write active debug groups for kver to /boot/compile-kernel-flags/{kver}.
+    Empty list writes an empty file (clean kernel — no flags).
     """
     KERNEL_FLAGS_DIR.mkdir(parents=True, exist_ok=True)
     flag_file = KERNEL_FLAGS_DIR / kver
-    flag_file.write_text(" ".join(flags) + "\n" if flags else "\n", encoding="utf8")
-    eprint(f"wrote kernel flags for {kver}: {flags}")
+    flag_file.write_text(" ".join(labels) + "\n" if labels else "\n", encoding="utf8")
+    eprint(f"wrote kernel flags for {kver}: {labels}")
 
 
 def _read_kernel_flags(kver: str) -> list[str] | None:
@@ -4922,6 +4928,29 @@ def _read_kernel_flags(kver: str) -> list[str] | None:
         return None
     content = flag_file.read_text(encoding="utf8").strip()
     return content.split() if content else []
+
+
+KERNEL_CMDLINE_DIR = Path("/boot/compile-kernel-cmdline")
+
+
+def _write_kernel_cmdline(kver: str, params: list[str]) -> None:
+    """Record the boot params this kver needs to arm its compiled-in debug
+    facilities. _postprocess_grub_cfg appends them to that kernel's linux
+    line, so each menuentry carries exactly the params its build needs —
+    GRUB_CMDLINE_LINUX is global and cannot do per-kernel.
+    """
+    KERNEL_CMDLINE_DIR.mkdir(parents=True, exist_ok=True)
+    cmdline_file = KERNEL_CMDLINE_DIR / kver
+    cmdline_file.write_text(" ".join(params) + "\n" if params else "\n", encoding="utf8")
+    eprint(f"wrote kernel cmdline for {kver}: {params}")
+
+
+def _read_kernel_cmdline(kver: str) -> list[str]:
+    """Params recorded for kver; empty when none recorded."""
+    cmdline_file = KERNEL_CMDLINE_DIR / kver
+    if not cmdline_file.exists():
+        return []
+    return cmdline_file.read_text(encoding="utf8").split()
 
 
 _BOOT_FILE_PREFIXES = ("vmlinuz", "System.map", "config", "initramfs")
@@ -5165,40 +5194,49 @@ def _kver_from_vmlinuz(vmlinuz_path: str) -> str:
 
 
 def _postprocess_grub_cfg(cfg_path: Path) -> None:
-    """Rewrite menuentry/submenu titles in grub.cfg to reflect per-kernel
-    flags. Snapshots now live in /boot/snapshots/{kver}/ and are not
-    visible to grub-mkconfig, so no initrd rewriting is needed — every
-    menuentry references canonical /boot files paired correctly by
-    grub-mkconfig itself.
+    """Rewrite grub.cfg to reflect per-kernel state:
 
-    For each menuentry, extract the kver from the linux line, look up its
-    flags file, strip any existing [...] bracket from the title, append
-    the correct one (or nothing for clean kernels). Operates in place.
+    * each menuentry title gets a [flag flag] label from its kver's flags
+      file, so the boot menu says what each kernel is. Submenu titles are
+      left alone — they contain many kernels and belong to none of them.
+    * each kernel's `linux` line gets the boot params from that kver's
+      cmdline file appended. GRUB_CMDLINE_LINUX is global, so per-kernel
+      params can only be done here, after grub-mkconfig has run.
+
+    Snapshots live in /boot/snapshots/{kver}/ and are invisible to
+    grub-mkconfig, so every menuentry references canonical /boot files
+    already paired correctly; no initrd rewriting is needed.
+
+    Idempotent: titles have any existing [...] stripped before relabelling,
+    and params already present on a linux line are not appended twice.
     """
     text = cfg_path.read_text(encoding="utf8")
     lines = text.splitlines(keepends=True)
     result: list[str] = []
 
-    # Pass 1: build vmlinuz → flags label mapping by scanning all linux lines.
+    # Pass 1: map each vmlinuz to its flag label, scanning all linux lines.
     flags_map: dict[str, str | None] = {}
     for line in lines:
-        m = re.match(r'\s+linux\s+(\S+)', line)
+        m = re.match(r"\s+linux\s+(\S+)", line)
         if m:
             vmlinuz = m.group(1)
             kver = _kver_from_vmlinuz(vmlinuz)
-            flags = _read_kernel_flags(kver)
-            if flags is None:
+            kflags = _read_kernel_flags(kver)
+            if kflags is None:
                 flags_map[vmlinuz] = None
-            elif flags:
-                flags_map[vmlinuz] = "[" + " ".join(flags) + "]"
+            elif kflags:
+                flags_map[vmlinuz] = "[" + " ".join(kflags) + "]"
             else:
                 flags_map[vmlinuz] = ""
 
-    # Pass 2: rewrite menuentry/submenu titles.
+    # Pass 2: rewrite titles and append per-kernel boot params.
     i = 0
     while i < len(lines):
         line = lines[i]
-        if re.match(r"\s*(menuentry|submenu)\s+['\"]", line):
+
+        # menuentry only: a submenu holds many kernels, so labelling it with
+        # whichever one happens to appear first inside it is just wrong.
+        if re.match(r"\s*menuentry\s+['\"]", line):
             vmlinuz: str | None = None
             depth = 0
             for j in range(i, min(i + 60, len(lines))):
@@ -5210,8 +5248,9 @@ def _postprocess_grub_cfg(cfg_path: Path) -> None:
                     break
                 if depth < 0:
                     break
-            if vmlinuz and vmlinuz in flags_map and flags_map[vmlinuz] is not None:
+            if vmlinuz and flags_map.get(vmlinuz) is not None:
                 label = flags_map[vmlinuz]
+
                 def replace_title(m2: re.Match) -> str:
                     q = m2.group(1)
                     title = m2.group(2)
@@ -5219,12 +5258,50 @@ def _postprocess_grub_cfg(cfg_path: Path) -> None:
                     if label:
                         title = title + " " + label
                     return q + title + q
+
                 line = re.sub(r"(['\"])(.+?)\1", replace_title, line, count=1)
+
+        m = re.match(r"(\s+linux\s+)(\S+)(.*?)(\n?)$", line)
+        if m:
+            indent, vmlinuz, rest, nl = m.groups()
+            params = _read_kernel_cmdline(_kver_from_vmlinuz(vmlinuz))
+            existing = rest.split()
+            for param in params:
+                key = param.split("=", 1)[0]
+                if any(e == param or e.startswith(key + "=") for e in existing):
+                    continue
+                rest = rest + " " + param
+            line = indent + vmlinuz + rest + nl
+
         result.append(line)
         i += 1
 
     cfg_path.write_text("".join(result), encoding="utf8")
-    eprint("postprocessed grub.cfg with per-kernel flag labels")
+    eprint("postprocessed grub.cfg with per-kernel flag labels and boot params")
+
+
+def _set_grub_top_level(kver: str) -> None:
+    """Point GRUB_TOP_LEVEL at kver's vmlinuz so grub-mkconfig promotes it to
+    the first top-level menuentry, which GRUB_DEFAULT=0 then boots.
+
+    Without this, grub-mkconfig sorts kernels with `sort -V` and takes the
+    highest as top level — and a variant sorts ABOVE the plain build
+    (vmlinuz-6.19.6-gentoo-x86_64-debug > vmlinuz-6.19.6-gentoo-x86_64),
+    which would silently make the instrumented kernel the boot default.
+    """
+    grub_defaults = Path("/etc/default/grub")
+    if not grub_defaults.exists():
+        return
+    vmlinuz = f"/boot/vmlinuz-{kver}"
+    file_lines = grub_defaults.read_text(encoding="utf8").splitlines()
+    new_lines = [
+        l
+        for l in file_lines
+        if not (l.strip().startswith("GRUB_TOP_LEVEL=") and not l.strip().startswith("#"))
+    ]
+    new_lines.append(f'GRUB_TOP_LEVEL="{vmlinuz}"')
+    grub_defaults.write_text("\n".join(new_lines) + "\n", encoding="utf8")
+    eprint(f"GRUB_TOP_LEVEL set to {vmlinuz}")
 
 
 def _set_grub_distributor() -> None:
@@ -5320,29 +5397,28 @@ def set_grub_font(size: int = 12) -> None:
     icp("run grub-mkconfig to apply the new font")
 
 
+def _record_build(kver: str, flags: KernelFlags) -> None:
+    """Persist what this kver is, so the grub menu can label it and give it
+    the boot params its compiled-in facilities need."""
+    _write_kernel_flags(kver, flags.labels())
+    _write_kernel_cmdline(kver, flags.cmdline())
+
+
+def _regenerate_grub(default_kver: str | None) -> None:
+    """Rebuild grub.cfg and relabel it. default_kver, when given, is promoted
+    to the top-level entry so GRUB_DEFAULT=0 boots it."""
+    if not Path("/boot/grub").is_dir():
+        return
+    if default_kver is not None:
+        _set_grub_top_level(default_kver)
+    _set_grub_distributor()
+    hs.Command("grub-mkconfig")("-o", "/boot/grub/grub.cfg")
+    _postprocess_grub_cfg(Path("/boot/grub/grub.cfg"))
+
+
 def install_compiled_kernel(
-    kasan: bool = False,
-    kmemleak: bool = False,
-    slub_debug: bool = False,
-    lockdep: bool = False,
-    debug_objects: bool = False,
-    gcov: bool = False,
-    zbtree_debug: bool = False,
-    zfs_debug: bool = False,
-    ubsan: bool = False,
-    kcsan: bool = False,
-    watchdog: bool = False,
-    fault_inject: bool = False,
-    mem_init: bool = False,
-    dma_debug: bool = False,
-    data_struct_debug: bool = False,
-    netconsole: bool = True,
-    lock_stat: bool = False,
-    perf_profile: bool = False,
-    harden: bool = False,
-    ia32: bool = False,
-    bpftrace: bool = False,
-    docker: bool = False,
+    *,
+    flags: KernelFlags,
 ):
     _snapshot_for_current_source()
     with chdir("/usr/src/linux"):
@@ -5352,208 +5428,211 @@ def install_compiled_kernel(
     genkernel_command.bake("initramfs")
     genkernel_command.bake("--no-clean")
     genkernel_command.bake("--no-mrproper")
-    # pin LOCALVERSION to whatever the built tree used, so genkernel's
-    # default (-${ARCH}) can't rename the initramfs away from the kernel
-    # it belongs to (matters for variant builds).
+    # Pin LOCALVERSION to whatever the built tree actually used, so genkernel's
+    # own default (-${ARCH}) cannot rename the initramfs away from the kernel
+    # it belongs to. Matters for variant builds.
     _localversion = hs.Command("/usr/src/linux/scripts/config")(
         "--file", "/usr/src/linux/.config", "--state", "LOCALVERSION"
     ).strip()
     if _localversion and _localversion != "undef":
         genkernel_command.bake(f"--kernel-localversion={_localversion}")
-    # genkernel_command.bake("--no-busybox")
-    # genkernel_command.bake("--no-keymap")
-    # icp(genkernel_command)
     genkernel_command(_fg=True)
 
     assert Path("/boot/grub").is_dir()
-    _kver = Path("/usr/src/linux/include/config/kernel.release").read_text(encoding="utf8").strip()
-    _write_kernel_flags(
-        _kver,
-        _active_debug_flags(
-            kasan=kasan,
-            kmemleak=kmemleak,
-            slub_debug=slub_debug,
-            lockdep=lockdep,
-            debug_objects=debug_objects,
-            gcov=gcov,
-            zbtree_debug=zbtree_debug,
-            zfs_debug=zfs_debug,
-            ubsan=ubsan,
-            kcsan=kcsan,
-            watchdog=watchdog,
-            fault_inject=fault_inject,
-            mem_init=mem_init,
-            dma_debug=dma_debug,
-            data_struct_debug=data_struct_debug,
-            netconsole=netconsole,
-            lock_stat=lock_stat,
-            perf_profile=perf_profile,
-            harden=harden,
-            ia32=ia32,
-            bpftrace=bpftrace,
-            docker=docker,
-        ),
-    )
-    _set_grub_distributor()
-    hs.Command("grub-mkconfig")("-o", "/boot/grub/grub.cfg")
-    _postprocess_grub_cfg(Path("/boot/grub/grub.cfg"))
+    _kver = _kver_from_source()
+    assert _kver is not None
+    _record_build(_kver, flags)
+    _regenerate_grub(default_kver=None)
 
 
 def configure_kernel(
+    *,
     fix: bool,
     warn_only: bool,
     interactive: bool,
-    kasan: bool = False,
-    kmemleak: bool = False,
-    slub_debug: bool = False,
-    lockdep: bool = False,
-    debug_objects: bool = False,
-    gcov: bool = False,
-    zbtree_debug: bool = False,
-    zfs_debug: bool = False,
-    ubsan: bool = False,
-    kcsan: bool = False,
-    watchdog: bool = False,
-    fault_inject: bool = False,
-    mem_init: bool = False,
-    dma_debug: bool = False,
-    data_struct_debug: bool = False,
-    netconsole: bool = True,
-    lock_stat: bool = False,
-    perf_profile: bool = False,
-    harden: bool = False,
-    ia32: bool = False,
-    bpftrace: bool = False,
-    docker: bool = False,
-    zfs_compat_lockdep: bool = False,
-    nvidia_compat: bool = False,
+    flags: KernelFlags,
     variant: str | None = None,
 ):
     if interactive:
-        with chdir(
-            "/usr/src/linux",
-        ):
+        with chdir("/usr/src/linux"):
             os.system("make nconfig")
     check_kernel_config(
         path=Path("/usr/src/linux/.config"),
         fix=fix,
         warn_only=warn_only,
-        kasan=kasan,
-        kmemleak=kmemleak,
-        slub_debug=slub_debug,
-        lockdep=lockdep,
-        debug_objects=debug_objects,
-        gcov=gcov,
-        zbtree_debug=zbtree_debug,
-        zfs_debug=zfs_debug,
-        ubsan=ubsan,
-        kcsan=kcsan,
-        watchdog=watchdog,
-        fault_inject=fault_inject,
-        mem_init=mem_init,
-        dma_debug=dma_debug,
-        data_struct_debug=data_struct_debug,
-        netconsole=netconsole,
-        lock_stat=lock_stat,
-        perf_profile=perf_profile,
-        harden=harden,
-        ia32=ia32,
-        bpftrace=bpftrace,
-        docker=docker,
-        zfs_compat_lockdep=zfs_compat_lockdep,
-        nvidia_compat=nvidia_compat,
+        flags=flags,
         variant=variant,
     )  # must be done after nconfig
 
 
+def _build_one(
+    *,
+    build: KernelBuild,
+    fix: bool,
+    warn_only: bool,
+    interactive_configure: bool,
+    pre_module_rebuild: bool,
+) -> str:
+    """Configure, compile, and install exactly one kernel. Returns its kver.
+
+    Everything that distinguishes this build from a sibling build of the same
+    source lives in build.variant, which becomes part of CONFIG_LOCALVERSION
+    and therefore of kernel.release — so /boot files, /lib/modules/{kver},
+    initramfs, flags, cmdline, snapshots, and the grub entry are all disjoint
+    from any other variant. Nothing this function writes can collide.
+    """
+    flags = build.flags
+    variant = build.variant
+    eprint(f"=== building kernel variant={variant!r} flags={flags.labels()} ===")
+
+    configure_kernel(
+        fix=fix,
+        warn_only=warn_only,
+        interactive=interactive_configure,
+        flags=flags,
+        variant=variant,
+    )
+
+    unconfigured_kernel = False
+    icp("attempting to upgrade zfs")
+    try:
+        hs.Command("emerge")(
+            "sys-fs/zfs",
+            "-u",
+            _tee=True,
+            _tty_out=False,
+        )
+    except hs.ErrorReturnCode_1 as e:
+        _markers = (
+            b"Could not find a usable .config",
+            b"tree at that location has not been built.",
+            b"Kernel sources need compiling first",
+            b"Could not find a Makefile in the kernel source directory",
+            b"These sources have not yet been prepared",
+        )
+        stdout = getattr(e, "stdout", b"") or b""
+        unconfigured_kernel = any(m in stdout for m in _markers)
+        if not unconfigured_kernel:
+            raise
+        icp("NOTE: kernel is unconfigured, skipping `emerge sys-fs/zfs` before compile")
+
+    if pre_module_rebuild and not unconfigured_kernel:
+        icp("attempting pre-compile emerge zfs @module-rebuild")
+        _emerge_zfs_module_rebuild()
+
+    gcc_check()
+
+    _kver_pre = _kver_from_source()
+    if _kver_pre is not None:
+        icp("boot_is_correct:", boot_is_correct(kver=_kver_pre))
+
+    if not Path("/usr/src/linux/.config").exists():
+        hs.Command("make")("defconfig")
+        check_kernel_config(
+            path=Path("/usr/src/linux/.config"),
+            fix=True,
+            warn_only=warn_only,
+            flags=flags,
+            variant=variant,
+        )
+
+    # Re-assert the config: the zfs emerge above can rewrite .config, and the
+    # olddefconfig inside check_kernel_config is what proves the variant's
+    # LOCALVERSION and every required symbol actually survived.
+    check_kernel_config(
+        path=Path("/usr/src/linux/.config"),
+        fix=fix,
+        warn_only=warn_only,
+        flags=flags,
+        variant=variant,
+    )
+
+    _snapshot_for_current_source()
+
+    genkernel_command = hs.Command("genkernel")
+    genkernel_command.bake("all")
+    genkernel_command.bake("--no-clean")
+    genkernel_command.bake("--no-mrproper")
+    genkernel_command.bake("--symlink")
+    # Module rebuild is handled by _emerge_zfs_module_rebuild() after genkernel
+    # returns, not by genkernel's --module-rebuild / --callback= mechanisms
+    # (which cannot react to an nvidia-drivers build failure). nvidia handling
+    # runs in _ensure_nvidia_or_fallback() BEFORE genkernel, because
+    # genkernel's own compile_external_modules() trips pkg_setup on
+    # nvidia-drivers and takes down the whole compile before any
+    # post-genkernel hook could run.
+    genkernel_command.bake("--all-ramdisk-modules")
+    genkernel_command.bake("--firmware")
+    genkernel_command.bake("--microcode=all")
+    genkernel_command.bake("--microcode-initramfs")
+    genkernel_command.bake(f"--makeopts=-j{os.cpu_count()}")
+    # Pin LOCALVERSION so genkernel's default (-${ARCH}) cannot stomp the
+    # variant we wrote into .config; the two must agree or kernel.release —
+    # and every /boot and /lib/modules name derived from it — diverges
+    # between what we configured and what genkernel builds.
+    genkernel_command.bake(f"--kernel-localversion={_desired_localversion(variant)}")
+
+    _ensure_nvidia_or_fallback()
+    icp(genkernel_command)
+    genkernel_command(_fg=True)
+
+    _emerge_zfs_module_rebuild()
+
+    kver = _kver_from_source()
+    if kver is None:
+        raise RuntimeError("kernel.release missing after genkernel — build did not complete")
+    if not boot_is_correct(kver=kver):
+        raise RuntimeError(f"/boot is missing artifacts for {kver} after genkernel")
+    _record_build(kver, flags)
+    eprint(f"=== finished kernel {kver} ===")
+    return kver
+
+
 def compile_and_install_kernel(
     *,
+    builds: list[KernelBuild],
     configure: bool,
-    force: bool,
     fix: bool,
     warn_only: bool,
     no_check_boot: bool,
     symlink_config: bool,
     pre_module_rebuild: bool,
-    kasan: bool = False,
-    kmemleak: bool = False,
-    slub_debug: bool = False,
-    lockdep: bool = False,
-    debug_objects: bool = False,
-    gcov: bool = False,
-    zbtree_debug: bool = False,
-    zfs_debug: bool = False,
-    ubsan: bool = False,
-    kcsan: bool = False,
-    watchdog: bool = False,
-    fault_inject: bool = False,
-    mem_init: bool = False,
-    dma_debug: bool = False,
-    data_struct_debug: bool = False,
-    netconsole: bool = True,
-    lock_stat: bool = False,
-    perf_profile: bool = False,
-    harden: bool = False,
-    ia32: bool = False,
-    bpftrace: bool = False,
-    docker: bool = False,
-    zfs_compat_lockdep: bool = False,
-    nvidia_compat: bool = False,
-    variant: str | None = None,
 ):
+    """Build every kernel in `builds`, then regenerate grub once.
+
+    builds[0] is the boot default: it gets GRUB_TOP_LEVEL, which promotes it
+    to the first top-level menuentry that GRUB_DEFAULT=0 selects. This is
+    load-bearing when a variant is present — `sort -V` puts
+    vmlinuz-6.19.6-gentoo-x86_64-debug ABOVE vmlinuz-6.19.6-gentoo-x86_64,
+    so without GRUB_TOP_LEVEL the instrumented kernel would quietly become
+    the default.
+    """
     icp()
+    if not builds:
+        raise ValueError("no builds requested")
+
+    variants = [b.variant for b in builds]
+    if len(set(variants)) != len(variants):
+        raise ValueError(f"duplicate variants in builds: {variants}")
+    for build in builds:
+        # fail before anything expensive if a variant name can't be a kver
+        _desired_localversion(build.variant)
+
     if not root_user():
         raise ValueError("you must be root")
-
-    unconfigured_kernel = None
 
     if no_check_boot:
         icp("skipped checking if /boot was mounted")
     else:
         if not Path("/boot/grub/grub.cfg").exists():
-            icp("/boot/grub/grub.cfg not found. Exiting.")
             raise ValueError("/boot/grub/grub.cfg not found")
-
         if not Path("/boot/kernel").exists():
-            icp("mount /boot first. Exiting.")
             raise ValueError("mount /boot first")
 
     if symlink_config:
         check_config_enviroment()
         _symlink_config()
         assert Path("/usr/src/linux/.config").is_symlink()
-
-    if configure:
-        configure_kernel(
-            fix=fix,
-            warn_only=warn_only,
-            interactive=True,
-            kasan=kasan,
-            kmemleak=kmemleak,
-            slub_debug=slub_debug,
-            lockdep=lockdep,
-            debug_objects=debug_objects,
-            gcov=gcov,
-            zbtree_debug=zbtree_debug,
-            zfs_debug=zfs_debug,
-            ubsan=ubsan,
-            kcsan=kcsan,
-            watchdog=watchdog,
-            fault_inject=fault_inject,
-            mem_init=mem_init,
-            dma_debug=dma_debug,
-            data_struct_debug=data_struct_debug,
-            netconsole=netconsole,
-            lock_stat=lock_stat,
-            perf_profile=perf_profile,
-            harden=harden,
-            ia32=ia32,
-            bpftrace=bpftrace,
-            docker=docker,
-            zfs_compat_lockdep=zfs_compat_lockdep,
-            nvidia_compat=nvidia_compat,
-            variant=variant,
-        )
 
     hs.Command("emerge")(
         "genkernel",
@@ -5562,246 +5641,23 @@ def compile_and_install_kernel(
         _err=sys.stderr,
     )
 
-    # do this before the long @module-rebuild to catch problems now
-    configure_kernel(
-        fix=fix,
-        warn_only=warn_only,
-        interactive=False,
-        kasan=kasan,
-        kmemleak=kmemleak,
-        slub_debug=slub_debug,
-        lockdep=lockdep,
-        debug_objects=debug_objects,
-        gcov=gcov,
-        zbtree_debug=zbtree_debug,
-        zfs_debug=zfs_debug,
-        ubsan=ubsan,
-        kcsan=kcsan,
-        watchdog=watchdog,
-        fault_inject=fault_inject,
-        mem_init=mem_init,
-        dma_debug=dma_debug,
-        data_struct_debug=data_struct_debug,
-        netconsole=netconsole,
-        lock_stat=lock_stat,
-        perf_profile=perf_profile,
-        harden=harden,
-        ia32=ia32,
-        bpftrace=bpftrace,
-        docker=docker,
-        zfs_compat_lockdep=zfs_compat_lockdep,
-        nvidia_compat=nvidia_compat,
-        variant=variant,
-    )
-    # handle a downgrade from -9999 before genkernel calls @module-rebuild
-    icp("attempting to upgrade zfs")
-    try:
-        hs.Command("emerge")(
-            "sys-fs/zfs",
-            "-u",
-            # _out=sys.stdout,
-            # _err=sys.stderr,
-            _tee=True,
-            _tty_out=False,
-        )
-    except hs.ErrorReturnCode_1 as e:
-        icp(e)
-        icp(dir(e))
-        unconfigured_kernel = False
-        if hasattr(e, "stdout"):
-            icp(type(e.stdout))
-            if b"Could not find a usable .config" in e.stdout:
-                unconfigured_kernel = True
-            if b"tree at that location has not been built." in e.stdout:
-                unconfigured_kernel = True
-            if b"Kernel sources need compiling first" in e.stdout:
-                unconfigured_kernel = True
-            if b"Could not find a Makefile in the kernel source directory" in e.stdout:
-                unconfigured_kernel = True
-            if b"These sources have not yet been prepared" in e.stdout:
-                unconfigured_kernel = True
-
-        if not unconfigured_kernel:
-            # ic(unconfigured_kernel)
-            icp("unconfigured_kernel:", unconfigured_kernel)
-            raise e
-        icp(
-            "NOTE: kernel is unconfigured, skipping `emerge sys-fs/zfs` before kernel compile"
+    kvers: list[str] = []
+    for index, build in enumerate(builds):
+        kvers.append(
+            _build_one(
+                build=build,
+                fix=fix,
+                warn_only=warn_only,
+                # only the first build gets the interactive nconfig pass; the
+                # rest derive from the same source tree non-interactively
+                interactive_configure=configure and index == 0,
+                pre_module_rebuild=pre_module_rebuild,
+            )
         )
 
-    if not unconfigured_kernel:
-        if pre_module_rebuild:
-            icp("attempting pre-compile emerge zfs @module-rebuild")
-            try:
-                _emerge_zfs_module_rebuild()
-            except hs.ErrorReturnCode_1 as e:
-                unconfigured_kernel = True  # todo, get conditions from above
-                if not unconfigured_kernel:
-                    raise e
-                icp(
-                    "NOTE: kernel is unconfigured, skipping pre-compile module rebuild"
-                )
-
-    # might fail if gcc was upgraded and the kernel hasnt been recompiled yet
-    # for line in hs.Command("emerge")('sci-libs/linux-gpib', '-u', _err_to_out=True, _iter=True, _out_bufsize=100):
-    #   eprint(line, end='')
-
-    gcc_check()
-
-    os.chdir("/usr/src/linux")
-
-    _kver_pre = _kver_from_source()
-    if _kver_pre is not None:
-        icp("boot_is_correct:", boot_is_correct(kver=_kver_pre))
-    else:
-        icp("boot check skipped: source tree not yet configured")
-
-    if not Path("/usr/src/linux/.config").exists():
-        hs.Command("make")("defconfig")
-        check_kernel_config(
-            path=Path("/usr/src/linux/.config"),
-            fix=True,
-            warn_only=warn_only,
-            kasan=kasan,
-            kmemleak=kmemleak,
-            slub_debug=slub_debug,
-            lockdep=lockdep,
-            debug_objects=debug_objects,
-            gcov=gcov,
-            zbtree_debug=zbtree_debug,
-            zfs_debug=zfs_debug,
-            ubsan=ubsan,
-            kcsan=kcsan,
-            watchdog=watchdog,
-            fault_inject=fault_inject,
-            mem_init=mem_init,
-            dma_debug=dma_debug,
-            data_struct_debug=data_struct_debug,
-            netconsole=netconsole,
-            lock_stat=lock_stat,
-            perf_profile=perf_profile,
-            harden=harden,
-            ia32=ia32,
-            bpftrace=bpftrace,
-            docker=docker,
-            zfs_compat_lockdep=zfs_compat_lockdep,
-            nvidia_compat=nvidia_compat,
-            variant=variant,
-        )
-
-    check_kernel_config(
-        path=Path("/usr/src/linux/.config"),
-        fix=fix,
-        warn_only=warn_only,
-        kasan=kasan,
-        kmemleak=kmemleak,
-        slub_debug=slub_debug,
-        lockdep=lockdep,
-        debug_objects=debug_objects,
-        gcov=gcov,
-        zbtree_debug=zbtree_debug,
-        zfs_debug=zfs_debug,
-        ubsan=ubsan,
-        kcsan=kcsan,
-        watchdog=watchdog,
-        fault_inject=fault_inject,
-        mem_init=mem_init,
-        dma_debug=dma_debug,
-        data_struct_debug=data_struct_debug,
-        netconsole=netconsole,
-        lock_stat=lock_stat,
-        perf_profile=perf_profile,
-        harden=harden,
-        ia32=ia32,
-        bpftrace=bpftrace,
-        docker=docker,
-        zfs_compat_lockdep=zfs_compat_lockdep,
-        nvidia_compat=nvidia_compat,
-        variant=variant,
-    )  # must be done after nconfig
-    _snapshot_for_current_source()
-    genkernel_command = hs.Command("genkernel")
-    genkernel_command.bake("all")
-    # if configure:
-    #    genkernel_command.bake('--nconfig')
-    genkernel_command.bake("--no-clean")
-    genkernel_command.bake("--no-mrproper")
-    genkernel_command.bake("--symlink")
-    # genkernel_command.bake("--luks")
-    # module rebuild handled by _emerge_zfs_module_rebuild() below,
-    # not by genkernel's --module-rebuild / --callback= mechanisms (which
-    # can't react to a nvidia-drivers build failure).  nvidia handling is
-    # done in _ensure_nvidia_or_fallback() BEFORE genkernel runs, because
-    # genkernel's own compile_external_modules() will trip pkg_setup on
-    # nvidia-drivers and crash the whole compile before any post-genkernel
-    # hook gets a chance.
-    genkernel_command.bake("--all-ramdisk-modules")
-    genkernel_command.bake("--firmware")
-    genkernel_command.bake("--microcode=all")
-    genkernel_command.bake("--microcode-initramfs")
-    genkernel_command.bake(f"--makeopts=-j{os.cpu_count()}")
-    # pin LOCALVERSION so genkernel's own default (-${ARCH}) can't stomp the
-    # variant we wrote into .config — the two must agree or kernel.release
-    # (and every /boot and /lib/modules name derived from it) diverges
-    # between what we configured and what genkernel builds.
-    genkernel_command.bake(f"--kernel-localversion={_desired_localversion(variant)}")
-    # genkernel_command.bake("--no-busybox")
-    # genkernel_command.bake("--no-keymap")
-    # --zfs
-    _ensure_nvidia_or_fallback()
-    icp(genkernel_command)
-    genkernel_command(_fg=True)
-
-    _emerge_zfs_module_rebuild()
-
-    hs.Command("rc-update")(
-        "add",
-        "zfs-import",
-        "boot",
-    )
-    hs.Command("rc-update")(
-        "add",
-        "zfs-share",
-        "default",
-    )
-    hs.Command("rc-update")(
-        "add",
-        "zfs-zed",
-        "default",
-    )
-
-    if Path("/boot/grub").is_dir():
-        _kver = Path("/usr/src/linux/include/config/kernel.release").read_text(encoding="utf8").strip()
-        _write_kernel_flags(
-            _kver,
-            _active_debug_flags(
-                kasan=kasan,
-                kmemleak=kmemleak,
-                slub_debug=slub_debug,
-                lockdep=lockdep,
-                debug_objects=debug_objects,
-                gcov=gcov,
-                zbtree_debug=zbtree_debug,
-                zfs_debug=zfs_debug,
-                ubsan=ubsan,
-                kcsan=kcsan,
-                watchdog=watchdog,
-                fault_inject=fault_inject,
-                mem_init=mem_init,
-                dma_debug=dma_debug,
-                data_struct_debug=data_struct_debug,
-                netconsole=netconsole,
-                lock_stat=lock_stat,
-                perf_profile=perf_profile,
-                harden=harden,
-                ia32=ia32,
-                bpftrace=bpftrace,
-                docker=docker,
-            ),
-        )
-        _set_grub_distributor()
-        hs.Command("grub-mkconfig")("-o", "/boot/grub/grub.cfg")
-        _postprocess_grub_cfg(Path("/boot/grub/grub.cfg"))
+    hs.Command("rc-update")("add", "zfs-import", "boot")
+    hs.Command("rc-update")("add", "zfs-share", "default")
+    hs.Command("rc-update")("add", "zfs-zed", "default")
 
     hs.Command("emerge")(
         "sys-kernel/linux-firmware",
@@ -5810,41 +5666,22 @@ def compile_and_install_kernel(
         _err=sys.stderr,
     )
 
+    _regenerate_grub(default_kver=kvers[0])
+
     if Path("/boot/grub").is_dir():
         os.makedirs("/boot_backup", exist_ok=True)
-        with chdir(
-            "/boot_backup",
-        ):
+        with chdir("/boot_backup"):
             if not Path("/boot_backup/.git").is_dir():
                 hs.Command("git")("init")
-
-            hs.Command("git")(
-                "config",
-                "user.email",
-                "user@example.com",
-            )
-            hs.Command("git")(
-                "config",
-                "user.name",
-                "user",
-            )
-
+            hs.Command("git")("config", "user.email", "user@example.com")
+            hs.Command("git")("config", "user.name", "user")
             timestamp = str(time.time())
             os.makedirs(timestamp)
-            hs.Command("cp")(
-                "-ar",
-                "/boot",
-                timestamp + "/",
-            )
-            hs.Command("git")(
-                "add",
-                timestamp,
-                "--force",
-            )
-            hs.Command("git")(
-                "commit",
-                "-m",
-                timestamp,
-            )
+            hs.Command("cp")("-ar", "/boot", timestamp + "/")
+            hs.Command("git")("add", timestamp, "--force")
+            hs.Command("git")("commit", "-m", timestamp)
 
+    for kver in kvers:
+        eprint(f"installed kernel: {kver}")
+    eprint(f"boot default: {kvers[0]}")
     icp("kernel compile and install completed OK")

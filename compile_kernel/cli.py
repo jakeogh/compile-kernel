@@ -12,6 +12,7 @@ from pathlib import Path
 
 import click
 import hs
+from dataclasses import fields
 from asserttool import ic
 from asserttool import icp
 from click_auto_help import AHGroup
@@ -21,6 +22,8 @@ from clicktool import tvicgvd
 from eprint import eprint
 from globalverbose import gvd
 
+from compile_kernel import KernelBuild
+from compile_kernel import KernelFlags
 from compile_kernel import check_kernel_config
 from compile_kernel import check_kernel_config_perf
 from compile_kernel import compile_and_install_kernel
@@ -31,6 +34,55 @@ from compile_kernel import install_compiled_kernel
 from compile_kernel import set_grub_font
 
 click_option_code_debug = click.option("--code-debug", is_flag=True)
+
+# Every command that configures a kernel takes the same debug-group flags.
+# Defined once here and shared, so a new group is added in exactly one place.
+_KERNEL_FLAG_OPTIONS = [
+    click.option("--kasan", is_flag=True, help="Enable KASAN/KFENCE memory error detection"),
+    click.option("--kmemleak", is_flag=True, help="Enable kmemleak memory leak detection"),
+    click.option("--slub-debug", is_flag=True, help="Enable SLUB allocator debugging"),
+    click.option("--lockdep", is_flag=True, help="Enable lockdep lock correctness checking"),
+    click.option("--lock-stat", is_flag=True, help="Enable CONFIG_LOCK_STAT for lock contention profiling (~10-20% cost; lighter than --lockdep)"),
+    click.option("--perf-profile", is_flag=True, help="Enable KALLSYMS_ALL+DEBUG_INFO_DWARF5+FRAME_POINTER for perf record --call-graph=dwarf"),
+    click.option("--debug-objects", is_flag=True, help="Enable object lifecycle debugging"),
+    click.option("--gcov", is_flag=True, help="Enable GCOV kernel coverage"),
+    click.option("--zbtree-debug", is_flag=True, help="Enable KFENCE+SLUB_DEBUG+DEBUG_OBJECTS for out-of-tree module debugging"),
+    click.option("--zfs-debug", is_flag=True, help="Enable CONFIG_FRAME_POINTER required by sys-fs/zfs USE=debug (auto-detected from the resolved USE flag)"),
+    click.option("--ubsan", is_flag=True, help="Enable UBSAN undefined behaviour checks"),
+    click.option("--kcsan", is_flag=True, help="Enable KCSAN data-race detector (sampling)"),
+    click.option("--watchdog", is_flag=True, help="Enable softlockup/hardlockup/hung-task/WQ watchdogs"),
+    click.option("--fault-inject", is_flag=True, help="Enable fault injection framework (slab/page/futex)"),
+    click.option("--mem-init", is_flag=True, help="Enable memory init-on-alloc/free and page poisoning"),
+    click.option("--dma-debug", is_flag=True, help="Enable DMA API correctness checking"),
+    click.option("--data-struct-debug", is_flag=True, help="Enable list/SG/notifier/IRQ integrity checks"),
+    click.option("--disable-netconsole", is_flag=True, help="Disable netconsole UDP kernel log (on by default)"),
+    click.option("--harden", is_flag=True, help="Enable CPU mitigations and KASLR (off by default for perf)"),
+    click.option("--ia32", is_flag=True, help="Enable COMPAT and IA32_EMULATION for 32-bit binaries (off by default)"),
+    click.option("--bpftrace", is_flag=True, help="Enable BTF + FTRACE_SYSCALLS required by dev-debug/bpftrace"),
+    click.option("--docker", is_flag=True, help="Enable container-runtime kernel options (Docker/Podman/containerd/kube)"),
+    click.option("--zfs-compat-lockdep", is_flag=True, help="Disable the full lockdep selector chain (PROVE_LOCKING, LOCK_STAT, DEBUG_LOCK_ALLOC, DEBUG_SPINLOCK, DEBUG_MUTEXES, LOCKDEP) so ZFS builds when --lockdep is set"),
+    click.option("--nvidia-compat", is_flag=True, help="Override LOCKDEP/SLUB_DEBUG_ON/DEBUG_MUTEXES=n so nvidia-drivers builds"),
+]
+
+_variant_option = click.option(
+    "--variant",
+    type=str,
+    default=None,
+    help="Name this build: appends -VARIANT to CONFIG_LOCALVERSION so it installs alongside (not over) the plain build of the same source — its own vmlinuz, initramfs, /lib/modules tree, and grub entry",
+)
+
+_FLAG_FIELDS = tuple(f.name for f in fields(KernelFlags) if f.name != "netconsole")
+
+
+def _flags_from_kwargs(kwargs: dict) -> KernelFlags:
+    """Consume the shared kernel-flag options out of click's kwargs.
+
+    netconsole is the one group that defaults ON, so it is exposed as
+    --disable-netconsole and inverted here.
+    """
+    values = {name: kwargs.pop(name) for name in _FLAG_FIELDS}
+    values["netconsole"] = not kwargs.pop("disable_netconsole")
+    return KernelFlags(**values)
 
 
 @click.group(no_args_is_help=True, cls=AHGroup)
@@ -53,99 +105,20 @@ def cli(
 
 @cli.command()
 @click.option("--no-fix", is_flag=True)
-@click.option(
-    "--kasan", is_flag=True, help="Enable KASAN/KFENCE memory error detection"
-)
-@click.option("--kmemleak", is_flag=True, help="Enable kmemleak memory leak detection")
-@click.option("--slub-debug", is_flag=True, help="Enable SLUB allocator debugging")
-@click.option(
-    "--lockdep", is_flag=True, help="Enable lockdep lock correctness checking"
-)
-@click.option("--debug-objects", is_flag=True, help="Enable object lifecycle debugging")
-@click.option("--gcov", is_flag=True, help="Enable GCOV kernel coverage")
-@click.option(
-    "--zbtree-debug",
-    is_flag=True,
-    help="Enable KFENCE+SLUB_DEBUG+DEBUG_OBJECTS for out-of-tree module debugging",
-)
-@click.option(
-    "--zfs-debug",
-    is_flag=True,
-    help="Enable CONFIG_FRAME_POINTER required by sys-fs/zfs USE=debug",
-)
-@click.option(
-    "--lock-stat",
-    is_flag=True,
-    help="Enable CONFIG_LOCK_STAT for lock contention profiling (~10-20% cost; lighter than --lockdep)",
-)
-@click.option(
-    "--perf-profile",
-    is_flag=True,
-    help="Enable KALLSYMS_ALL+DEBUG_INFO_DWARF5+FRAME_POINTER for perf record --call-graph=dwarf",
-)
-@click.option(
-    "--harden",
-    is_flag=True,
-    help="Enable CPU mitigations and KASLR (off by default for perf)",
-)
-@click.option(
-    "--ia32",
-    is_flag=True,
-    help="Enable COMPAT and IA32_EMULATION for 32-bit binaries (off by default)",
-)
-@click.option(
-    "--bpftrace",
-    is_flag=True,
-    help="Enable BTF + FTRACE_SYSCALLS required by dev-debug/bpftrace",
-)
-@click.option(
-    "--docker",
-    is_flag=True,
-    help="Enable container-runtime kernel options (Docker/Podman/containerd/kube)",
-)
-@click.option(
-    "--zfs-compat-lockdep",
-    is_flag=True,
-    help="Disable the full lockdep selector chain (PROVE_LOCKING, LOCK_STAT, DEBUG_LOCK_ALLOC, DEBUG_SPINLOCK, DEBUG_MUTEXES, LOCKDEP) so ZFS builds when --lockdep is set",
-)
-@click.option(
-    "--nvidia-compat",
-    is_flag=True,
-    help="Override LOCKDEP/SLUB_DEBUG_ON/DEBUG_MUTEXES=n so nvidia-drivers builds",
-)
-@click.option(
-    "--variant",
-    type=str,
-    default=None,
-    help="Named kernel variant: appends -VARIANT to CONFIG_LOCALVERSION so this build installs alongside (not over) the default build of the same source version — separate vmlinuz, initramfs, /lib/modules tree, and grub entry",
-)
+@_variant_option
+@click_add_options(_KERNEL_FLAG_OPTIONS)
 @click_option_code_debug
 @click_add_options(click_global_options)
 @click.pass_context
 def configure(
     ctx,
     no_fix: bool,
-    kasan: bool,
-    kmemleak: bool,
-    slub_debug: bool,
-    lockdep: bool,
-    debug_objects: bool,
-    gcov: bool,
-    zbtree_debug: bool,
-    zfs_debug: bool,
-    lock_stat: bool,
-    perf_profile: bool,
-    harden: bool,
-    ia32: bool,
-    bpftrace: bool,
-    docker: bool,
-    zfs_compat_lockdep: bool,
-    nvidia_compat: bool,
     variant: str | None,
     code_debug: bool,
     verbose_inf: bool,
     dict_output: bool,
     verbose: bool = False,
+    **kwargs,
 ):
     tty, verbose = tvicgvd(
         ctx=ctx,
@@ -164,9 +137,7 @@ def configure(
         gvd.enable()
 
     fix = not no_fix
-    warn_only = False
-    if not fix:
-        warn_only = True
+    warn_only = not fix
     if code_debug:
         ic.enable()
 
@@ -174,22 +145,7 @@ def configure(
         fix=fix,
         warn_only=warn_only,
         interactive=True,
-        kasan=kasan,
-        kmemleak=kmemleak,
-        slub_debug=slub_debug,
-        lockdep=lockdep,
-        debug_objects=debug_objects,
-        gcov=gcov,
-        zbtree_debug=zbtree_debug,
-        zfs_debug=zfs_debug,
-        lock_stat=lock_stat,
-        perf_profile=perf_profile,
-        harden=harden,
-        ia32=ia32,
-        bpftrace=bpftrace,
-        docker=docker,
-        zfs_compat_lockdep=zfs_compat_lockdep,
-        nvidia_compat=nvidia_compat,
+        flags=_flags_from_kwargs(kwargs),
         variant=variant,
     )
 
@@ -309,85 +265,21 @@ def compare_loaded_modules_to_config(
 
 @cli.command()
 @click.option("--configure", "--config", is_flag=True)
-@click.option("--force", is_flag=True)
 @click.option("--no-fix", is_flag=True)
 @click.option("--symlink-config", is_flag=True)
 @click.option("--no-check-boot", is_flag=True)
-@click.option("--pre-module-rebuild", is_flag=True, help="Run emerge @module-rebuild before kernel compile (genkernel's post-build callback already handles this; only useful if pre-build modules need updating)")
 @click.option(
-    "--kasan", is_flag=True, help="Enable KASAN/KFENCE memory error detection"
-)
-@click.option("--kmemleak", is_flag=True, help="Enable kmemleak memory leak detection")
-@click.option("--slub-debug", is_flag=True, help="Enable SLUB allocator debugging")
-@click.option(
-    "--lockdep", is_flag=True, help="Enable lockdep lock correctness checking"
-)
-@click.option("--debug-objects", is_flag=True, help="Enable object lifecycle debugging")
-@click.option("--gcov", is_flag=True, help="Enable GCOV kernel coverage")
-@click.option(
-    "--zbtree-debug",
+    "--pre-module-rebuild",
     is_flag=True,
-    help="Enable KFENCE+SLUB_DEBUG+DEBUG_OBJECTS for out-of-tree module debugging",
+    help="Run emerge zfs @module-rebuild before the kernel compile (only useful if pre-build modules need updating)",
 )
+@_variant_option
 @click.option(
-    "--zfs-debug",
+    "--pair",
     is_flag=True,
-    help="Enable CONFIG_FRAME_POINTER required by sys-fs/zfs USE=debug",
+    help="Also build a plain kernel with no debug groups, and make it the boot default. The flags given on this command line apply to the second (instrumented) kernel, which installs under --variant (default: debug). Both appear in the grub menu.",
 )
-@click.option("--ubsan", is_flag=True, help="Enable UBSAN undefined behaviour checks")
-@click.option("--kcsan", is_flag=True, help="Enable KCSAN data-race detector (sampling)")
-@click.option("--watchdog", is_flag=True, help="Enable softlockup/hardlockup/hung-task/WQ watchdogs")
-@click.option("--fault-inject", is_flag=True, help="Enable fault injection framework (slab/page/futex)")
-@click.option("--mem-init", is_flag=True, help="Enable memory init-on-alloc/free and page poisoning")
-@click.option("--dma-debug", is_flag=True, help="Enable DMA API correctness checking")
-@click.option("--data-struct-debug", is_flag=True, help="Enable list/SG/notifier/IRQ integrity checks")
-@click.option("--disable-netconsole", is_flag=True, help="Disable netconsole UDP kernel log (on by default)")
-@click.option(
-    "--lock-stat",
-    is_flag=True,
-    help="Enable CONFIG_LOCK_STAT for lock contention profiling (~10-20% cost; lighter than --lockdep)",
-)
-@click.option(
-    "--perf-profile",
-    is_flag=True,
-    help="Enable KALLSYMS_ALL+DEBUG_INFO_DWARF5+FRAME_POINTER for perf record --call-graph=dwarf",
-)
-@click.option(
-    "--harden",
-    is_flag=True,
-    help="Enable CPU mitigations and KASLR (off by default for perf)",
-)
-@click.option(
-    "--ia32",
-    is_flag=True,
-    help="Enable COMPAT and IA32_EMULATION for 32-bit binaries (off by default)",
-)
-@click.option(
-    "--bpftrace",
-    is_flag=True,
-    help="Enable BTF + FTRACE_SYSCALLS required by dev-debug/bpftrace",
-)
-@click.option(
-    "--docker",
-    is_flag=True,
-    help="Enable container-runtime kernel options (Docker/Podman/containerd/kube)",
-)
-@click.option(
-    "--zfs-compat-lockdep",
-    is_flag=True,
-    help="Disable the full lockdep selector chain (PROVE_LOCKING, LOCK_STAT, DEBUG_LOCK_ALLOC, DEBUG_SPINLOCK, DEBUG_MUTEXES, LOCKDEP) so ZFS builds when --lockdep is set",
-)
-@click.option(
-    "--nvidia-compat",
-    is_flag=True,
-    help="Override LOCKDEP/SLUB_DEBUG_ON/DEBUG_MUTEXES=n so nvidia-drivers builds",
-)
-@click.option(
-    "--variant",
-    type=str,
-    default=None,
-    help="Named kernel variant: appends -VARIANT to CONFIG_LOCALVERSION so this build installs alongside (not over) the default build of the same source version — separate vmlinuz, initramfs, /lib/modules tree, and grub entry",
-)
+@click_add_options(_KERNEL_FLAG_OPTIONS)
 @click_option_code_debug
 @click_add_options(click_global_options)
 @click.pass_context
@@ -396,38 +288,15 @@ def compile_and_install(
     configure: bool,
     no_fix: bool,
     symlink_config: bool,
-    verbose_inf: bool,
-    dict_output: bool,
-    force: bool,
     no_check_boot: bool,
     pre_module_rebuild: bool,
-    kasan: bool,
-    kmemleak: bool,
-    slub_debug: bool,
-    lockdep: bool,
-    debug_objects: bool,
-    gcov: bool,
-    zbtree_debug: bool,
-    zfs_debug: bool,
-    ubsan: bool,
-    kcsan: bool,
-    watchdog: bool,
-    fault_inject: bool,
-    mem_init: bool,
-    dma_debug: bool,
-    data_struct_debug: bool,
-    disable_netconsole: bool,
-    lock_stat: bool,
-    perf_profile: bool,
-    harden: bool,
-    ia32: bool,
-    bpftrace: bool,
-    docker: bool,
-    zfs_compat_lockdep: bool,
-    nvidia_compat: bool,
     variant: str | None,
+    pair: bool,
     code_debug: bool,
+    verbose_inf: bool,
+    dict_output: bool,
     verbose: bool = False,
+    **kwargs,
 ):
     tty, verbose = tvicgvd(
         ctx=ctx,
@@ -446,137 +315,48 @@ def compile_and_install(
         gvd.enable()
 
     fix = not no_fix
-    warn_only = False
-    if not fix:
-        warn_only = True
+    warn_only = not fix
     if code_debug:
         ic.enable()
 
+    flags = _flags_from_kwargs(kwargs)
+
+    if pair:
+        if flags == KernelFlags():
+            raise click.UsageError(
+                "--pair with no debug groups would build the same kernel twice; "
+                "pass the groups you want in the instrumented build"
+            )
+        # builds[0] is the boot default: plain kernel, tool defaults only.
+        builds = [
+            KernelBuild(flags=KernelFlags(), variant=None),
+            KernelBuild(flags=flags, variant=variant or "debug"),
+        ]
+    else:
+        builds = [KernelBuild(flags=flags, variant=variant)]
+
     compile_and_install_kernel(
+        builds=builds,
         configure=configure,
-        force=force,
         fix=fix,
         warn_only=warn_only,
         no_check_boot=no_check_boot,
         symlink_config=symlink_config,
         pre_module_rebuild=pre_module_rebuild,
-        kasan=kasan,
-        kmemleak=kmemleak,
-        slub_debug=slub_debug,
-        lockdep=lockdep,
-        debug_objects=debug_objects,
-        gcov=gcov,
-        zbtree_debug=zbtree_debug,
-        zfs_debug=zfs_debug,
-        ubsan=ubsan,
-        kcsan=kcsan,
-        watchdog=watchdog,
-        fault_inject=fault_inject,
-        mem_init=mem_init,
-        dma_debug=dma_debug,
-        data_struct_debug=data_struct_debug,
-        netconsole=not disable_netconsole,
-        lock_stat=lock_stat,
-        perf_profile=perf_profile,
-        harden=harden,
-        ia32=ia32,
-        bpftrace=bpftrace,
-        docker=docker,
-        zfs_compat_lockdep=zfs_compat_lockdep,
-        nvidia_compat=nvidia_compat,
-        variant=variant,
     )
     eprint("DONT FORGET TO UMOUNT /boot")
 
 
 @cli.command("install-kernel")
-@click.option(
-    "--kasan", is_flag=True, help="Enable KASAN/KFENCE memory error detection"
-)
-@click.option("--kmemleak", is_flag=True, help="Enable kmemleak memory leak detection")
-@click.option("--slub-debug", is_flag=True, help="Enable SLUB allocator debugging")
-@click.option(
-    "--lockdep", is_flag=True, help="Enable lockdep lock correctness checking"
-)
-@click.option("--debug-objects", is_flag=True, help="Enable object lifecycle debugging")
-@click.option("--gcov", is_flag=True, help="Enable GCOV kernel coverage")
-@click.option(
-    "--zbtree-debug",
-    is_flag=True,
-    help="Enable KFENCE+SLUB_DEBUG+DEBUG_OBJECTS for out-of-tree module debugging",
-)
-@click.option(
-    "--zfs-debug",
-    is_flag=True,
-    help="Enable CONFIG_FRAME_POINTER required by sys-fs/zfs USE=debug",
-)
-@click.option(
-    "--lock-stat",
-    is_flag=True,
-    help="Enable CONFIG_LOCK_STAT for lock contention profiling (~10-20% cost; lighter than --lockdep)",
-)
-@click.option(
-    "--perf-profile",
-    is_flag=True,
-    help="Enable KALLSYMS_ALL+DEBUG_INFO_DWARF5+FRAME_POINTER for perf record --call-graph=dwarf",
-)
-@click.option(
-    "--harden",
-    is_flag=True,
-    help="Enable CPU mitigations and KASLR (off by default for perf)",
-)
-@click.option(
-    "--ia32",
-    is_flag=True,
-    help="Enable COMPAT and IA32_EMULATION for 32-bit binaries (off by default)",
-)
-@click.option(
-    "--bpftrace",
-    is_flag=True,
-    help="Enable BTF + FTRACE_SYSCALLS required by dev-debug/bpftrace",
-)
-@click.option(
-    "--docker",
-    is_flag=True,
-    help="Enable container-runtime kernel options (Docker/Podman/containerd/kube)",
-)
-@click.option("--ubsan", is_flag=True, help="Enable UBSAN undefined behaviour checks")
-@click.option("--kcsan", is_flag=True, help="Enable KCSAN data-race detector (sampling)")
-@click.option("--watchdog", is_flag=True, help="Enable softlockup/hardlockup/hung-task/WQ watchdogs")
-@click.option("--fault-inject", is_flag=True, help="Enable fault injection framework (slab/page/futex)")
-@click.option("--mem-init", is_flag=True, help="Enable memory init-on-alloc/free and page poisoning")
-@click.option("--dma-debug", is_flag=True, help="Enable DMA API correctness checking")
-@click.option("--data-struct-debug", is_flag=True, help="Enable list/SG/notifier/IRQ integrity checks")
-@click.option("--disable-netconsole", is_flag=True, help="Disable netconsole UDP kernel log (on by default)")
+@click_add_options(_KERNEL_FLAG_OPTIONS)
 @click_add_options(click_global_options)
 @click.pass_context
 def _install_kernel(
     ctx,
-    kasan: bool,
-    kmemleak: bool,
-    slub_debug: bool,
-    lockdep: bool,
-    debug_objects: bool,
-    gcov: bool,
-    zbtree_debug: bool,
-    zfs_debug: bool,
-    lock_stat: bool,
-    perf_profile: bool,
-    harden: bool,
-    ia32: bool,
-    bpftrace: bool,
-    docker: bool,
-    ubsan: bool,
-    kcsan: bool,
-    watchdog: bool,
-    fault_inject: bool,
-    mem_init: bool,
-    dma_debug: bool,
-    data_struct_debug: bool,
-    disable_netconsole: bool,
     verbose_inf: bool,
     dict_output: bool,
     verbose: bool = False,
+    **kwargs,
 ):
     tty, verbose = tvicgvd(
         ctx=ctx,
@@ -592,30 +372,7 @@ def _install_kernel(
     if verbose_inf:
         gvd.enable()
 
-    install_compiled_kernel(
-        kasan=kasan,
-        kmemleak=kmemleak,
-        slub_debug=slub_debug,
-        lockdep=lockdep,
-        debug_objects=debug_objects,
-        gcov=gcov,
-        zbtree_debug=zbtree_debug,
-        zfs_debug=zfs_debug,
-        ubsan=ubsan,
-        kcsan=kcsan,
-        watchdog=watchdog,
-        fault_inject=fault_inject,
-        mem_init=mem_init,
-        dma_debug=dma_debug,
-        data_struct_debug=data_struct_debug,
-        netconsole=not disable_netconsole,
-        lock_stat=lock_stat,
-        perf_profile=perf_profile,
-        harden=harden,
-        ia32=ia32,
-        bpftrace=bpftrace,
-        docker=docker,
-    )
+    install_compiled_kernel(flags=_flags_from_kwargs(kwargs))
 
 
 @cli.command()
@@ -632,66 +389,8 @@ def _install_kernel(
     metavar="DOTCONFIG...",
 )
 @click.option("--fix", is_flag=True)
-@click.option(
-    "--kasan", is_flag=True, help="Enable KASAN/KFENCE memory error detection"
-)
-@click.option("--kmemleak", is_flag=True, help="Enable kmemleak memory leak detection")
-@click.option("--slub-debug", is_flag=True, help="Enable SLUB allocator debugging")
-@click.option(
-    "--lockdep", is_flag=True, help="Enable lockdep lock correctness checking"
-)
-@click.option("--debug-objects", is_flag=True, help="Enable object lifecycle debugging")
-@click.option("--gcov", is_flag=True, help="Enable GCOV kernel coverage")
-@click.option(
-    "--zbtree-debug",
-    is_flag=True,
-    help="Enable KFENCE+SLUB_DEBUG+DEBUG_OBJECTS for out-of-tree module debugging",
-)
-@click.option(
-    "--zfs-debug",
-    is_flag=True,
-    help="Enable CONFIG_FRAME_POINTER required by sys-fs/zfs USE=debug",
-)
-@click.option(
-    "--lock-stat",
-    is_flag=True,
-    help="Enable CONFIG_LOCK_STAT for lock contention profiling (~10-20% cost; lighter than --lockdep)",
-)
-@click.option(
-    "--perf-profile",
-    is_flag=True,
-    help="Enable KALLSYMS_ALL+DEBUG_INFO_DWARF5+FRAME_POINTER for perf record --call-graph=dwarf",
-)
-@click.option(
-    "--harden",
-    is_flag=True,
-    help="Enable CPU mitigations and KASLR (off by default for perf)",
-)
-@click.option(
-    "--ia32",
-    is_flag=True,
-    help="Enable COMPAT and IA32_EMULATION for 32-bit binaries (off by default)",
-)
-@click.option(
-    "--bpftrace",
-    is_flag=True,
-    help="Enable BTF + FTRACE_SYSCALLS required by dev-debug/bpftrace",
-)
-@click.option(
-    "--docker",
-    is_flag=True,
-    help="Enable container-runtime kernel options (Docker/Podman/containerd/kube)",
-)
-@click.option(
-    "--zfs-compat-lockdep",
-    is_flag=True,
-    help="Disable the full lockdep selector chain (PROVE_LOCKING, LOCK_STAT, DEBUG_LOCK_ALLOC, DEBUG_SPINLOCK, DEBUG_MUTEXES, LOCKDEP) so ZFS builds when --lockdep is set",
-)
-@click.option(
-    "--nvidia-compat",
-    is_flag=True,
-    help="Override LOCKDEP/SLUB_DEBUG_ON/DEBUG_MUTEXES=n so nvidia-drivers builds",
-)
+@_variant_option
+@click_add_options(_KERNEL_FLAG_OPTIONS)
 @click_option_code_debug
 @click_add_options(click_global_options)
 @click.pass_context
@@ -699,26 +398,12 @@ def check_config(
     ctx,
     dotconfigs: tuple[Path, ...],
     fix: bool,
-    kasan: bool,
-    kmemleak: bool,
-    slub_debug: bool,
-    lockdep: bool,
-    debug_objects: bool,
-    gcov: bool,
-    zbtree_debug: bool,
-    zfs_debug: bool,
-    lock_stat: bool,
-    perf_profile: bool,
-    harden: bool,
-    ia32: bool,
-    bpftrace: bool,
-    docker: bool,
-    zfs_compat_lockdep: bool,
-    nvidia_compat: bool,
+    variant: str | None,
     code_debug: bool,
     verbose_inf: bool,
     dict_output: bool,
     verbose: bool = False,
+    **kwargs,
 ):
     tty, verbose = tvicgvd(
         ctx=ctx,
@@ -736,9 +421,7 @@ def check_config(
     if verbose_inf:
         gvd.enable()
 
-    warn_only = False
-    if not fix:
-        warn_only = True
+    warn_only = not fix
     if code_debug:
         ic.enable()
 
@@ -747,56 +430,23 @@ def check_config(
             "at least one DOTCONFIG path is required (e.g. /usr/src/linux/.config or /proc/config.gz)"
         )
 
-    debug_flags: dict[str, bool] = {
-        "kasan": kasan,
-        "kmemleak": kmemleak,
-        "slub-debug": slub_debug,
-        "lockdep": lockdep,
-        "debug-objects": debug_objects,
-        "gcov": gcov,
-        "zbtree-debug": zbtree_debug,
-        "zfs-debug": zfs_debug,
-        "lock-stat": lock_stat,
-        "perf-profile": perf_profile,
-        "harden": harden,
-        "ia32": ia32,
-        "bpftrace": bpftrace,
-        "docker": docker,
-        "zfs-compat": zfs_compat_lockdep,
-        "nvidia-compat": nvidia_compat,
-    }
+    flags = _flags_from_kwargs(kwargs)
+    active = flags.labels()
 
     for config in dotconfigs:
         eprint(f"check-config: {config.resolve()}")
         eprint(f"  mode: {'fix' if fix else 'warn-only'}")
-        active = [k for k, v in debug_flags.items() if v]
-        inactive = [k for k, v in debug_flags.items() if not v]
         if active:
-            eprint(f"  debug groups ON:  {' '.join(active)}")
-        if inactive:
-            eprint(f"  debug groups OFF: {' '.join(inactive)}")
+            eprint(f"  debug groups ON: {' '.join(active)}")
+        else:
+            eprint("  debug groups ON: (none)")
         check_kernel_config(
             path=config,
             fix=fix,
             warn_only=warn_only,
-            kasan=kasan,
-            kmemleak=kmemleak,
-            slub_debug=slub_debug,
-            lockdep=lockdep,
-            debug_objects=debug_objects,
-            gcov=gcov,
-            zbtree_debug=zbtree_debug,
-            zfs_debug=zfs_debug,
-            lock_stat=lock_stat,
-            perf_profile=perf_profile,
-            harden=harden,
-            ia32=ia32,
-            bpftrace=bpftrace,
-            docker=docker,
-            zfs_compat_lockdep=zfs_compat_lockdep,
-            nvidia_compat=nvidia_compat,
-        )  # must be done after nconfig
-        return
+            flags=flags,
+            variant=variant,
+        )
 
 
 @cli.command()
