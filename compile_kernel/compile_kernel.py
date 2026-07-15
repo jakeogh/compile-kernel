@@ -126,6 +126,53 @@ def _int_spec_apply(
             )
 
 
+# String-valued config options (e.g. CONFIG_LOCALVERSION).
+# Stored as dict[symbol, str]; last-writer-wins same as ConfigSpec.
+StrConfigSpec = dict[str, str]
+
+
+def _str_spec_add(
+    spec: StrConfigSpec,
+    define: str,
+    value: str,
+) -> None:
+    if not define.startswith("CONFIG_"):
+        raise ValueError(
+            f"_str_spec_add: {define!r} must start with 'CONFIG_'"
+        )
+    spec[define] = value
+
+
+def _str_spec_apply(
+    sspec: StrConfigSpec,
+    path: Path,
+    fix: bool,
+) -> None:
+    """Apply string config values via scripts/config --set-str."""
+    if not sspec:
+        return
+    script_path = Path("/usr/src/linux/scripts/config")
+    for define, value in sspec.items():
+        current = hs.Command(script_path)(
+            "--file", path.as_posix(), "--state", define
+        ).strip()
+        if current == value:
+            continue
+        if fix:
+            hs.Command(script_path)(
+                "--file",
+                path.as_posix(),
+                "--set-str",
+                define,
+                value,
+            )
+        else:
+            eprint(
+                path.as_posix(),
+                f"WARNING: {define} is {current!r} but should be {value!r}",
+            )
+
+
 _KCONFIG_INDEX_CACHE: dict[str, dict[str, dict]] = {}
 
 
@@ -253,10 +300,41 @@ def _filter_spec_for_kernel(
     return out
 
 
+_VARIANT_RE = re.compile(r"^[a-z0-9][a-z0-9._+-]*$")
+
+
+def _validate_variant(variant: str) -> str:
+    """Variant names become part of kernel.release and therefore of file
+    names in /boot and directory names in /lib/modules. Keep them to a
+    conservative character set."""
+    if not _VARIANT_RE.match(variant):
+        raise ValueError(
+            f"invalid variant {variant!r}: must match {_VARIANT_RE.pattern}"
+        )
+    return variant
+
+
+def _desired_localversion(variant: str | None) -> str:
+    """CONFIG_LOCALVERSION for this build.
+
+    Base is -{arch} (matches genkernel's historical default, so existing
+    kernels keep their names). A variant appends -{variant}, giving e.g.
+    kernel.release 6.19.6-gentoo-x86_64-debug — a fully distinct kver with
+    its own /boot files, /lib/modules tree, initramfs, flags file,
+    snapshots, and grub menuentry. Two kernels from the same source
+    version coexist cleanly because nothing they install overlaps.
+    """
+    base = f"-{os.uname().machine}"
+    if variant is None:
+        return base
+    return f"{base}-{_validate_variant(variant)}"
+
+
 def _resolve_and_verify_config(
     *,
     spec: ConfigSpec,
     ispec: IntConfigSpec,
+    sspec: StrConfigSpec,
     path: Path,
 ) -> None:
     """Run `make olddefconfig` to propagate Kconfig selects/choice resolution,
@@ -306,6 +384,11 @@ def _resolve_and_verify_config(
         got = state.get(define, "absent")
         if got != want and not (want == "y" and got == "m"):
             missing.append((define, want, got))
+
+    for define, svalue in sspec.items():
+        got = state.get(define, "absent")
+        if got != svalue:
+            missing.append((define, svalue, got))
 
     if missing:
         index = _kconfig_index(src)
@@ -1980,6 +2063,7 @@ def check_kernel_config(
     docker: bool = False,
     zfs_compat_lockdep: bool = False,
     nvidia_compat: bool = False,
+    variant: str | None = None,
 ):
     icp(
         path,
@@ -1997,6 +2081,7 @@ def check_kernel_config(
     # --- build the merged spec in layers ---
     spec: ConfigSpec = {}
     ispec: IntConfigSpec = {}
+    sspec: StrConfigSpec = {}
 
     # layer 1: production base
     check_kernel_config_nfs(spec=spec, warn_only=warn_only)
@@ -4528,6 +4613,17 @@ def check_kernel_config(
         1000,
     )
 
+    # --- string config values ---
+    # LOCALVERSION owns the kernel's identity: kernel.release =
+    # {version}{LOCALVERSION}. Every downstream name (vmlinuz, initramfs,
+    # /lib/modules/{kver}, flags file, snapshots, grub entry) derives from
+    # it, so a distinct variant gives a fully parallel, co-bootable kernel.
+    _str_spec_add(
+        sspec,
+        "CONFIG_LOCALVERSION",
+        _desired_localversion(variant),
+    )
+
     # --- pre-filter spec against the live kernel's Kconfig (when relevant) ---
     if path.resolve() == Path("/usr/src/linux/.config").resolve():
         spec = _filter_spec_for_kernel(spec, Path("/usr/src/linux"))
@@ -4543,12 +4639,17 @@ def check_kernel_config(
         path=path,
         fix=fix,
     )
+    _str_spec_apply(
+        sspec=sspec,
+        path=path,
+        fix=fix,
+    )
     if _tmp_config is not None:
         Path(_tmp_config.name).unlink(missing_ok=True)
 
     # --- propagate Kconfig selects and validate (only when fixing the live tree) ---
     if fix and path.resolve() == Path("/usr/src/linux/.config").resolve():
-        _resolve_and_verify_config(spec=spec, ispec=ispec, path=path)
+        _resolve_and_verify_config(spec=spec, ispec=ispec, sspec=sspec, path=path)
 
 
 # bpf
@@ -4609,25 +4710,27 @@ def check_config_enviroment():
         sys.exit(1)
 
 
-def get_kernel_version_from_symlink():
-    linux = Path("/usr/src/linux")
-    assert linux.is_symlink()
-    path = linux.resolve()
-    version = path.parts[-1]
-    version = version.split("linux-")[-1]
-    return version
+def _kver_from_source() -> str | None:
+    """kernel.release for the current /usr/src/linux build, or None if the
+    tree hasn't been configured/built yet."""
+    kver_file = Path("/usr/src/linux/include/config/kernel.release")
+    if not kver_file.exists():
+        return None
+    return kver_file.read_text(encoding="utf8").strip()
 
 
 def boot_is_correct(
     *,
-    linux_version: str,
-):
-    assets = ["System.map", "initramfs", "vmlinux"]
-    for asset in assets:
-        path = Path(asset) / Path("-") / Path(linux_version)
-        if not file_exists_nonzero(path):
-            return False
-    return True
+    kver: str,
+) -> bool:
+    """True when /boot holds a complete, nonzero artifact set for kver."""
+    boot = Path("/boot")
+    required = [
+        boot / f"vmlinuz-{kver}",
+        boot / f"System.map-{kver}",
+        boot / f"initramfs-{kver}.img",
+    ]
+    return all(file_exists_nonzero(p) for p in required)
 
 
 def _ensure_nvidia_or_fallback(
@@ -4745,61 +4848,6 @@ def gcc_check():
         icp("old gcc version detected, calling 'make clean'")
         os.chdir("/usr/src/linux")
         hs.Command("make")("clean")
-
-
-def gcc_check_old():
-    test_path = Path("/usr/src/linux/init/.init_task.o.cmd")
-    if test_path.exists():
-        icp(
-            "found previously compiled kernel tree, checking is the current gcc version was used"
-        )
-        gcc_version = hs.Command("gcc-config")("-l")
-        icp(gcc_version)
-        gcc_version = gcc_version.splitlines()
-        line = None
-        for line in gcc_version:
-            if not line.endswith("*"):
-                continue
-        assert line
-        gcc_version = line.split("-")[-1]
-        gcc_version = gcc_version.split(" ")[0]
-        icp("checking for gcc version:", gcc_version)
-
-        try:
-            grep_target = ("gcc/x86_64-pc-linux-gnu/" + gcc_version,)
-            icp(grep_target)
-            hs.Command("grep")(grep_target, "/usr/src/linux/init/.init_task.o.cmd")
-            icp(
-                gcc_version,
-                "was used to compile kernel previously, not running `make clean`",
-            )
-        except hs.ErrorReturnCode_1 as e:
-            icp(e)
-            icp("old gcc version detected, make clean required. Sleeping 5.")
-            os.chdir("/usr/src/linux")
-            time.sleep(5)
-            hs.Command("make")("clean")
-
-
-def kernel_is_already_compiled():
-    kernel_version = get_kernel_version_from_symlink()
-    icp(kernel_version)
-    test_path = Path("/usr/src/linux/init/.init_task.o.cmd")
-
-    if Path(
-        "/boot/initramfs"
-    ).exists():  # should be looking for the current kernel version
-        if Path("/boot/initramfs").stat().st_size > 0:
-            # if Path("/usr/src/linux/include/linux/kconfig.h").exists():
-            if test_path.exists():
-                eprint(
-                    f"/boot/initramfs and {test_path.as_posix()} exist, skipping compile"
-                )
-                return True
-        icp("/boot/initramfs exists, checking if /usr/src/linux is configured")
-        if test_path.exists():
-            icp(test_path, "exists, skipping kernel compile")
-            return True
 
 
 def _active_debug_flags(
@@ -4979,8 +5027,11 @@ def _snapshot_existing_kernel_files(kver: str) -> None:
         eprint(f"snapshot: {src} -> {target}")
         src.rename(target)
         for prefix in _BOOT_FILE_PREFIXES:
-            if base_name.startswith(prefix + "-") or base_name.startswith(prefix):
-                snapshotted[prefix] = target.name
+            if base_name.startswith(prefix + "-"):
+                # candidates iterate (current, current.old) per prefix;
+                # first-write-wins so the manifest points at the CURRENT
+                # file's snapshot, never the .old one.
+                snapshotted.setdefault(prefix, target.name)
                 break
         # Re-point any /boot symlinks (e.g. /boot/kernel, /boot/initramfs) that
         # pointed at the just-moved file. We point them into the snapshots
@@ -5106,8 +5157,7 @@ def _kver_from_vmlinuz(vmlinuz_path: str) -> str:
         name = name[len("vmlinuz-"):]
     # strip trailing .{integer_ts} (snapshot suffix from _snapshot_existing_kernel_files)
     # so e.g. vmlinuz-6.19.6-gentoo-x86_64.1773443816 maps to 6.19.6-gentoo-x86_64
-    import re as _re
-    name = _re.sub(r"\.\d{9,}$", "", name)
+    name = re.sub(r"\.\d{9,}$", "", name)
     # also strip legacy .old suffix for pre-snapshot kernels
     if name.endswith(".old"):
         name = name[:-4]
@@ -5125,7 +5175,6 @@ def _postprocess_grub_cfg(cfg_path: Path) -> None:
     flags file, strip any existing [...] bracket from the title, append
     the correct one (or nothing for clean kernels). Operates in place.
     """
-    import re
     text = cfg_path.read_text(encoding="utf8")
     lines = text.splitlines(keepends=True)
     result: list[str] = []
@@ -5303,6 +5352,14 @@ def install_compiled_kernel(
     genkernel_command.bake("initramfs")
     genkernel_command.bake("--no-clean")
     genkernel_command.bake("--no-mrproper")
+    # pin LOCALVERSION to whatever the built tree used, so genkernel's
+    # default (-${ARCH}) can't rename the initramfs away from the kernel
+    # it belongs to (matters for variant builds).
+    _localversion = hs.Command("/usr/src/linux/scripts/config")(
+        "--file", "/usr/src/linux/.config", "--state", "LOCALVERSION"
+    ).strip()
+    if _localversion and _localversion != "undef":
+        genkernel_command.bake(f"--kernel-localversion={_localversion}")
     # genkernel_command.bake("--no-busybox")
     # genkernel_command.bake("--no-keymap")
     # icp(genkernel_command)
@@ -5370,6 +5427,7 @@ def configure_kernel(
     docker: bool = False,
     zfs_compat_lockdep: bool = False,
     nvidia_compat: bool = False,
+    variant: str | None = None,
 ):
     if interactive:
         with chdir(
@@ -5404,6 +5462,7 @@ def configure_kernel(
         docker=docker,
         zfs_compat_lockdep=zfs_compat_lockdep,
         nvidia_compat=nvidia_compat,
+        variant=variant,
     )  # must be done after nconfig
 
 
@@ -5440,6 +5499,7 @@ def compile_and_install_kernel(
     docker: bool = False,
     zfs_compat_lockdep: bool = False,
     nvidia_compat: bool = False,
+    variant: str | None = None,
 ):
     icp()
     if not root_user():
@@ -5492,6 +5552,7 @@ def compile_and_install_kernel(
             docker=docker,
             zfs_compat_lockdep=zfs_compat_lockdep,
             nvidia_compat=nvidia_compat,
+            variant=variant,
         )
 
     hs.Command("emerge")(
@@ -5530,6 +5591,7 @@ def compile_and_install_kernel(
         docker=docker,
         zfs_compat_lockdep=zfs_compat_lockdep,
         nvidia_compat=nvidia_compat,
+        variant=variant,
     )
     # handle a downgrade from -9999 before genkernel calls @module-rebuild
     icp("attempting to upgrade zfs")
@@ -5588,17 +5650,11 @@ def compile_and_install_kernel(
 
     os.chdir("/usr/src/linux")
 
-    linux_version = get_kernel_version_from_symlink()
-    icp(
-        boot_is_correct(
-            linux_version=linux_version,
-        )
-    )
-
-    # if not force:
-    #    if kernel_is_already_compiled():
-    #        icp("kernel is already compiled, skipping")
-    #        return
+    _kver_pre = _kver_from_source()
+    if _kver_pre is not None:
+        icp("boot_is_correct:", boot_is_correct(kver=_kver_pre))
+    else:
+        icp("boot check skipped: source tree not yet configured")
 
     if not Path("/usr/src/linux/.config").exists():
         hs.Command("make")("defconfig")
@@ -5611,6 +5667,26 @@ def compile_and_install_kernel(
             slub_debug=slub_debug,
             lockdep=lockdep,
             debug_objects=debug_objects,
+            gcov=gcov,
+            zbtree_debug=zbtree_debug,
+            zfs_debug=zfs_debug,
+            ubsan=ubsan,
+            kcsan=kcsan,
+            watchdog=watchdog,
+            fault_inject=fault_inject,
+            mem_init=mem_init,
+            dma_debug=dma_debug,
+            data_struct_debug=data_struct_debug,
+            netconsole=netconsole,
+            lock_stat=lock_stat,
+            perf_profile=perf_profile,
+            harden=harden,
+            ia32=ia32,
+            bpftrace=bpftrace,
+            docker=docker,
+            zfs_compat_lockdep=zfs_compat_lockdep,
+            nvidia_compat=nvidia_compat,
+            variant=variant,
         )
 
     check_kernel_config(
@@ -5641,6 +5717,7 @@ def compile_and_install_kernel(
         docker=docker,
         zfs_compat_lockdep=zfs_compat_lockdep,
         nvidia_compat=nvidia_compat,
+        variant=variant,
     )  # must be done after nconfig
     _snapshot_for_current_source()
     genkernel_command = hs.Command("genkernel")
@@ -5662,7 +5739,12 @@ def compile_and_install_kernel(
     genkernel_command.bake("--firmware")
     genkernel_command.bake("--microcode=all")
     genkernel_command.bake("--microcode-initramfs")
-    genkernel_command.bake('--makeopts="-j12"')
+    genkernel_command.bake(f"--makeopts=-j{os.cpu_count()}")
+    # pin LOCALVERSION so genkernel's own default (-${ARCH}) can't stomp the
+    # variant we wrote into .config — the two must agree or kernel.release
+    # (and every /boot and /lib/modules name derived from it) diverges
+    # between what we configured and what genkernel builds.
+    genkernel_command.bake(f"--kernel-localversion={_desired_localversion(variant)}")
     # genkernel_command.bake("--no-busybox")
     # genkernel_command.bake("--no-keymap")
     # --zfs

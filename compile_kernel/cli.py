@@ -113,6 +113,12 @@ def cli(
     is_flag=True,
     help="Override LOCKDEP/SLUB_DEBUG_ON/DEBUG_MUTEXES=n so nvidia-drivers builds",
 )
+@click.option(
+    "--variant",
+    type=str,
+    default=None,
+    help="Named kernel variant: appends -VARIANT to CONFIG_LOCALVERSION so this build installs alongside (not over) the default build of the same source version — separate vmlinuz, initramfs, /lib/modules tree, and grub entry",
+)
 @click_option_code_debug
 @click_add_options(click_global_options)
 @click.pass_context
@@ -135,6 +141,7 @@ def configure(
     docker: bool,
     zfs_compat_lockdep: bool,
     nvidia_compat: bool,
+    variant: str | None,
     code_debug: bool,
     verbose_inf: bool,
     dict_output: bool,
@@ -183,6 +190,7 @@ def configure(
         docker=docker,
         zfs_compat_lockdep=zfs_compat_lockdep,
         nvidia_compat=nvidia_compat,
+        variant=variant,
     )
 
 
@@ -374,6 +382,12 @@ def compare_loaded_modules_to_config(
     is_flag=True,
     help="Override LOCKDEP/SLUB_DEBUG_ON/DEBUG_MUTEXES=n so nvidia-drivers builds",
 )
+@click.option(
+    "--variant",
+    type=str,
+    default=None,
+    help="Named kernel variant: appends -VARIANT to CONFIG_LOCALVERSION so this build installs alongside (not over) the default build of the same source version — separate vmlinuz, initramfs, /lib/modules tree, and grub entry",
+)
 @click_option_code_debug
 @click_add_options(click_global_options)
 @click.pass_context
@@ -411,6 +425,7 @@ def compile_and_install(
     docker: bool,
     zfs_compat_lockdep: bool,
     nvidia_compat: bool,
+    variant: str | None,
     code_debug: bool,
     verbose: bool = False,
 ):
@@ -469,6 +484,7 @@ def compile_and_install(
         docker=docker,
         zfs_compat_lockdep=zfs_compat_lockdep,
         nvidia_compat=nvidia_compat,
+        variant=variant,
     )
     eprint("DONT FORGET TO UMOUNT /boot")
 
@@ -524,16 +540,14 @@ def compile_and_install(
     is_flag=True,
     help="Enable container-runtime kernel options (Docker/Podman/containerd/kube)",
 )
-@click.option(
-    "--zfs-compat-lockdep",
-    is_flag=True,
-    help="Disable the full lockdep selector chain (PROVE_LOCKING, LOCK_STAT, DEBUG_LOCK_ALLOC, DEBUG_SPINLOCK, DEBUG_MUTEXES, LOCKDEP) so ZFS builds when --lockdep is set",
-)
-@click.option(
-    "--nvidia-compat",
-    is_flag=True,
-    help="Override LOCKDEP/SLUB_DEBUG_ON/DEBUG_MUTEXES=n so nvidia-drivers builds",
-)
+@click.option("--ubsan", is_flag=True, help="Enable UBSAN undefined behaviour checks")
+@click.option("--kcsan", is_flag=True, help="Enable KCSAN data-race detector (sampling)")
+@click.option("--watchdog", is_flag=True, help="Enable softlockup/hardlockup/hung-task/WQ watchdogs")
+@click.option("--fault-inject", is_flag=True, help="Enable fault injection framework (slab/page/futex)")
+@click.option("--mem-init", is_flag=True, help="Enable memory init-on-alloc/free and page poisoning")
+@click.option("--dma-debug", is_flag=True, help="Enable DMA API correctness checking")
+@click.option("--data-struct-debug", is_flag=True, help="Enable list/SG/notifier/IRQ integrity checks")
+@click.option("--disable-netconsole", is_flag=True, help="Disable netconsole UDP kernel log (on by default)")
 @click_add_options(click_global_options)
 @click.pass_context
 def _install_kernel(
@@ -552,8 +566,14 @@ def _install_kernel(
     ia32: bool,
     bpftrace: bool,
     docker: bool,
-    zfs_compat_lockdep: bool,
-    nvidia_compat: bool,
+    ubsan: bool,
+    kcsan: bool,
+    watchdog: bool,
+    fault_inject: bool,
+    mem_init: bool,
+    dma_debug: bool,
+    data_struct_debug: bool,
+    disable_netconsole: bool,
     verbose_inf: bool,
     dict_output: bool,
     verbose: bool = False,
@@ -581,14 +601,20 @@ def _install_kernel(
         gcov=gcov,
         zbtree_debug=zbtree_debug,
         zfs_debug=zfs_debug,
+        ubsan=ubsan,
+        kcsan=kcsan,
+        watchdog=watchdog,
+        fault_inject=fault_inject,
+        mem_init=mem_init,
+        dma_debug=dma_debug,
+        data_struct_debug=data_struct_debug,
+        netconsole=not disable_netconsole,
         lock_stat=lock_stat,
         perf_profile=perf_profile,
         harden=harden,
         ia32=ia32,
         bpftrace=bpftrace,
         docker=docker,
-        zfs_compat_lockdep=zfs_compat_lockdep,
-        nvidia_compat=nvidia_compat,
     )
 
 
