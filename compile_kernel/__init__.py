@@ -2,6 +2,9 @@
 isort:skip_file
 """
 
+from .compile_kernel import KernelBuild as KernelBuild
+from .compile_kernel import KernelFlags as KernelFlags
+from .compile_kernel import build_status as build_status
 from .compile_kernel import check_kernel_config as check_kernel_config
 from .compile_kernel import check_kernel_config_perf as check_kernel_config_perf
 from .compile_kernel import configure_kernel as configure_kernel
