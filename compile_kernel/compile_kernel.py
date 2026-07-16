@@ -281,10 +281,7 @@ def _kconfig_index(src: Path) -> dict[str, dict]:
     for kfile in src.rglob("Kconfig*"):
         if not kfile.is_file():
             continue
-        try:
-            lines = kfile.read_text(encoding="utf8", errors="replace").splitlines()
-        except OSError:
-            continue
+        lines = kfile.read_text(encoding="utf8", errors="replace").splitlines()
         if_stack: list[str] = []
         i = 0
         n = len(lines)
@@ -380,6 +377,11 @@ def _filter_spec_for_kernel(
     return out
 
 
+_SOURCE_DIR = Path("/usr/src/linux")
+# One object dir per kver. The source tree stays pristine and holds no .config,
+# so nothing about a build lives anywhere two builds could contend for it.
+_BUILD_ROOT = Path("/usr/src/linux-build")
+
 _VARIANT_RE = re.compile(r"^[a-z0-9][a-z0-9._+-]*$")
 
 
@@ -410,48 +412,116 @@ def _desired_localversion(variant: str | None) -> str:
     return f"{base}-{_validate_variant(variant)}"
 
 
+def _make(*args: str, build_dir: Path, capture: bool = False) -> str:
+    """Kbuild always runs out-of-tree: -C source, O=build_dir."""
+    cmd = ["make", "-C", _SOURCE_DIR.as_posix(), f"O={build_dir.as_posix()}", *args]
+    result = subprocess.run(cmd, capture_output=capture, check=True)
+    return result.stdout.decode("utf8").strip() if capture else ""
+
+
+def _source_kernelversion() -> str:
+    """VERSION.PATCHLEVEL.SUBLEVEL + EXTRAVERSION from the source Makefile.
+    Needs no .config, so it is available before a build dir exists."""
+    result = subprocess.run(
+        ["make", "-s", "-C", _SOURCE_DIR.as_posix(), "kernelversion"],
+        capture_output=True,
+        check=True,
+    )
+    return result.stdout.decode("utf8").strip()
+
+
+def _kver_for_variant(variant: str | None) -> str:
+    """Predict kernel.release for a variant before its build dir exists.
+
+    Holds because production base pins CONFIG_LOCALVERSION_AUTO=n; the
+    prediction is asserted against `make kernelrelease` once the config is
+    resolved, so a drift here fails loudly rather than silently naming a
+    directory wrong.
+    """
+    return _source_kernelversion() + _desired_localversion(variant)
+
+
+def _build_dir(kver: str) -> Path:
+    return _BUILD_ROOT / kver
+
+
+def _kernelrelease(build_dir: Path) -> str:
+    return _make("-s", "kernelrelease", build_dir=build_dir, capture=True)
+
+
+def _ensure_build_dir(kver: str) -> Path:
+    """Create this kver's object dir and seed a .config to start from.
+
+    Seeds from the running kernel's config when available so a new variant
+    inherits the current hardware setup rather than a bare defconfig; the
+    spec layers then assert everything that matters on top.
+    """
+    build_dir = _build_dir(kver)
+    build_dir.mkdir(parents=True, exist_ok=True)
+    config = build_dir / ".config"
+    if not config.exists():
+        running_config = Path("/proc/config.gz")
+        if running_config.exists():
+            eprint(f"seeding {config} from {running_config}")
+            with gzip.open(running_config, "rb") as f_in:
+                config.write_bytes(f_in.read())
+        else:
+            eprint(f"seeding {config} from make defconfig")
+            _make("defconfig", build_dir=build_dir)
+    return build_dir
+
+
+def _link_module_build_dir(kver: str, build_dir: Path) -> None:
+    """Point /lib/modules/{kver}/{build,source} at this kver's object dir and
+    the source tree.
+
+    This is what makes `make -C /lib/modules/$(uname -r)/build M=$PWD` correct
+    for whichever kernel is booted, and what lets linux-info.eclass find the
+    right object dir when KBUILD_OUTPUT is not set in the environment.
+    """
+    mod_dir = Path("/lib/modules") / kver
+    for name, target in (("build", build_dir), ("source", _SOURCE_DIR)):
+        link = mod_dir / name
+        if link.is_symlink() and Path(os.readlink(link)) == target:
+            continue
+        link.unlink(missing_ok=True)
+        link.symlink_to(target)
+        eprint(f"linked {link} -> {target}")
+
+
+def _emerge_env(build_dir: Path) -> dict[str, str]:
+    """KBUILD_OUTPUT tells linux-info.eclass which object dir to build modules
+    against. It is the highest-priority source the eclass consults, and the
+    eclass dies if it points nowhere, so an emerge can never silently target
+    the wrong kernel."""
+    env = os.environ.copy()
+    env["KBUILD_OUTPUT"] = build_dir.as_posix()
+    return env
+
+
 def _resolve_and_verify_config(
     *,
     spec: ConfigSpec,
     ispec: IntConfigSpec,
     sspec: StrConfigSpec,
-    path: Path,
+    build_dir: Path,
 ) -> None:
-    """Run `make olddefconfig` to propagate Kconfig selects/choice resolution,
-    then verify that every required-True symbol from the spec is actually set.
+    """Propagate Kconfig selects/choice via olddefconfig, then verify every
+    required symbol survived.
 
-    scripts/config is text-only — it cannot propagate `select X` from a
-    parent symbol to a child, and it cannot resolve choice blocks. Without
-    this step, settings like CONFIG_UNWINDER_FRAME_POINTER=y exist in .config
-    but the symbols they select (FRAME_POINTER, ARCH_WANT_FRAME_POINTERS) do
-    not appear until make olddefconfig runs.
+    scripts/config is text-only: it cannot propagate `select X` from a parent
+    symbol nor resolve choice blocks, so e.g. UNWINDER_FRAME_POINTER=y exists
+    in .config while FRAME_POINTER does not until olddefconfig runs.
     """
-    src = Path("/usr/src/linux")
-    if not (src / "Makefile").exists():
-        eprint("WARNING: /usr/src/linux/Makefile missing — cannot run olddefconfig")
-        return
+    _make("olddefconfig", build_dir=build_dir)
 
-    icp("running make olddefconfig to propagate selects/choice")
-    result = subprocess.run(
-        ["make", "-C", src.as_posix(), "olddefconfig"],
-        capture_output=True,
-        check=False,
-    )
-    if result.returncode != 0:
-        eprint(
-            "WARNING: make olddefconfig failed:",
-            result.stderr.decode("utf8", errors="replace"),
-        )
-        return
-
-    # Re-parse .config and verify required-True symbols
+    path = build_dir / ".config"
     content = path.read_text(encoding="utf8", errors="replace")
     state: dict[str, str] = {}
     for line in content.splitlines():
         line = line.strip()
         if line.startswith("# CONFIG_") and line.endswith(" is not set"):
-            sym = line[2:].split(" ", 1)[0]
-            state[sym] = "n"
+            state[line[2:].split(" ", 1)[0]] = "n"
         elif line.startswith("CONFIG_") and "=" in line:
             sym, val = line.split("=", 1)
             state[sym] = val.strip().strip('"')
@@ -464,14 +534,17 @@ def _resolve_and_verify_config(
         got = state.get(define, "absent")
         if got != want and not (want == "y" and got == "m"):
             missing.append((define, want, got))
-
     for define, svalue in sspec.items():
         got = state.get(define, "absent")
         if got != svalue:
             missing.append((define, svalue, got))
+    for define, ivalue in ispec.items():
+        got = state.get(define, "absent")
+        if got != str(ivalue):
+            missing.append((define, str(ivalue), got))
 
     if missing:
-        index = _kconfig_index(src)
+        index = _kconfig_index(_SOURCE_DIR)
         eprint("WARNING: the following required symbols did not survive olddefconfig:")
         for sym, want, got in missing:
             meta = _kmeta(sym, index)
@@ -482,28 +555,15 @@ def _resolve_and_verify_config(
                     f"  {sym}: hidden by unmet dependency — depends on: "
                     f"{meta['depends_on']}  (defined at {meta['file']}:{meta['line']})"
                 )
-                eprint(
-                    f"      → enable each parent symbol in the spec, then re-run"
-                )
-            elif got == "y" and want == "m" and meta.get("type") == "bool":
-                eprint(
-                    f"  {sym}: spec wants =m but Kconfig declares it as bool "
-                    f"— pre-filter should have coerced this; possible bug"
-                )
             else:
                 eprint(
                     f"  {sym}: want={want} got={got} "
                     f"(type={meta.get('type')}, depends_on={meta.get('depends_on')})"
                 )
-        eprint(
-            "fix each entry above (prune, enable parents, or correct the spec), "
-            "then re-run."
-        )
         raise RuntimeError(
             f"{len(missing)} required config symbol(s) missing after olddefconfig"
         )
-    else:
-        icp("olddefconfig validated — all required symbols are set")
+    icp("olddefconfig validated — all required symbols are set")
 
 
 def generate_module_config_dict(path: Path):
@@ -591,10 +651,7 @@ def _detect_cpu_march_symbol() -> str:
         distinguish Zen2/Zen3/Zen4/Zen5.
     Anything we don't recognise falls back to GENERIC_CPU.
     """
-    try:
-        info = Path("/proc/cpuinfo").read_text(encoding="utf8", errors="replace")
-    except OSError:
-        return "CONFIG_GENERIC_CPU"
+    info = Path("/proc/cpuinfo").read_text(encoding="utf8", errors="replace")
 
     vendor = ""
     family = -1
@@ -799,10 +856,7 @@ def _decompress_config_if_needed(
         pass
 
     # 2. Read enough to sniff
-    try:
-        head = path.read_bytes()[:8192]
-    except OSError as exc:
-        raise ValueError(f"cannot read {path}: {exc}") from exc
+    head = path.read_bytes()[:8192]
 
     # 3. Plain text kernel config — must contain CONFIG_ tokens within the head
     if b"CONFIG_" in head:
@@ -2121,7 +2175,15 @@ def check_kernel_config(
     warn_only: bool,
     flags: KernelFlags,
     variant: str | None = None,
+    build_dir: Path | None = None,
 ):
+    """Assert the merged spec against `path`.
+
+    build_dir, when given, is this kver's object dir: the spec is pre-filtered
+    against the source Kconfig and olddefconfig resolves selects afterwards.
+    Without it (checking an arbitrary .config, e.g. /proc/config.gz) the
+    symbols are asserted as-is with nothing to resolve them against.
+    """
     icp(
         path,
         fix,
@@ -2132,8 +2194,6 @@ def check_kernel_config(
 
     path = path.resolve()
     path, _tmp_config = _decompress_config_if_needed(path)
-    assert insure_config_exists()
-    icp(path, warn_only)
 
     # --- build the merged spec in layers ---
     spec: ConfigSpec = {}
@@ -4671,6 +4731,18 @@ def check_kernel_config(
         1000,
     )
 
+    # LOCALVERSION_AUTO appends git describe output to kernel.release, which
+    # would make the kver unpredictable and rename every artifact on each
+    # commit. _kver_for_variant() depends on this being off.
+    _spec_add(
+        spec,
+        "CONFIG_LOCALVERSION_AUTO",
+        required_state=False,
+        module=False,
+        warn=warn_only,
+        url=None,
+    )
+
     # --- string config values ---
     # LOCALVERSION owns the kernel's identity: kernel.release =
     # {version}{LOCALVERSION}. Every downstream name (vmlinuz, initramfs,
@@ -4682,9 +4754,8 @@ def check_kernel_config(
         _desired_localversion(variant),
     )
 
-    # --- pre-filter spec against the live kernel's Kconfig (when relevant) ---
-    if path.resolve() == Path("/usr/src/linux/.config").resolve():
-        spec = _filter_spec_for_kernel(spec, Path("/usr/src/linux"))
+    if build_dir is not None:
+        spec = _filter_spec_for_kernel(spec, _SOURCE_DIR)
 
     # --- apply merged spec — each symbol written exactly once ---
     _spec_apply(
@@ -4705,9 +4776,10 @@ def check_kernel_config(
     if _tmp_config is not None:
         Path(_tmp_config.name).unlink(missing_ok=True)
 
-    # --- propagate Kconfig selects and validate (only when fixing the live tree) ---
-    if fix and path.resolve() == Path("/usr/src/linux/.config").resolve():
-        _resolve_and_verify_config(spec=spec, ispec=ispec, sspec=sspec, path=path)
+    if fix and build_dir is not None:
+        _resolve_and_verify_config(
+            spec=spec, ispec=ispec, sspec=sspec, build_dir=build_dir
+        )
 
 
 # bpf
@@ -4715,57 +4787,6 @@ def check_kernel_config(
 # CONFIG_NET_CLS_BPF:         is not set when it should be.
 # CONFIG_NET_ACT_BPF:         is not set when it should be.
 # CONFIG_BPF_EVENTS:  is not set when it should be.
-
-
-def _symlink_config():
-    dot_config = Path("/usr/src/linux/.config")
-    if dot_config.exists():
-        if not dot_config.is_symlink():
-            timestamp = str(time.time())
-            hs.Command("busybox")(
-                "mv",
-                dot_config,
-                f"{dot_config}.{timestamp}",
-            )
-
-    if not dot_config.exists():
-        with resources.path("compile_kernel", ".config") as _kernel_config:
-            icp(_kernel_config)
-            hs.Command("ln")(
-                "-s",
-                _kernel_config,
-                dot_config,
-            )
-
-
-def extract_kernel_config():
-    input_path = "/proc/config.gz"
-    output_path = "/usr/src/linux/.config"
-
-    if os.path.exists(output_path):
-        raise FileExistsError(f"File {output_path} already exists")
-    with gzip.open(input_path, "rb") as f_in:
-        config_data = f_in.read()
-    with open(output_path, "wb") as f_out:
-        f_out.write(config_data)
-
-
-def insure_config_exists():
-    dot_config = Path("/usr/src/linux/.config")
-    if not dot_config.exists():
-        # if _symlink_config():
-        #    return True
-        extract_kernel_config()
-        assert dot_config.exists()
-    return True
-
-
-def check_config_enviroment():
-    # https://www.mail-archive.com/lede-dev@lists.infradead.org/msg07290.html
-    if not (os.getenv("KCONFIG_OVERWRITECONFIG") == "1"):
-        icp("KCONFIG_OVERWRITECONFIG=1 needs to be set to 1")
-        icp("add it to /etc/env.d/99kconfig-symlink. Exiting.")
-        sys.exit(1)
 
 
 def _kver_from_source() -> str | None:
@@ -4793,119 +4814,87 @@ def boot_is_correct(
 
 def _ensure_nvidia_or_fallback(
     *,
+    build_dir: Path,
     nvidia_group: str = "video-nvidia",
     fallback_group: str = "video-nouveau",
 ) -> None:
-    """Pre-build x11-drivers/nvidia-drivers against the current kernel
-    sources. If that build fails (e.g. pkg_setup CONFIG_CHECK refuses
-    DEBUG_MUTEXES / SLUB_DEBUG_ON / LOCKDEP, or the actual compile
-    fails), UNMERGE nvidia-drivers and switch portage-manager to
-    `fallback_group` so genkernel's internal compile_external_modules()
-    won't find a broken nvidia install to attempt rebuilding.
+    """Build nvidia-drivers against build_dir, or unmerge it and fall back.
 
-    Must run BEFORE genkernel: genkernel raises on its first failed
-    external module, taking down the whole compile-and-install before
-    any post-genkernel hook can run.
+    Must run before genkernel: genkernel's own compile_external_modules() trips
+    on nvidia-drivers pkg_setup and takes down the whole compile before any
+    post-genkernel hook could react, so nvidia is either buildable or gone by
+    the time genkernel starts.
 
-    Idempotent across kernel rebuilds: a future kernel that nvidia
-    likes will reinstall and stick on nvidia without manual action,
-    since each call starts by optimistically selecting nvidia_group
-    and forcing a rebuild.
-
-    Silently no-ops when portage-manager isn't installed or the two
-    video groups aren't both present.
+    Each call re-selects nvidia first, so a kernel that nvidia accepts pulls
+    the system back without manual action.
     """
     pm = shutil.which("portage-manager")
     groups_dir = Path("/etc/portage-manager/groups")
-    have_groups = (
-        pm is not None
-        and (groups_dir / nvidia_group).is_dir()
-        and (groups_dir / fallback_group).is_dir()
-    )
-    if not have_groups:
-        if pm is None:
-            icp("portage-manager not installed; skipping nvidia preflight")
-        else:
-            icp(
-                f"video groups not both configured "
-                f"({groups_dir / nvidia_group}, {groups_dir / fallback_group}); "
-                f"skipping nvidia preflight"
-            )
+    if (
+        pm is None
+        or not (groups_dir / nvidia_group).is_dir()
+        or not (groups_dir / fallback_group).is_dir()
+    ):
+        icp("portage-manager video groups unavailable; skipping nvidia preflight")
         return
 
-    icp(f"nvidia preflight: optimistically selecting {nvidia_group}")
+    env = _emerge_env(build_dir)
     hs.Command(pm)(
-        "video", "set", nvidia_group, "--sync",
-        _out=sys.stdout, _err=sys.stderr,
+        "video", "set", nvidia_group, "--sync", _out=sys.stdout, _err=sys.stderr
     )
-
-    icp("attempting to build x11-drivers/nvidia-drivers against /usr/src/linux")
+    icp(f"nvidia preflight: building x11-drivers/nvidia-drivers against {build_dir}")
     try:
         hs.Command("emerge")(
-            "-1", "--quiet-build=y", "x11-drivers/nvidia-drivers",
-            _out=sys.stdout, _err=sys.stderr,
+            "-1",
+            "--quiet-build=y",
+            "x11-drivers/nvidia-drivers",
+            _env=env,
+            _out=sys.stdout,
+            _err=sys.stderr,
         )
-        icp("nvidia-drivers built successfully; staying on nvidia")
+        icp("nvidia-drivers built; staying on nvidia")
         return
     except hs.ErrorReturnCode:
-        icp(
-            f"nvidia-drivers failed against this kernel; unmerging "
-            f"and switching to {fallback_group}"
-        )
+        icp(f"nvidia-drivers failed against this kernel; falling back to {fallback_group}")
 
-    # Unmerge BEFORE switching groups, so portage-manager's package.mask
-    # for nvidia-drivers (which the fallback group activates) doesn't
-    # conflict with an installed nvidia-drivers when sync runs.
-    try:
-        hs.Command("emerge")(
-            "--unmerge", "--quiet=y", "x11-drivers/nvidia-drivers",
-            _out=sys.stdout, _err=sys.stderr,
-        )
-    except hs.ErrorReturnCode:
-        icp("nvidia-drivers unmerge returned non-zero (likely not installed); continuing")
-
-    hs.Command(pm)(
-        "video", "set", fallback_group, "--sync",
-        _out=sys.stdout, _err=sys.stderr,
-    )
-
-
-def _emerge_zfs_module_rebuild() -> None:
-    """Rebuild zfs and everything in @module-rebuild against the
-    current kernel.  Runs after the kernel itself is built/installed;
-    nvidia-drivers (if present) will be rebuilt here too, but it has
-    already been preflighted by _ensure_nvidia_or_fallback() so this
-    call will only encounter a buildable nvidia or no nvidia at all."""
-    icp("emerge zfs @module-rebuild")
+    # Unmerge before switching: the fallback group masks nvidia-drivers, and
+    # genkernel must not find an installed-but-unbuildable nvidia.
     hs.Command("emerge")(
-        "zfs", "@module-rebuild", _out=sys.stdout, _err=sys.stderr
+        "--unmerge", "--quiet=y", "x11-drivers/nvidia-drivers",
+        _env=env, _out=sys.stdout, _err=sys.stderr,
+    )
+    hs.Command(pm)(
+        "video", "set", fallback_group, "--sync", _out=sys.stdout, _err=sys.stderr
     )
 
 
-def gcc_check():
-    #'gcc --version | head -n1 | grep -oP "\d+\.\d+(\.\d+)?" | head -n1 | cut -d. -f1'
-    _gcc_version_string_command = hs.Command("gcc")
-    _gcc_version_string = _gcc_version_string_command("--version").splitlines()[0]
-    icp(_gcc_version_string)
-    _current_gcc_major_version = _gcc_version_string.split(" ")[-2][:2]
-    icp(_current_gcc_major_version)
-    # assert _current_gcc_major_version == "14"
-    _config_gcc_version = (
-        hs.Command("grep")(["CONFIG_GCC_VERSION", "/usr/src/linux/.config"])
-        .strip()
-        .split("=")[-1][:2]
+def _emerge_zfs_module_rebuild(*, build_dir: Path) -> None:
+    icp(f"emerge zfs @module-rebuild against {build_dir}")
+    hs.Command("emerge")(
+        "zfs",
+        "@module-rebuild",
+        _env=_emerge_env(build_dir),
+        _out=sys.stdout,
+        _err=sys.stderr,
     )
-    icp(_config_gcc_version)
-    if _config_gcc_version == _current_gcc_major_version:
-        icp(
-            _config_gcc_version,
-            "was used to compile kernel previously, not running `make clean`",
-        )
-        return
-    else:
-        icp("old gcc version detected, calling 'make clean'")
-        os.chdir("/usr/src/linux")
-        hs.Command("make")("clean")
+
+
+def gcc_check(*, build_dir: Path) -> None:
+    """Force a clean when the compiler changed under an existing build dir.
+    Objects from a different gcc major cannot be linked against new ones."""
+    version_line = hs.Command("gcc")("--version").splitlines()[0]
+    current_major = version_line.split(" ")[-2].split(".")[0]
+    config = build_dir / ".config"
+    config_major = ""
+    for line in config.read_text(encoding="utf8").splitlines():
+        if line.startswith("CONFIG_GCC_VERSION="):
+            # CONFIG_GCC_VERSION is MMmmpp, e.g. 150201 for 15.2.1
+            config_major = line.split("=", 1)[1].strip()[:2].lstrip("0")
+            break
+    icp(f"gcc major: current={current_major} build_dir={config_major}")
+    if config_major and config_major != current_major:
+        eprint(f"gcc changed ({config_major} -> {current_major}); cleaning {build_dir}")
+        _make("clean", build_dir=build_dir)
 
 
 KERNEL_FLAGS_DIR = Path("/boot/compile-kernel-flags")
@@ -4954,228 +4943,57 @@ def _read_kernel_cmdline(kver: str) -> list[str]:
 
 
 _BOOT_FILE_PREFIXES = ("vmlinuz", "System.map", "config", "initramfs")
-_SNAPSHOT_MANIFEST_DIR = Path("/boot/compile-kernel-snapshots")
 _SNAPSHOT_DIR = Path("/boot/snapshots")
 
 
-def _migrate_legacy_snapshots(boot: Path, kver: str) -> int:
-    """Move pre-existing /boot/{prefix}-{kver}.{ts} snapshots into
-    /boot/snapshots/{kver}/. Returns count moved.
-
-    Old code (this same project, earlier commits) left snapshots directly in
-    /boot/ where grub-mkconfig auto-generated menuentries for them. Those
-    entries booted but had MODVERSIONS-mismatched modules. Move them so
-    grub-mkconfig stops seeing them.
-    """
-    moved = 0
-    for prefix in _BOOT_FILE_PREFIXES:
-        if prefix == "initramfs":
-            pattern = f"{prefix}-{kver}.img.[0-9]*"
-        else:
-            pattern = f"{prefix}-{kver}.[0-9]*"
-        for src in sorted(boot.glob(pattern)):
-            if not src.is_file():
-                continue
-            dest_dir = _SNAPSHOT_DIR / kver
-            dest_dir.mkdir(parents=True, exist_ok=True)
-            target = dest_dir / src.name
-            if target.exists():
-                # rare: same-name already migrated; skip
-                continue
-            eprint(f"migrate-legacy-snapshot: {src} -> {target}")
-            src.rename(target)
-            moved += 1
-    return moved
-
-
 def _snapshot_existing_kernel_files(kver: str) -> None:
-    """Move all existing /boot files for kver into /boot/snapshots/{kver}/
-    with names {basename}.{mtime_ts}.
+    """Move existing /boot files for kver into /boot/snapshots/{kver}/ as
+    {basename}.{mtime}.
 
-    Captures vmlinuz-{kver}, System.map-{kver}, config-{kver}, and
-    initramfs-{kver}.img — including any existing .old variants. Snapshots
-    live in a subdirectory so grub-mkconfig does NOT see them as bootable
-    kernels — they're for archival/recovery only, not for the boot menu.
-
-    Why a subdir: grub-mkconfig builds menuentries from /boot/vmlinuz-* and
-    sorts version-aware. A file named vmlinuz-6.19.6-gentoo-x86_64.1777158198
-    sorts AFTER vmlinuz-6.19.6-gentoo-x86_64 and gets picked as the default
-    "newest" kernel. Booting it gives MODVERSIONS-mismatched modules because
-    /lib/modules/{kver}/ contains modules from a DIFFERENT build that shares
-    the same uname -r string. Hiding snapshots from grub-mkconfig avoids the
-    problem entirely.
-
-    Also migrates any legacy snapshots (left in /boot/ by earlier versions
-    of this code) into the same subdir so the boot menu cleans up on the
-    first run after upgrade.
-
-    Writes a manifest at /boot/compile-kernel-snapshots/{vmlinuz-snapshot-name}
-    that records the snapshotted name of every companion file. The manifest
-    is now mostly informational — there's no grub.cfg rewriting to do since
-    snapshots aren't bootable from the auto-generated menu.
+    The subdir is what keeps them out of the boot menu. grub-mkconfig builds
+    menuentries from /boot/vmlinuz-* and sorts version-aware, so a file named
+    vmlinuz-6.19.6-gentoo-x86_64.1777158198 sorts after the real one and gets
+    picked as newest. Booting it gives MODVERSIONS-mismatched modules, because
+    /lib/modules/{kver}/ holds modules from a different build sharing that
+    uname -r. Hiding snapshots from the scan removes the failure entirely.
     """
     boot = Path("/boot")
     if not boot.is_dir():
         return
 
-    # First: clean up any legacy snapshots from previous tool versions.
-    legacy_moved = _migrate_legacy_snapshots(boot, kver)
-    if legacy_moved:
-        eprint(f"migrated {legacy_moved} legacy snapshot file(s) out of /boot/")
-
     candidates: list[Path] = []
     for prefix in _BOOT_FILE_PREFIXES:
-        if prefix == "initramfs":
-            base = f"{prefix}-{kver}.img"
-        else:
-            base = f"{prefix}-{kver}"
+        base = f"{prefix}-{kver}.img" if prefix == "initramfs" else f"{prefix}-{kver}"
         for name in (base, f"{base}.old"):
-            p = boot / name
-            if p.exists():
-                candidates.append(p)
-
+            path = boot / name
+            if path.exists():
+                candidates.append(path)
     if not candidates:
         return
 
-    # Destination subdir for this kver's snapshots.
     dest_dir = _SNAPSHOT_DIR / kver
     dest_dir.mkdir(parents=True, exist_ok=True)
 
-    # Track the snapshotted name of each kind so we can write the manifest.
-    snapshotted: dict[str, str] = {}  # prefix -> snapshotted basename (no path)
-
     for src in candidates:
         ts = int(src.stat().st_mtime)
-        # strip a trailing ".old" so the timestamped name is canonical
         base_name = src.name[:-4] if src.name.endswith(".old") else src.name
         target = dest_dir / f"{base_name}.{ts}"
-        # rebuilds within the same second — bump until unique
         while target.exists():
             ts += 1
             target = dest_dir / f"{base_name}.{ts}"
         eprint(f"snapshot: {src} -> {target}")
         src.rename(target)
-        for prefix in _BOOT_FILE_PREFIXES:
-            if base_name.startswith(prefix + "-"):
-                # candidates iterate (current, current.old) per prefix;
-                # first-write-wins so the manifest points at the CURRENT
-                # file's snapshot, never the .old one.
-                snapshotted.setdefault(prefix, target.name)
-                break
-        # Re-point any /boot symlinks (e.g. /boot/kernel, /boot/initramfs) that
-        # pointed at the just-moved file. We point them into the snapshots
-        # subdir using a relative path so the link is portable.
+        # Repoint any /boot symlink that referenced the moved file, relative so
+        # the link stays valid regardless of how /boot is mounted.
         for entry in boot.iterdir():
             if not entry.is_symlink():
                 continue
-            link_str = os.readlink(entry)
-            link_basename = Path(link_str).name
-            if link_basename != src.name:
+            if Path(os.readlink(entry)).name != src.name:
                 continue
             entry.unlink()
-            # use a relative path from /boot to the snapshot
             new_target = f"snapshots/{kver}/{target.name}"
             entry.symlink_to(new_target)
-            eprint(f"snapshot: repointed symlink {entry} -> {new_target}")
-
-    # Write the manifest keyed by the snapshotted vmlinuz basename.
-    # Schema: one line per companion, "prefix=snapshotted_basename".
-    if "vmlinuz" in snapshotted:
-        # Fill in any companion that wasn't snapshotted in THIS call by finding
-        # the most recent prior snapshot for the same kver in the subdir.
-        for prefix in _BOOT_FILE_PREFIXES:
-            if prefix in snapshotted:
-                continue
-            if prefix == "initramfs":
-                base = f"{prefix}-{kver}.img"
-            else:
-                base = f"{prefix}-{kver}"
-            siblings = sorted(
-                dest_dir.glob(f"{base}.[0-9]*"),
-                key=lambda p: p.stat().st_mtime,
-                reverse=True,
-            )
-            if siblings:
-                snapshotted[prefix] = siblings[0].name
-
-        _SNAPSHOT_MANIFEST_DIR.mkdir(parents=True, exist_ok=True)
-        manifest = _SNAPSHOT_MANIFEST_DIR / snapshotted["vmlinuz"]
-        # store the kver too so callers can locate the files without parsing
-        snapshotted["kver"] = kver
-        manifest.write_text(
-            "\n".join(f"{k}={v}" for k, v in sorted(snapshotted.items())) + "\n",
-            encoding="utf8",
-        )
-        eprint(f"snapshot manifest: {manifest}")
-
-
-def _read_snapshot_manifest(vmlinuz_basename: str) -> dict[str, str] | None:
-    """Return manifest dict for a snapshotted vmlinuz, or None if no manifest.
-    The manifest pairs each vmlinuz snapshot with its companion files so that
-    GRUB postprocess can rewrite initrd lines to the correct snapshotted
-    initramfs (and not the freshly-built one with the canonical name).
-
-    For legacy manifests (pre-mtime-pairing fix) that lack the initramfs
-    entry, transparently fill it in by picking the snapshotted initramfs
-    with mtime closest to (but not exceeding) the vmlinuz snapshot mtime.
-    The recovered manifest is rewritten to disk so the fix is sticky.
-    """
-    manifest = _SNAPSHOT_MANIFEST_DIR / vmlinuz_basename
-    if not manifest.exists():
-        return None
-    out: dict[str, str] = {}
-    for line in manifest.read_text(encoding="utf8").splitlines():
-        line = line.strip()
-        if not line or "=" not in line:
-            continue
-        k, v = line.split("=", 1)
-        out[k] = v
-
-    # Legacy manifest recovery: missing initramfs → guess by mtime pairing.
-    if "vmlinuz" in out and "initramfs" not in out:
-        boot = Path("/boot")
-        vmlinuz_path = boot / out["vmlinuz"]
-        if vmlinuz_path.exists():
-            kver = _kver_from_vmlinuz(out["vmlinuz"])
-            target_mtime = vmlinuz_path.stat().st_mtime
-            # collect every initramfs snapshot for this kver that's older than
-            # or close to the vmlinuz mtime (within 1 day either way), pick
-            # the closest match. If none qualify, use the canonical initramfs
-            # if it exists.
-            candidates: list[tuple[float, Path]] = []
-            for cand in boot.glob(f"initramfs-{kver}.img.[0-9]*"):
-                if not cand.is_file():
-                    continue
-                candidates.append((abs(cand.stat().st_mtime - target_mtime), cand))
-            canonical = boot / f"initramfs-{kver}.img"
-            if canonical.exists():
-                candidates.append(
-                    (abs(canonical.stat().st_mtime - target_mtime), canonical)
-                )
-            if candidates:
-                candidates.sort(key=lambda t: t[0])
-                out["initramfs"] = candidates[0][1].name
-                # persist the repair
-                manifest.write_text(
-                    "\n".join(f"{k}={v}" for k, v in sorted(out.items())) + "\n",
-                    encoding="utf8",
-                )
-                eprint(
-                    f"snapshot manifest repaired: {manifest.name} initramfs={out['initramfs']}"
-                )
-    return out
-
-
-def _snapshot_for_current_source() -> None:
-    """Read kver from /usr/src/linux and snapshot existing /boot files for it.
-    No-op if kernel.release is not yet generated (kernel not configured).
-    """
-    kver_file = Path("/usr/src/linux/include/config/kernel.release")
-    if not kver_file.exists():
-        icp("snapshot skipped: include/config/kernel.release not present")
-        return
-    kver = kver_file.read_text(encoding="utf8").strip()
-    _snapshot_existing_kernel_files(kver)
+            eprint(f"snapshot: repointed {entry} -> {new_target}")
 
 
 def _kver_from_vmlinuz(vmlinuz_path: str) -> str:
@@ -5398,15 +5216,11 @@ def set_grub_font(size: int = 12) -> None:
 
 
 def _record_build(kver: str, flags: KernelFlags) -> None:
-    """Persist what this kver is, so the grub menu can label it and give it
-    the boot params its compiled-in facilities need."""
     _write_kernel_flags(kver, flags.labels())
     _write_kernel_cmdline(kver, flags.cmdline())
 
 
 def _regenerate_grub(default_kver: str | None) -> None:
-    """Rebuild grub.cfg and relabel it. default_kver, when given, is promoted
-    to the top-level entry so GRUB_DEFAULT=0 boots it."""
     if not Path("/boot/grub").is_dir():
         return
     if default_kver is not None:
@@ -5416,32 +5230,64 @@ def _regenerate_grub(default_kver: str | None) -> None:
     _postprocess_grub_cfg(Path("/boot/grub/grub.cfg"))
 
 
-def install_compiled_kernel(
-    *,
-    flags: KernelFlags,
-):
-    _snapshot_for_current_source()
-    with chdir("/usr/src/linux"):
-        os.system("make install")
+def build_status() -> None:
+    """Report the running kernel against every known build dir.
+
+    The failure this exists to make impossible: building an out-of-tree module
+    against an object dir that is not the running kernel's, which produces a
+    module that installs into a /lib/modules tree the running kernel never
+    reads — succeeding silently while changing nothing.
+    """
+    running = os.uname().release
+    print(f"running kernel: {running}")
+    running_build = Path("/lib/modules") / running / "build"
+    if running_build.is_symlink():
+        print(f"  /lib/modules/{running}/build -> {os.readlink(running_build)}")
+    else:
+        print(f"  /lib/modules/{running}/build: MISSING")
+    print(f"  KBUILD_OUTPUT in env: {os.environ.get('KBUILD_OUTPUT', '(unset)')}")
+
+    source_config = _SOURCE_DIR / ".config"
+    if source_config.exists():
+        print(
+            f"\n{source_config}: PRESENT — the source tree should hold no config;"
+            f" a stale one here can capture builds that meant to target a build dir"
+        )
+
+    print(f"\nbuild dirs under {_BUILD_ROOT}:")
+    if not _BUILD_ROOT.is_dir():
+        print("  (none)")
+        return
+    for build_dir in sorted(_BUILD_ROOT.iterdir()):
+        if not (build_dir / ".config").exists():
+            continue
+        mark = " <- running" if build_dir.name == running else ""
+        flags = _read_kernel_flags(build_dir.name)
+        label = " ".join(flags) if flags else "(no flags)"
+        print(f"  {build_dir.name}{mark}")
+        print(f"      flags:   {label}")
+        print(f"      cmdline: {' '.join(_read_kernel_cmdline(build_dir.name)) or '(none)'}")
+
+
+def install_compiled_kernel(*, flags: KernelFlags, variant: str | None = None):
+    kver = _kver_for_variant(variant)
+    build_dir = _build_dir(kver)
+    if not (build_dir / ".config").exists():
+        raise ValueError(f"no configured build dir for {kver} at {build_dir}")
+    _snapshot_existing_kernel_files(kver)
+    _make("install", build_dir=build_dir)
 
     genkernel_command = hs.Command("genkernel")
     genkernel_command.bake("initramfs")
     genkernel_command.bake("--no-clean")
     genkernel_command.bake("--no-mrproper")
-    # Pin LOCALVERSION to whatever the built tree actually used, so genkernel's
-    # own default (-${ARCH}) cannot rename the initramfs away from the kernel
-    # it belongs to. Matters for variant builds.
-    _localversion = hs.Command("/usr/src/linux/scripts/config")(
-        "--file", "/usr/src/linux/.config", "--state", "LOCALVERSION"
-    ).strip()
-    if _localversion and _localversion != "undef":
-        genkernel_command.bake(f"--kernel-localversion={_localversion}")
+    genkernel_command.bake(f"--kerneldir={_SOURCE_DIR}")
+    genkernel_command.bake(f"--kernel-outputdir={build_dir}")
+    genkernel_command.bake(f"--kernel-localversion={_desired_localversion(variant)}")
     genkernel_command(_fg=True)
 
-    assert Path("/boot/grub").is_dir()
-    _kver = _kver_from_source()
-    assert _kver is not None
-    _record_build(_kver, flags)
+    _link_module_build_dir(kver, build_dir)
+    _record_build(kver, flags)
     _regenerate_grub(default_kver=None)
 
 
@@ -5452,17 +5298,28 @@ def configure_kernel(
     interactive: bool,
     flags: KernelFlags,
     variant: str | None = None,
-):
+) -> Path:
+    """Configure this variant's build dir and return it."""
+    kver = _kver_for_variant(variant)
+    build_dir = _ensure_build_dir(kver)
     if interactive:
-        with chdir("/usr/src/linux"):
-            os.system("make nconfig")
+        _make("nconfig", build_dir=build_dir)
     check_kernel_config(
-        path=Path("/usr/src/linux/.config"),
+        path=build_dir / ".config",
         fix=fix,
         warn_only=warn_only,
         flags=flags,
         variant=variant,
+        build_dir=build_dir,
     )  # must be done after nconfig
+    actual = _kernelrelease(build_dir)
+    if actual != kver:
+        raise RuntimeError(
+            f"kernel.release is {actual!r} but this build dir is named {kver!r}; "
+            f"CONFIG_LOCALVERSION_AUTO or a localversion* file in {_SOURCE_DIR} "
+            f"is adding to the release string"
+        )
+    return build_dir
 
 
 def _build_one(
@@ -5473,118 +5330,74 @@ def _build_one(
     interactive_configure: bool,
     pre_module_rebuild: bool,
 ) -> str:
-    """Configure, compile, and install exactly one kernel. Returns its kver.
+    """Configure, compile, and install one kernel. Returns its kver.
 
-    Everything that distinguishes this build from a sibling build of the same
-    source lives in build.variant, which becomes part of CONFIG_LOCALVERSION
-    and therefore of kernel.release — so /boot files, /lib/modules/{kver},
-    initramfs, flags, cmdline, snapshots, and the grub entry are all disjoint
-    from any other variant. Nothing this function writes can collide.
+    Every artifact is keyed by kver — the object dir, /boot files,
+    /lib/modules tree, initramfs, flags, cmdline, snapshots, grub entry — so
+    two variants of one source share nothing they could contend for.
     """
     flags = build.flags
     variant = build.variant
-    eprint(f"=== building kernel variant={variant!r} flags={flags.labels()} ===")
+    eprint(f"=== building variant={variant!r} flags={flags.labels()} ===")
 
-    configure_kernel(
+    build_dir = configure_kernel(
         fix=fix,
         warn_only=warn_only,
         interactive=interactive_configure,
         flags=flags,
         variant=variant,
     )
+    kver = _kernelrelease(build_dir)
 
-    unconfigured_kernel = False
-    icp("attempting to upgrade zfs")
-    try:
-        hs.Command("emerge")(
-            "sys-fs/zfs",
-            "-u",
-            _tee=True,
-            _tty_out=False,
-        )
-    except hs.ErrorReturnCode_1 as e:
-        _markers = (
-            b"Could not find a usable .config",
-            b"tree at that location has not been built.",
-            b"Kernel sources need compiling first",
-            b"Could not find a Makefile in the kernel source directory",
-            b"These sources have not yet been prepared",
-        )
-        stdout = getattr(e, "stdout", b"") or b""
-        unconfigured_kernel = any(m in stdout for m in _markers)
-        if not unconfigured_kernel:
-            raise
-        icp("NOTE: kernel is unconfigured, skipping `emerge sys-fs/zfs` before compile")
+    # Prepare before any emerge: an unprepared tree is the only reason the zfs
+    # emerge below could fail for a reason that is not a real error, so doing
+    # this first means every failure past this point is worth crashing on.
+    _make("modules_prepare", build_dir=build_dir)
+    _link_module_build_dir(kver, build_dir)
 
-    if pre_module_rebuild and not unconfigured_kernel:
-        icp("attempting pre-compile emerge zfs @module-rebuild")
-        _emerge_zfs_module_rebuild()
-
-    gcc_check()
-
-    _kver_pre = _kver_from_source()
-    if _kver_pre is not None:
-        icp("boot_is_correct:", boot_is_correct(kver=_kver_pre))
-
-    if not Path("/usr/src/linux/.config").exists():
-        hs.Command("make")("defconfig")
-        check_kernel_config(
-            path=Path("/usr/src/linux/.config"),
-            fix=True,
-            warn_only=warn_only,
-            flags=flags,
-            variant=variant,
-        )
-
-    # Re-assert the config: the zfs emerge above can rewrite .config, and the
-    # olddefconfig inside check_kernel_config is what proves the variant's
-    # LOCALVERSION and every required symbol actually survived.
-    check_kernel_config(
-        path=Path("/usr/src/linux/.config"),
-        fix=fix,
-        warn_only=warn_only,
-        flags=flags,
-        variant=variant,
+    env = _emerge_env(build_dir)
+    icp("upgrading sys-fs/zfs before genkernel's own external-module step")
+    hs.Command("emerge")(
+        "sys-fs/zfs", "-u", _env=env, _out=sys.stdout, _err=sys.stderr
     )
 
-    _snapshot_for_current_source()
+    if pre_module_rebuild:
+        _emerge_zfs_module_rebuild(build_dir=build_dir)
+
+    gcc_check(build_dir=build_dir)
+
+    _snapshot_existing_kernel_files(kver)
 
     genkernel_command = hs.Command("genkernel")
     genkernel_command.bake("all")
     genkernel_command.bake("--no-clean")
     genkernel_command.bake("--no-mrproper")
     genkernel_command.bake("--symlink")
-    # Module rebuild is handled by _emerge_zfs_module_rebuild() after genkernel
-    # returns, not by genkernel's --module-rebuild / --callback= mechanisms
-    # (which cannot react to an nvidia-drivers build failure). nvidia handling
-    # runs in _ensure_nvidia_or_fallback() BEFORE genkernel, because
-    # genkernel's own compile_external_modules() trips pkg_setup on
-    # nvidia-drivers and takes down the whole compile before any
-    # post-genkernel hook could run.
     genkernel_command.bake("--all-ramdisk-modules")
     genkernel_command.bake("--firmware")
     genkernel_command.bake("--microcode=all")
     genkernel_command.bake("--microcode-initramfs")
     genkernel_command.bake(f"--makeopts=-j{os.cpu_count()}")
-    # Pin LOCALVERSION so genkernel's default (-${ARCH}) cannot stomp the
-    # variant we wrote into .config; the two must agree or kernel.release —
-    # and every /boot and /lib/modules name derived from it — diverges
-    # between what we configured and what genkernel builds.
+    genkernel_command.bake(f"--kerneldir={_SOURCE_DIR}")
+    # Keep objects out of the source tree so each variant owns its own.
+    genkernel_command.bake(f"--kernel-outputdir={build_dir}")
+    # Pin LOCALVERSION: genkernel defaults to -${ARCH} and would otherwise
+    # rename every artifact away from the variant written into .config.
     genkernel_command.bake(f"--kernel-localversion={_desired_localversion(variant)}")
 
-    _ensure_nvidia_or_fallback()
+    _ensure_nvidia_or_fallback(build_dir=build_dir)
     icp(genkernel_command)
     genkernel_command(_fg=True)
 
-    _emerge_zfs_module_rebuild()
+    _emerge_zfs_module_rebuild(build_dir=build_dir)
 
-    kver = _kver_from_source()
-    if kver is None:
-        raise RuntimeError("kernel.release missing after genkernel — build did not complete")
+    if _kernelrelease(build_dir) != kver:
+        raise RuntimeError(f"kernel.release changed during build of {kver}")
     if not boot_is_correct(kver=kver):
         raise RuntimeError(f"/boot is missing artifacts for {kver} after genkernel")
+    _link_module_build_dir(kver, build_dir)
     _record_build(kver, flags)
-    eprint(f"=== finished kernel {kver} ===")
+    eprint(f"=== finished {kver} ===")
     return kver
 
 
@@ -5595,31 +5408,34 @@ def compile_and_install_kernel(
     fix: bool,
     warn_only: bool,
     no_check_boot: bool,
-    symlink_config: bool,
     pre_module_rebuild: bool,
 ):
     """Build every kernel in `builds`, then regenerate grub once.
 
-    builds[0] is the boot default: it gets GRUB_TOP_LEVEL, which promotes it
-    to the first top-level menuentry that GRUB_DEFAULT=0 selects. This is
-    load-bearing when a variant is present — `sort -V` puts
-    vmlinuz-6.19.6-gentoo-x86_64-debug ABOVE vmlinuz-6.19.6-gentoo-x86_64,
-    so without GRUB_TOP_LEVEL the instrumented kernel would quietly become
-    the default.
+    builds[0] is the boot default and gets GRUB_TOP_LEVEL. That is load-bearing
+    whenever a variant is present: grub-mkconfig picks its top-level entry with
+    sort -V, which ranks vmlinuz-…-x86_64-debug above vmlinuz-…-x86_64, so the
+    instrumented kernel would otherwise become the default.
     """
     icp()
     if not builds:
         raise ValueError("no builds requested")
-
     variants = [b.variant for b in builds]
     if len(set(variants)) != len(variants):
         raise ValueError(f"duplicate variants in builds: {variants}")
     for build in builds:
-        # fail before anything expensive if a variant name can't be a kver
         _desired_localversion(build.variant)
 
     if not root_user():
         raise ValueError("you must be root")
+
+    source_config = _SOURCE_DIR / ".config"
+    if source_config.exists():
+        raise ValueError(
+            f"{source_config} exists; the source tree must hold no config. "
+            f"Every build has its own object dir under {_BUILD_ROOT}, and a "
+            f"config here can capture builds meant for one of them. Remove it."
+        )
 
     if no_check_boot:
         icp("skipped checking if /boot was mounted")
@@ -5629,41 +5445,25 @@ def compile_and_install_kernel(
         if not Path("/boot/kernel").exists():
             raise ValueError("mount /boot first")
 
-    if symlink_config:
-        check_config_enviroment()
-        _symlink_config()
-        assert Path("/usr/src/linux/.config").is_symlink()
+    hs.Command("emerge")("genkernel", "-u", _out=sys.stdout, _err=sys.stderr)
 
-    hs.Command("emerge")(
-        "genkernel",
-        "-u",
-        _out=sys.stdout,
-        _err=sys.stderr,
-    )
-
-    kvers: list[str] = []
-    for index, build in enumerate(builds):
-        kvers.append(
-            _build_one(
-                build=build,
-                fix=fix,
-                warn_only=warn_only,
-                # only the first build gets the interactive nconfig pass; the
-                # rest derive from the same source tree non-interactively
-                interactive_configure=configure and index == 0,
-                pre_module_rebuild=pre_module_rebuild,
-            )
+    kvers = [
+        _build_one(
+            build=build,
+            fix=fix,
+            warn_only=warn_only,
+            interactive_configure=configure and index == 0,
+            pre_module_rebuild=pre_module_rebuild,
         )
+        for index, build in enumerate(builds)
+    ]
 
     hs.Command("rc-update")("add", "zfs-import", "boot")
     hs.Command("rc-update")("add", "zfs-share", "default")
     hs.Command("rc-update")("add", "zfs-zed", "default")
 
     hs.Command("emerge")(
-        "sys-kernel/linux-firmware",
-        "-u",
-        _out=sys.stdout,
-        _err=sys.stderr,
+        "sys-kernel/linux-firmware", "-u", _out=sys.stdout, _err=sys.stderr
     )
 
     _regenerate_grub(default_kver=kvers[0])

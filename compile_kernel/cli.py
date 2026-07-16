@@ -24,6 +24,7 @@ from globalverbose import gvd
 
 from compile_kernel import KernelBuild
 from compile_kernel import KernelFlags
+from compile_kernel import build_status
 from compile_kernel import check_kernel_config
 from compile_kernel import check_kernel_config_perf
 from compile_kernel import compile_and_install_kernel
@@ -266,7 +267,6 @@ def compare_loaded_modules_to_config(
 @cli.command()
 @click.option("--configure", "--config", is_flag=True)
 @click.option("--no-fix", is_flag=True)
-@click.option("--symlink-config", is_flag=True)
 @click.option("--no-check-boot", is_flag=True)
 @click.option(
     "--pre-module-rebuild",
@@ -287,7 +287,6 @@ def compile_and_install(
     ctx,
     configure: bool,
     no_fix: bool,
-    symlink_config: bool,
     no_check_boot: bool,
     pre_module_rebuild: bool,
     variant: str | None,
@@ -341,18 +340,19 @@ def compile_and_install(
         fix=fix,
         warn_only=warn_only,
         no_check_boot=no_check_boot,
-        symlink_config=symlink_config,
         pre_module_rebuild=pre_module_rebuild,
     )
     eprint("DONT FORGET TO UMOUNT /boot")
 
 
 @cli.command("install-kernel")
+@_variant_option
 @click_add_options(_KERNEL_FLAG_OPTIONS)
 @click_add_options(click_global_options)
 @click.pass_context
 def _install_kernel(
     ctx,
+    variant: str | None,
     verbose_inf: bool,
     dict_output: bool,
     verbose: bool = False,
@@ -372,7 +372,7 @@ def _install_kernel(
     if verbose_inf:
         gvd.enable()
 
-    install_compiled_kernel(flags=_flags_from_kwargs(kwargs))
+    install_compiled_kernel(flags=_flags_from_kwargs(kwargs), variant=variant)
 
 
 @cli.command()
@@ -389,7 +389,6 @@ def _install_kernel(
     metavar="DOTCONFIG...",
 )
 @click.option("--fix", is_flag=True)
-@_variant_option
 @click_add_options(_KERNEL_FLAG_OPTIONS)
 @click_option_code_debug
 @click_add_options(click_global_options)
@@ -398,7 +397,6 @@ def check_config(
     ctx,
     dotconfigs: tuple[Path, ...],
     fix: bool,
-    variant: str | None,
     code_debug: bool,
     verbose_inf: bool,
     dict_output: bool,
@@ -445,7 +443,6 @@ def check_config(
             fix=fix,
             warn_only=warn_only,
             flags=flags,
-            variant=variant,
         )
 
 
@@ -525,6 +522,32 @@ def grub_font(
         gvd.enable()
 
     set_grub_font(size=size)
+
+
+@cli.command("status")
+@click_add_options(click_global_options)
+@click.pass_context
+def status(
+    ctx,
+    verbose_inf: bool,
+    dict_output: bool,
+    verbose: bool = False,
+):
+    tty, verbose = tvicgvd(
+        ctx=ctx,
+        verbose=verbose,
+        verbose_inf=verbose_inf,
+        ic=ic,
+        gvd=gvd,
+    )
+    if not verbose:
+        ic.disable()
+    else:
+        ic.enable()
+    if verbose_inf:
+        gvd.enable()
+
+    build_status()
 
 
 @cli.command("check-config-perf")
