@@ -377,6 +377,27 @@ def _filter_spec_for_kernel(
     return out
 
 
+def _filter_value_spec[T](vspec: dict[str, T], src: Path) -> dict[str, T]:
+    """Drop int/string spec entries whose symbol this kernel does not define.
+
+    The bool/tristate spec gets the same treatment in _filter_spec_for_kernel.
+    Without it, a symbol a newer kernel removed is still applied and then
+    asserted, failing verification for a symbol that cannot be set at all.
+    """
+    if not (src / "Kconfig").exists():
+        return vspec
+    index = _kconfig_index(src)
+    out: dict[str, T] = {}
+    for define, value in vspec.items():
+        if _kmeta(define, index) is None:
+            eprint(
+                f"spec filter: {define} not in this kernel — skipping (likely removed)"
+            )
+            continue
+        out[define] = value
+    return out
+
+
 _SOURCE_DIR = Path("/usr/src/linux")
 # One object dir per kver. The source tree stays pristine and holds no .config,
 # so nothing about a build lives anywhere two builds could contend for it.
@@ -4893,6 +4914,8 @@ def check_kernel_config(
 
     if build_dir is not None:
         spec = _filter_spec_for_kernel(spec, _SOURCE_DIR)
+        ispec = _filter_value_spec(ispec, _SOURCE_DIR)
+        sspec = _filter_value_spec(sspec, _SOURCE_DIR)
 
     # --- apply merged spec — each symbol written exactly once ---
     _spec_apply(
