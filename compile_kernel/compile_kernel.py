@@ -13,10 +13,8 @@ import sys
 import tempfile
 import time
 from dataclasses import dataclass
-from dataclasses import field
 from dataclasses import fields
 from dataclasses import replace
-from importlib import resources
 from pathlib import Path
 
 import hs
@@ -26,7 +24,6 @@ from asserttool import root_user
 from eprint import eprint
 from globalverbose import gvd
 from pathtool import file_exists_nonzero
-from with_chdir import chdir
 
 # from rich import print as pprint
 logging.basicConfig(level=logging.WARNING)
@@ -5642,19 +5639,6 @@ def compile_and_install_kernel(
     )
 
     _regenerate_grub(default_kver=kvers[0])
-
-    if Path("/boot/grub").is_dir():
-        os.makedirs("/boot_backup", exist_ok=True)
-        with chdir("/boot_backup"):
-            if not Path("/boot_backup/.git").is_dir():
-                hs.Command("git")("init")
-            hs.Command("git")("config", "user.email", "user@example.com")
-            hs.Command("git")("config", "user.name", "user")
-            timestamp = str(time.time())
-            os.makedirs(timestamp)
-            hs.Command("cp")("-ar", "/boot", timestamp + "/")
-            hs.Command("git")("add", timestamp, "--force")
-            hs.Command("git")("commit", "-m", timestamp)
 
     for kver in kvers:
         eprint(f"installed kernel: {kver}")
