@@ -489,6 +489,108 @@ def _link_module_build_dir(kver: str, build_dir: Path) -> None:
         eprint(f"linked {link} -> {target}")
 
 
+PORTAGE_BASHRC = Path("/etc/portage/bashrc")
+_BASHRC_BEGIN = "# >>> compile-kernel managed >>>"
+_BASHRC_END = "# <<< compile-kernel managed <<<"
+
+_BASHRC_BLOCK = f"""{_BASHRC_BEGIN}
+# Point external-module builds at the running kernel's object dir, but only
+# when the caller has not already chosen one: compile-kernel exports
+# KBUILD_OUTPUT explicitly while building a kernel that is not the running one,
+# and clobbering it there would silently build against the wrong kernel.
+# Only set a directory that exists; linux-info.eclass dies on a KBUILD_OUTPUT
+# pointing nowhere, which would break every package inheriting it.
+_ck_running_build="/lib/modules/$(uname -r)/build"
+if [[ -z ${{KBUILD_OUTPUT}} && -d ${{_ck_running_build}} ]]; then
+	export KBUILD_OUTPUT="${{_ck_running_build}}"
+fi
+unset _ck_running_build
+{_BASHRC_END}"""
+
+
+def _extract_bashrc_block(text: str) -> str | None:
+    if _BASHRC_BEGIN not in text or _BASHRC_END not in text:
+        return None
+    start = text.index(_BASHRC_BEGIN)
+    end = text.index(_BASHRC_END) + len(_BASHRC_END)
+    return text[start:end]
+
+
+def _install_portage_bashrc() -> None:
+    """Ensure /etc/portage/bashrc carries our KBUILD_OUTPUT block, verbatim.
+
+    Without it, a bare `emerge @module-rebuild` has no KBUILD_OUTPUT: the
+    eclass falls back to scanning /lib/modules/${KV_FULL}/build where KV_FULL
+    carries no localversion, matches nothing, lands on the config-free source
+    tree and dies. The block supplies the running kernel's object dir so a
+    manual emerge targets the kernel the operator is actually running.
+
+    An existing block that does not match ours is a conflict, not something to
+    silently overwrite: someone changed it deliberately and the two intents
+    need reconciling by hand.
+    """
+    PORTAGE_BASHRC.parent.mkdir(parents=True, exist_ok=True)
+    text = PORTAGE_BASHRC.read_text(encoding="utf8") if PORTAGE_BASHRC.exists() else ""
+    existing = _extract_bashrc_block(text)
+    if existing == _BASHRC_BLOCK:
+        return
+    if existing is not None:
+        raise ValueError(
+            f"{PORTAGE_BASHRC} holds a compile-kernel block that does not match "
+            f"this version. Reconcile it by hand, then re-run.\n"
+            f"--- on disk ---\n{existing}\n--- expected ---\n{_BASHRC_BLOCK}"
+        )
+    separator = "" if not text or text.endswith("\n") else "\n"
+    PORTAGE_BASHRC.write_text(text + separator + _BASHRC_BLOCK + "\n", encoding="utf8")
+    eprint(f"installed KBUILD_OUTPUT block into {PORTAGE_BASHRC}")
+    # Read back: this file decides which kernel every future manual module
+    # emerge targets, so confirm what landed rather than trusting the write.
+    if _extract_bashrc_block(PORTAGE_BASHRC.read_text(encoding="utf8")) != _BASHRC_BLOCK:
+        raise RuntimeError(f"{PORTAGE_BASHRC} does not contain the block after writing it")
+
+
+def _modules_dir(kver: str) -> Path:
+    return Path("/lib/modules") / kver
+
+
+def _newest_module_mtime(kver: str) -> float | None:
+    mod_dir = _modules_dir(kver)
+    if not mod_dir.is_dir():
+        return None
+    mtimes = [ko.stat().st_mtime for ko in mod_dir.rglob("*.ko*")]
+    return max(mtimes) if mtimes else None
+
+
+def _assert_modules_landed(*, kver: str, since: float) -> None:
+    """Verify an emerge actually installed modules into kver's tree.
+
+    KBUILD_OUTPUT reaching the ebuild is what aims an emerge at a given kernel,
+    and portage's env handling is not something to take on trust: KBUILD_OUTPUT
+    is absent from portage's environ_whitelist. So check the outcome rather
+    than the mechanism — if the modules did not land here, they landed
+    somewhere else, and that is the silent failure this whole layout exists to
+    prevent.
+    """
+    newest = _newest_module_mtime(kver)
+    if newest is None:
+        raise RuntimeError(
+            f"no modules in {_modules_dir(kver)} after emerge — KBUILD_OUTPUT did "
+            f"not reach the ebuild and the build targeted another kernel"
+        )
+    if newest < since:
+        others = {
+            other.name: _newest_module_mtime(other.name)
+            for other in Path("/lib/modules").iterdir()
+            if other.is_dir() and other.name != kver
+        }
+        landed = [name for name, mtime in others.items() if mtime and mtime >= since]
+        raise RuntimeError(
+            f"no module in {_modules_dir(kver)} was written by this emerge "
+            f"(newest predates it). Modules were written to: {landed or 'nowhere'}. "
+            f"KBUILD_OUTPUT did not aim the build at {kver}"
+        )
+
+
 def _emerge_env(build_dir: Path) -> dict[str, str]:
     """KBUILD_OUTPUT tells linux-info.eclass which object dir to build modules
     against. It is the highest-priority source the eclass consults, and the
@@ -4815,6 +4917,7 @@ def boot_is_correct(
 def _ensure_nvidia_or_fallback(
     *,
     build_dir: Path,
+    kver: str,
     nvidia_group: str = "video-nvidia",
     fallback_group: str = "video-nouveau",
 ) -> None:
@@ -4843,6 +4946,7 @@ def _ensure_nvidia_or_fallback(
         "video", "set", nvidia_group, "--sync", _out=sys.stdout, _err=sys.stderr
     )
     icp(f"nvidia preflight: building x11-drivers/nvidia-drivers against {build_dir}")
+    since = time.time()
     try:
         hs.Command("emerge")(
             "-1",
@@ -4852,6 +4956,7 @@ def _ensure_nvidia_or_fallback(
             _out=sys.stdout,
             _err=sys.stderr,
         )
+        _assert_modules_landed(kver=kver, since=since)
         icp("nvidia-drivers built; staying on nvidia")
         return
     except hs.ErrorReturnCode:
@@ -4868,8 +4973,9 @@ def _ensure_nvidia_or_fallback(
     )
 
 
-def _emerge_zfs_module_rebuild(*, build_dir: Path) -> None:
+def _emerge_zfs_module_rebuild(*, build_dir: Path, kver: str) -> None:
     icp(f"emerge zfs @module-rebuild against {build_dir}")
+    since = time.time()
     hs.Command("emerge")(
         "zfs",
         "@module-rebuild",
@@ -4877,6 +4983,7 @@ def _emerge_zfs_module_rebuild(*, build_dir: Path) -> None:
         _out=sys.stdout,
         _err=sys.stderr,
     )
+    _assert_modules_landed(kver=kver, since=since)
 
 
 def gcc_check(*, build_dir: Path) -> None:
@@ -5247,6 +5354,18 @@ def build_status() -> None:
         print(f"  /lib/modules/{running}/build: MISSING")
     print(f"  KBUILD_OUTPUT in env: {os.environ.get('KBUILD_OUTPUT', '(unset)')}")
 
+    bashrc_text = (
+        PORTAGE_BASHRC.read_text(encoding="utf8") if PORTAGE_BASHRC.exists() else ""
+    )
+    block = _extract_bashrc_block(bashrc_text)
+    if block == _BASHRC_BLOCK:
+        state = "present"
+    elif block is None:
+        state = "ABSENT — a bare emerge @module-rebuild has no KBUILD_OUTPUT and will die"
+    else:
+        state = "PRESENT BUT MODIFIED — does not match this version"
+    print(f"  {PORTAGE_BASHRC}: {state}")
+
     source_config = _SOURCE_DIR / ".config"
     if source_config.exists():
         print(
@@ -5362,7 +5481,7 @@ def _build_one(
     )
 
     if pre_module_rebuild:
-        _emerge_zfs_module_rebuild(build_dir=build_dir)
+        _emerge_zfs_module_rebuild(build_dir=build_dir, kver=kver)
 
     gcc_check(build_dir=build_dir)
 
@@ -5385,11 +5504,11 @@ def _build_one(
     # rename every artifact away from the variant written into .config.
     genkernel_command.bake(f"--kernel-localversion={_desired_localversion(variant)}")
 
-    _ensure_nvidia_or_fallback(build_dir=build_dir)
+    _ensure_nvidia_or_fallback(build_dir=build_dir, kver=kver)
     icp(genkernel_command)
     genkernel_command(_fg=True)
 
-    _emerge_zfs_module_rebuild(build_dir=build_dir)
+    _emerge_zfs_module_rebuild(build_dir=build_dir, kver=kver)
 
     if _kernelrelease(build_dir) != kver:
         raise RuntimeError(f"kernel.release changed during build of {kver}")
@@ -5444,6 +5563,8 @@ def compile_and_install_kernel(
             raise ValueError("/boot/grub/grub.cfg not found")
         if not Path("/boot/kernel").exists():
             raise ValueError("mount /boot first")
+
+    _install_portage_bashrc()
 
     hs.Command("emerge")("genkernel", "-u", _out=sys.stdout, _err=sys.stderr)
 
