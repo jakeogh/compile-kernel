@@ -419,6 +419,40 @@ def _make(*args: str, build_dir: Path, capture: bool = False) -> str:
     return result.stdout.decode("utf8").strip() if capture else ""
 
 
+def _ensure_pristine_source() -> None:
+    """Clear generated files out of the source tree so O= builds can run.
+
+    Kbuild's outputmakefile target refuses an out-of-tree build while the
+    source tree holds any of .config, include/config/, or
+    arch/$(SRCARCH)/include/generated/ — stale in-tree artifacts would shadow
+    the ones in the object dir. Previous in-tree builds leave all three.
+
+    mrproper only removes generated files; the distributed sources are
+    untouched, and /boot and /lib/modules are not involved.
+    """
+    markers = [
+        _SOURCE_DIR / ".config",
+        _SOURCE_DIR / "include" / "config",
+    ]
+    # kbuild only checks the current SRCARCH, but any arch's generated dir
+    # means a prior in-tree build, so treat them all as dirty.
+    markers.extend((_SOURCE_DIR / "arch").glob("*/include/generated"))
+    dirty = [m for m in markers if m.exists()]
+    if not dirty:
+        return
+
+    eprint(f"source tree is not clean: {[str(d) for d in dirty]}")
+    eprint(f"running make mrproper in {_SOURCE_DIR}")
+    subprocess.run(["make", "-C", _SOURCE_DIR.as_posix(), "mrproper"], check=True)
+
+    still = [m for m in markers if m.exists()]
+    if still:
+        raise RuntimeError(
+            f"mrproper left generated files in {_SOURCE_DIR}: "
+            f"{[str(s) for s in still]} — remove them before building"
+        )
+
+
 def _source_kernelversion() -> str:
     """VERSION.PATCHLEVEL.SUBLEVEL + EXTRAVERSION from the source Makefile.
     Needs no .config, so it is available before a build dir exists."""
@@ -480,6 +514,7 @@ def _link_module_build_dir(kver: str, build_dir: Path) -> None:
     right object dir when KBUILD_OUTPUT is not set in the environment.
     """
     mod_dir = Path("/lib/modules") / kver
+    mod_dir.mkdir(parents=True, exist_ok=True)
     for name, target in (("build", build_dir), ("source", _SOURCE_DIR)):
         link = mod_dir / name
         if link.is_symlink() and Path(os.readlink(link)) == target:
@@ -5389,6 +5424,7 @@ def build_status() -> None:
 
 
 def install_compiled_kernel(*, flags: KernelFlags, variant: str | None = None):
+    _ensure_pristine_source()
     kver = _kver_for_variant(variant)
     build_dir = _build_dir(kver)
     if not (build_dir / ".config").exists():
@@ -5419,6 +5455,7 @@ def configure_kernel(
     variant: str | None = None,
 ) -> Path:
     """Configure this variant's build dir and return it."""
+    _ensure_pristine_source()
     kver = _kver_for_variant(variant)
     build_dir = _ensure_build_dir(kver)
     if interactive:
@@ -5548,13 +5585,7 @@ def compile_and_install_kernel(
     if not root_user():
         raise ValueError("you must be root")
 
-    source_config = _SOURCE_DIR / ".config"
-    if source_config.exists():
-        raise ValueError(
-            f"{source_config} exists; the source tree must hold no config. "
-            f"Every build has its own object dir under {_BUILD_ROOT}, and a "
-            f"config here can capture builds meant for one of them. Remove it."
-        )
+    _ensure_pristine_source()
 
     if no_check_boot:
         icp("skipped checking if /boot was mounted")
