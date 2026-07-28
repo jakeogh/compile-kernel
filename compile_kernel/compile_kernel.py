@@ -957,6 +957,15 @@ def _zfs_debug_use_enabled() -> bool:
     return "debug" in settings["USE"].split()
 
 
+def _package_is_installed(atom: str) -> bool:
+    """True if atom has an installed version, queried from portage's vartree
+    (the installed-package DB, distinct from the ebuild tree)."""
+    import portage
+
+    vardb = portage.db[portage.root]["vartree"].dbapi
+    return bool(vardb.match(atom))
+
+
 def _decompress_config_if_needed(
     path: Path,
 ) -> tuple[Path, tempfile.NamedTemporaryFile | None]:
@@ -4998,11 +5007,17 @@ def _ensure_nvidia_or_fallback(
         icp(f"nvidia-drivers failed against this kernel; falling back to {fallback_group}")
 
     # Unmerge before switching: the fallback group masks nvidia-drivers, and
-    # genkernel must not find an installed-but-unbuildable nvidia.
-    hs.Command("emerge")(
-        "--unmerge", "--quiet=y", "x11-drivers/nvidia-drivers",
-        _env=env, _out=sys.stdout, _err=sys.stderr,
-    )
+    # genkernel must not find an installed-but-unbuildable nvidia. Only unmerge
+    # if it is actually installed — the build we just attempted may have been a
+    # first install that never completed, and `emerge --unmerge` on an absent
+    # package exits non-zero.
+    if _package_is_installed("x11-drivers/nvidia-drivers"):
+        hs.Command("emerge")(
+            "--unmerge", "--quiet=y", "x11-drivers/nvidia-drivers",
+            _env=env, _out=sys.stdout, _err=sys.stderr,
+        )
+    else:
+        icp("nvidia-drivers not installed; nothing to unmerge")
     hs.Command(pm)(
         "video", "set", fallback_group, "--sync", _out=sys.stdout, _err=sys.stderr
     )
