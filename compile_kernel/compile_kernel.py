@@ -543,63 +543,43 @@ def _link_module_build_dir(kver: str, build_dir: Path) -> None:
 
 
 PORTAGE_BASHRC = Path("/etc/portage/bashrc")
-_BASHRC_BEGIN = "# >>> compile-kernel managed >>>"
-_BASHRC_END = "# <<< compile-kernel managed <<<"
-
-_BASHRC_BLOCK = f"""{_BASHRC_BEGIN}
-# Point external-module builds at the running kernel's object dir, but only
-# when the caller has not already chosen one: compile-kernel exports
-# KBUILD_OUTPUT explicitly while building a kernel that is not the running one,
-# and clobbering it there would silently build against the wrong kernel.
-# Only set a directory that exists; linux-info.eclass dies on a KBUILD_OUTPUT
-# pointing nowhere, which would break every package inheriting it.
-_ck_running_build="/lib/modules/$(uname -r)/build"
-if [[ -z ${{KBUILD_OUTPUT}} && -d ${{_ck_running_build}} ]]; then
-	export KBUILD_OUTPUT="${{_ck_running_build}}"
-fi
-unset _ck_running_build
-{_BASHRC_END}"""
+# Shipped by the ebuild. Not written here: /etc/portage/bashrc is managed by
+# portage-manager, so anything appended to it is reverted on the next sync.
+BASHRC_HOOK = Path("/usr/share/compile-kernel/portage-bashrc.sh")
+BASHRC_SOURCE_LINE = f"[ -f {BASHRC_HOOK} ] && source {BASHRC_HOOK}"
 
 
-def _extract_bashrc_block(text: str) -> str | None:
-    if _BASHRC_BEGIN not in text or _BASHRC_END not in text:
-        return None
-    start = text.index(_BASHRC_BEGIN)
-    end = text.index(_BASHRC_END) + len(_BASHRC_END)
-    return text[start:end]
+def _portage_bashrc_sources_hook() -> bool:
+    if not PORTAGE_BASHRC.exists():
+        return False
+    return BASHRC_HOOK.as_posix() in PORTAGE_BASHRC.read_text(encoding="utf8")
 
 
-def _install_portage_bashrc() -> None:
-    """Ensure /etc/portage/bashrc carries our KBUILD_OUTPUT block, verbatim.
+def _verify_portage_bashrc() -> None:
+    """Confirm a bare `emerge @module-rebuild` will find a KBUILD_OUTPUT.
 
-    Without it, a bare `emerge @module-rebuild` has no KBUILD_OUTPUT: the
-    eclass falls back to scanning /lib/modules/${KV_FULL}/build where KV_FULL
-    carries no localversion, matches nothing, lands on the config-free source
-    tree and dies. The block supplies the running kernel's object dir so a
-    manual emerge targets the kernel the operator is actually running.
+    Without the hook the eclass falls back to scanning
+    /lib/modules/${KV_FULL}/build, where KV_FULL carries no localversion,
+    matches nothing, lands on the config-free source tree and dies.
 
-    An existing block that does not match ours is a conflict, not something to
-    silently overwrite: someone changed it deliberately and the two intents
-    need reconciling by hand.
+    compile-kernel's own emerges pass KBUILD_OUTPUT explicitly and do not need
+    this; it exists so a module rebuild typed by hand targets the running
+    kernel. Checked here because the failure otherwise surfaces later, in an
+    unrelated emerge, with a confusing message.
     """
-    PORTAGE_BASHRC.parent.mkdir(parents=True, exist_ok=True)
-    text = PORTAGE_BASHRC.read_text(encoding="utf8") if PORTAGE_BASHRC.exists() else ""
-    existing = _extract_bashrc_block(text)
-    if existing == _BASHRC_BLOCK:
-        return
-    if existing is not None:
-        raise ValueError(
-            f"{PORTAGE_BASHRC} holds a compile-kernel block that does not match "
-            f"this version. Reconcile it by hand, then re-run.\n"
-            f"--- on disk ---\n{existing}\n--- expected ---\n{_BASHRC_BLOCK}"
+    if not BASHRC_HOOK.is_file():
+        raise RuntimeError(
+            f"{BASHRC_HOOK} is missing — reinstall compile-kernel"
         )
-    separator = "" if not text or text.endswith("\n") else "\n"
-    PORTAGE_BASHRC.write_text(text + separator + _BASHRC_BLOCK + "\n", encoding="utf8")
-    eprint(f"installed KBUILD_OUTPUT block into {PORTAGE_BASHRC}")
-    # Read back: this file decides which kernel every future manual module
-    # emerge targets, so confirm what landed rather than trusting the write.
-    if _extract_bashrc_block(PORTAGE_BASHRC.read_text(encoding="utf8")) != _BASHRC_BLOCK:
-        raise RuntimeError(f"{PORTAGE_BASHRC} does not contain the block after writing it")
+    if _portage_bashrc_sources_hook():
+        return
+    raise RuntimeError(
+        f"{PORTAGE_BASHRC} does not source {BASHRC_HOOK}.\n"
+        f"{PORTAGE_BASHRC} is managed by portage-manager, so add this line to "
+        f"the group source (e.g. /etc/portage-manager/groups/base/bashrc) and "
+        f"run `portage-manager sync`:\n"
+        f"  {BASHRC_SOURCE_LINE}"
+    )
 
 
 def _modules_dir(kver: str) -> Path:
@@ -5409,17 +5389,16 @@ def build_status() -> None:
         print(f"  /lib/modules/{running}/build: MISSING")
     print(f"  KBUILD_OUTPUT in env: {os.environ.get('KBUILD_OUTPUT', '(unset)')}")
 
-    bashrc_text = (
-        PORTAGE_BASHRC.read_text(encoding="utf8") if PORTAGE_BASHRC.exists() else ""
-    )
-    block = _extract_bashrc_block(bashrc_text)
-    if block == _BASHRC_BLOCK:
-        state = "present"
-    elif block is None:
-        state = "ABSENT — a bare emerge @module-rebuild has no KBUILD_OUTPUT and will die"
+    if not BASHRC_HOOK.is_file():
+        state = f"MISSING {BASHRC_HOOK} — reinstall compile-kernel"
+    elif _portage_bashrc_sources_hook():
+        state = f"sourced from {PORTAGE_BASHRC}"
     else:
-        state = "PRESENT BUT MODIFIED — does not match this version"
-    print(f"  {PORTAGE_BASHRC}: {state}")
+        state = (
+            f"NOT sourced from {PORTAGE_BASHRC} — a bare emerge @module-rebuild "
+            f"has no KBUILD_OUTPUT and will die"
+        )
+    print(f"  {BASHRC_HOOK}: {state}")
 
     source_config = _SOURCE_DIR / ".config"
     if source_config.exists():
@@ -5615,7 +5594,7 @@ def compile_and_install_kernel(
         if not Path("/boot/kernel").exists():
             raise ValueError("mount /boot first")
 
-    _install_portage_bashrc()
+    _verify_portage_bashrc()
 
     hs.Command("emerge")("genkernel", "-u", _out=sys.stdout, _err=sys.stderr)
 
