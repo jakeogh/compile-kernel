@@ -544,7 +544,7 @@ def _link_module_build_dir(kver: str, build_dir: Path) -> None:
 
 PORTAGE_BASHRC = Path("/etc/portage/bashrc")
 # Shipped by the ebuild. Not written here: /etc/portage/bashrc is managed by
-# portage-manager, so anything appended to it is reverted on the next sync.
+# cfg-layer, so anything appended to it is reverted on the next sync.
 BASHRC_HOOK = Path("/usr/share/compile-kernel/portage-bashrc.sh")
 BASHRC_SOURCE_LINE = f"[ -f {BASHRC_HOOK} ] && source {BASHRC_HOOK}"
 
@@ -575,9 +575,10 @@ def _verify_portage_bashrc() -> None:
         return
     raise RuntimeError(
         f"{PORTAGE_BASHRC} does not source {BASHRC_HOOK}.\n"
-        f"{PORTAGE_BASHRC} is managed by portage-manager, so add this line to "
-        f"the group source (e.g. /etc/portage-manager/groups/base/bashrc) and "
-        f"run `portage-manager sync`:\n"
+        f"{PORTAGE_BASHRC} is managed by cfg-layer, so add this line to the "
+        f"group source (e.g. "
+        f"/etc/cfg-layer/groups/base/system/etc/portage/bashrc) and run "
+        f"`cfg-layer sync`:\n"
         f"  {BASHRC_SOURCE_LINE}"
     )
 
@@ -4975,20 +4976,23 @@ def _ensure_nvidia_or_fallback(
     Each call re-selects nvidia first, so a kernel that nvidia accepts pulls
     the system back without manual action.
     """
-    pm = shutil.which("portage-manager")
-    groups_dir = Path("/etc/portage-manager/groups")
-    if (
-        pm is None
-        or not (groups_dir / nvidia_group).is_dir()
-        or not (groups_dir / fallback_group).is_dir()
-    ):
-        icp("portage-manager video groups unavailable; skipping nvidia preflight")
+    pm = shutil.which("cfg-layer")
+    # packaged groups first, local overrides second, matching cfg-layer's own
+    # search order
+    group_roots = (
+        Path("/usr/share/cfg-layer/groups"),
+        Path("/etc/cfg-layer/groups"),
+    )
+
+    def _group_exists(name: str) -> bool:
+        return any((root / name).is_dir() for root in group_roots)
+
+    if pm is None or not _group_exists(nvidia_group) or not _group_exists(fallback_group):
+        icp("cfg-layer video groups unavailable; skipping nvidia preflight")
         return
 
     env = _emerge_env(build_dir)
-    hs.Command(pm)(
-        "video", "set", nvidia_group, "--sync", _out=sys.stdout, _err=sys.stderr
-    )
+    _set_video_group(pm, nvidia_group)
     icp(f"nvidia preflight: building x11-drivers/nvidia-drivers against {build_dir}")
     since = time.time()
     try:
@@ -5018,9 +5022,15 @@ def _ensure_nvidia_or_fallback(
         )
     else:
         icp("nvidia-drivers not installed; nothing to unmerge")
-    hs.Command(pm)(
-        "video", "set", fallback_group, "--sync", _out=sys.stdout, _err=sys.stderr
+    _set_video_group(pm, fallback_group)
+
+
+def _set_video_group(cfg_layer: str, group: str) -> None:
+    # selecting a dimension records the choice; sync is what materializes it
+    hs.Command(cfg_layer)(
+        "dimension", "set", "video", group, _out=sys.stdout, _err=sys.stderr
     )
+    hs.Command(cfg_layer)("sync", _out=sys.stdout, _err=sys.stderr)
 
 
 def _emerge_zfs_module_rebuild(*, build_dir: Path, kver: str) -> None:
