@@ -57,6 +57,7 @@ class KernelFlags:
     harden: bool = False
     ia32: bool = False
     bpftrace: bool = False
+    io_accounting: bool = False
     docker: bool = False
     # layer-3 compat overrides: config-time only, not part of the build's identity
     zfs_compat_lockdep: bool = False
@@ -2110,6 +2111,37 @@ def check_kernel_config_bpftrace(
     _spec_add(spec, "CONFIG_FTRACE_SYSCALLS", required_state=True, module=False, warn=True)
 
 
+def check_kernel_config_io_accounting(
+    *,
+    spec: ConfigSpec,
+    enable: bool,
+) -> None:
+    """Per-task IO and delay accounting:
+        CONFIG_TASKSTATS=y          — netlink transport for the counters
+        CONFIG_TASK_DELAY_ACCT=y    — time blocked on IO, swap, reclaim
+        CONFIG_TASK_XACCT=y         — extended accounting
+        CONFIG_TASK_IO_ACCOUNTING=y — per-task read/write byte counters
+
+    The whole chain is required for the leaf: TASK_IO_ACCOUNTING depends on
+    TASK_XACCT, which depends on TASKSTATS. Setting only the leaf leaves it
+    hidden by unmet dependencies.
+
+    Populates /proc/<pid>/io and is what iotop reads. Unlike SCHEDSTATS these
+    counters are not behind a static branch, so the cost (counter updates on
+    read/write paths, a little task_struct growth) is paid whenever compiled
+    in. Delay accounting alone can be gated at runtime via the
+    kernel.task_delayacct sysctl.
+    """
+    if not enable:
+        return
+    _spec_add(spec, "CONFIG_TASKSTATS", required_state=True, module=False, warn=True)
+    _spec_add(spec, "CONFIG_TASK_DELAY_ACCT", required_state=True, module=False, warn=True)
+    _spec_add(spec, "CONFIG_TASK_XACCT", required_state=True, module=False, warn=True)
+    _spec_add(
+        spec, "CONFIG_TASK_IO_ACCOUNTING", required_state=True, module=False, warn=True
+    )
+
+
 def check_kernel_config_docker(
     *,
     spec: ConfigSpec,
@@ -3574,27 +3606,6 @@ def check_kernel_config(
         url="https://github.com/gentoo/gentoo/blob/master/x11-drivers/xf86-input-wacom/xf86-input-wacom-0.40.0.ebuild",
     )
 
-    ## performance
-    ## required to enable CONFIG_TASK_DELAY_ACCT below, but disabled for now
-    # verify_kernel_config_setting(
-    #    path=path,
-    #    define="CONFIG_TASKSTATS",
-    #    required_state=False,
-    #    module=False,
-    #    warn=warn_only,
-    #    fix=fix,
-    #    url="",
-    # )
-    # verify_kernel_config_setting(
-    #    path=path,
-    #    define="CONFIG_TASK_DELAY_ACCT",
-    #    required_state=False,
-    #    module=False,
-    #    warn=warn_only,
-    #    fix=fix,
-    #    url="http://guichaz.free.fr/iotop/",
-    # )
-
     _spec_add(
         spec,
         "CONFIG_NET_CORE",
@@ -4568,26 +4579,6 @@ def check_kernel_config(
         warn=warn_only,
         url="",
     )
-    ## performance
-    # verify_kernel_config_setting(
-    #    path=path,
-    #    define="CONFIG_TASK_XACCT",
-    #    required_state=False,
-    #    module=False,
-    #    warn=warn_only,
-    #    fix=fix,
-    #    url="",
-    # )
-    ## performance
-    # verify_kernel_config_setting(
-    #    path=path,
-    #    define="CONFIG_TASK_IO_ACCOUNTING",
-    #    required_state=False,
-    #    module=False,
-    #    warn=warn_only,
-    #    fix=fix,
-    #    url="",
-    # )
     # performance
     # enable THP only for applications that explicitly request it (via madvise), MADV_DONTNEED
     _spec_add(
@@ -4856,6 +4847,7 @@ def check_kernel_config(
     check_kernel_config_harden(spec=spec, enable=flags.harden)
     check_kernel_config_ia32(spec=spec, enable=flags.ia32)
     check_kernel_config_bpftrace(spec=spec, enable=flags.bpftrace)
+    check_kernel_config_io_accounting(spec=spec, enable=flags.io_accounting)
     check_kernel_config_docker(spec=spec, enable=flags.docker)
 
     # --- layer 3: compat overrides (win over everything) ---
