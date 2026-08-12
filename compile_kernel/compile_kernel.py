@@ -58,6 +58,7 @@ class KernelFlags:
     ia32: bool = False
     bpftrace: bool = False
     io_accounting: bool = False
+    cgroups: bool = False
     docker: bool = False
     # layer-3 compat overrides: config-time only, not part of the build's identity
     zfs_compat_lockdep: bool = False
@@ -2139,6 +2140,65 @@ def check_kernel_config_io_accounting(
     _spec_add(spec, "CONFIG_TASK_XACCT", required_state=True, module=False, warn=True)
     _spec_add(
         spec, "CONFIG_TASK_IO_ACCOUNTING", required_state=True, module=False, warn=True
+    )
+
+
+def check_kernel_config_cgroups(
+    *,
+    spec: ConfigSpec,
+    enable: bool,
+) -> None:
+    """cgroup v2 resource control: CPU, memory, IO, and pressure.
+
+    Dependency chains that must hold, all satisfied by this group plus
+    production base: CGROUP_SCHED needs CGROUPS; FAIR_GROUP_SCHED needs
+    CGROUP_SCHED; CFS_BANDWIDTH needs FAIR_GROUP_SCHED; CGROUP_WRITEBACK
+    needs MEMCG and BLK_CGROUP; the BLK_CGROUP_IO* controllers and
+    BFQ_GROUP_IOSCHED need BLK_CGROUP and IOSCHED_BFQ respectively;
+    UCLAMP_TASK_GROUP needs UCLAMP_TASK and CGROUP_SCHED; UCLAMP_TASK needs
+    the schedutil governor and SCHED_CORE needs SCHED_SMT, both of which
+    production base already sets.
+
+    RT_GROUP_SCHED is forced off: with it on, non-root cgroups get zero RT
+    runtime by default, so any RT thread inside a cgroup fails to run until
+    bandwidth is hand-allocated.
+
+    PSI_DEFAULT_DISABLED is forced off so PSI is live without a psi=1 boot
+    param — PSI=y alone compiles the accounting in but leaves it dormant when
+    that symbol is set.
+    """
+    if not enable:
+        return
+    for _sym in (
+        # core
+        "CONFIG_CGROUPS",
+        "CONFIG_CPUSETS",
+        "CONFIG_MEMCG",
+        # cpu controller
+        "CONFIG_CGROUP_SCHED",
+        "CONFIG_FAIR_GROUP_SCHED",
+        "CONFIG_CFS_BANDWIDTH",
+        # io controllers
+        "CONFIG_BLK_CGROUP",
+        "CONFIG_BLK_CGROUP_IOCOST",
+        "CONFIG_BLK_CGROUP_IOPRIO",
+        "CONFIG_BLK_CGROUP_IOLATENCY",
+        "CONFIG_IOSCHED_BFQ",
+        "CONFIG_BFQ_GROUP_IOSCHED",
+        "CONFIG_CGROUP_WRITEBACK",
+        # pressure stall information
+        "CONFIG_PSI",
+        # utilization clamping
+        "CONFIG_UCLAMP_TASK",
+        "CONFIG_UCLAMP_TASK_GROUP",
+        # core scheduling (SMT co-scheduling control)
+        "CONFIG_SCHED_CORE",
+    ):
+        _spec_add(spec, _sym, required_state=True, module=False, warn=True)
+
+    _spec_add(spec, "CONFIG_RT_GROUP_SCHED", required_state=False, module=False, warn=True)
+    _spec_add(
+        spec, "CONFIG_PSI_DEFAULT_DISABLED", required_state=False, module=False, warn=True
     )
 
 
@@ -4848,6 +4908,7 @@ def check_kernel_config(
     check_kernel_config_ia32(spec=spec, enable=flags.ia32)
     check_kernel_config_bpftrace(spec=spec, enable=flags.bpftrace)
     check_kernel_config_io_accounting(spec=spec, enable=flags.io_accounting)
+    check_kernel_config_cgroups(spec=spec, enable=flags.cgroups)
     check_kernel_config_docker(spec=spec, enable=flags.docker)
 
     # --- layer 3: compat overrides (win over everything) ---
