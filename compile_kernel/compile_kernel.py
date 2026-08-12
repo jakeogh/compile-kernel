@@ -58,7 +58,7 @@ class KernelFlags:
     ia32: bool = False
     bpftrace: bool = False
     io_accounting: bool = False
-    cgroups: bool = False
+    cgroups: bool = True
     docker: bool = False
     # layer-3 compat overrides: config-time only, not part of the build's identity
     zfs_compat_lockdep: bool = False

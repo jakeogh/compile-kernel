@@ -61,7 +61,7 @@ _KERNEL_FLAG_OPTIONS = [
     click.option("--ia32", is_flag=True, help="Enable COMPAT and IA32_EMULATION for 32-bit binaries (off by default)"),
     click.option("--bpftrace", is_flag=True, help="Enable BTF + FTRACE_SYSCALLS required by dev-debug/bpftrace"),
     click.option("--io-accounting", is_flag=True, help="Enable TASKSTATS + delay/extended/IO accounting for /proc/<pid>/io and iotop"),
-    click.option("--cgroups", is_flag=True, help="Enable cgroup v2 CPU/memory/IO controllers, PSI, uclamp, and core scheduling"),
+    click.option("--no-cgroups", is_flag=True, help="Disable cgroup v2 CPU/memory/IO controllers, PSI, uclamp, and core scheduling (on by default)"),
     click.option("--docker", is_flag=True, help="Enable container-runtime kernel options (Docker/Podman/containerd/kube)"),
     click.option("--zfs-compat-lockdep", is_flag=True, help="Disable the full lockdep selector chain (PROVE_LOCKING, LOCK_STAT, DEBUG_LOCK_ALLOC, DEBUG_SPINLOCK, DEBUG_MUTEXES, LOCKDEP) so ZFS builds when --lockdep is set"),
     click.option("--nvidia-compat", is_flag=True, help="Override LOCKDEP/SLUB_DEBUG_ON/DEBUG_MUTEXES=n so nvidia-drivers builds"),
@@ -74,17 +74,23 @@ _variant_option = click.option(
     help="Name this build: appends -VARIANT to CONFIG_LOCALVERSION so it installs alongside (not over) the plain build of the same source — its own vmlinuz, initramfs, /lib/modules tree, and grub entry",
 )
 
-_FLAG_FIELDS = tuple(f.name for f in fields(KernelFlags) if f.name != "netconsole")
+# Groups that default ON are exposed as negative options, mapping the
+# KernelFlags field to the click kwarg that turns it off.
+_NEGATED_FLAGS = {
+    "netconsole": "disable_netconsole",
+    "cgroups": "no_cgroups",
+}
+
+_FLAG_FIELDS = tuple(
+    f.name for f in fields(KernelFlags) if f.name not in _NEGATED_FLAGS
+)
 
 
 def _flags_from_kwargs(kwargs: dict) -> KernelFlags:
-    """Consume the shared kernel-flag options out of click's kwargs.
-
-    netconsole is the one group that defaults ON, so it is exposed as
-    --disable-netconsole and inverted here.
-    """
+    """Consume the shared kernel-flag options out of click's kwargs."""
     values = {name: kwargs.pop(name) for name in _FLAG_FIELDS}
-    values["netconsole"] = not kwargs.pop("disable_netconsole")
+    for field_name, negation in _NEGATED_FLAGS.items():
+        values[field_name] = not kwargs.pop(negation)
     return KernelFlags(**values)
 
 
