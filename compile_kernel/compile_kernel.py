@@ -60,6 +60,7 @@ class KernelFlags:
     io_accounting: bool = False
     cgroups: bool = True
     docker: bool = False
+    g4_webcam: bool = False
     # layer-3 compat overrides: config-time only, not part of the build's identity
     zfs_compat_lockdep: bool = False
     nvidia_compat: bool = False
@@ -2255,6 +2256,38 @@ def check_kernel_config_docker(
         "CONFIG_CGROUP_BPF",
         "CONFIG_BLK_DEV_THROTTLING",
         "CONFIG_CFS_BANDWIDTH",
+    ):
+        _spec_add(spec, sym, required_state=True, module=True, warn=True)
+
+
+def check_kernel_config_g4_webcam(
+    *,
+    spec: ConfigSpec,
+    enable: bool,
+) -> None:
+    """HP ZBook 17 G4 camera and audio for Zoom.
+
+    The webcam is a USB UVC device: uvcvideo (=m) on top of the V4L2 core,
+    which stays built in. USB_VIDEO_CLASS selects VIDEOBUF2_VMALLOC and
+    UVC_COMMON; olddefconfig resolves those. The HDA codec is a Conexant
+    CX20724, which the generic parser drives without the HP fixups
+    (internal mic, speaker routing, mute LED), so the Conexant codec
+    driver is required for mic and speakers. MEDIA_SUPPORT and
+    MEDIA_USB_SUPPORT come from production base.
+
+    NO-OP when enable is False.
+    """
+    if not enable:
+        return
+    for sym in (
+        "CONFIG_MEDIA_CAMERA_SUPPORT",
+        "CONFIG_VIDEO_DEV",
+        "CONFIG_USB_VIDEO_CLASS_INPUT_EVDEV",
+    ):
+        _spec_add(spec, sym, required_state=True, module=False, warn=True)
+    for sym in (
+        "CONFIG_USB_VIDEO_CLASS",
+        "CONFIG_SND_HDA_CODEC_CONEXANT",
     ):
         _spec_add(spec, sym, required_state=True, module=True, warn=True)
 
@@ -4910,6 +4943,7 @@ def check_kernel_config(
     check_kernel_config_io_accounting(spec=spec, enable=flags.io_accounting)
     check_kernel_config_cgroups(spec=spec, enable=flags.cgroups)
     check_kernel_config_docker(spec=spec, enable=flags.docker)
+    check_kernel_config_g4_webcam(spec=spec, enable=flags.g4_webcam)
 
     # --- layer 3: compat overrides (win over everything) ---
     if flags.zfs_compat_lockdep:

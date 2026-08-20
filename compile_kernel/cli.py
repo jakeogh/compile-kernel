@@ -63,6 +63,7 @@ _KERNEL_FLAG_OPTIONS = [
     click.option("--io-accounting", is_flag=True, help="Enable TASKSTATS + delay/extended/IO accounting for /proc/<pid>/io and iotop"),
     click.option("--no-cgroups", is_flag=True, help="Disable cgroup v2 CPU/memory/IO controllers, PSI, uclamp, and core scheduling (on by default)"),
     click.option("--docker", is_flag=True, help="Enable container-runtime kernel options (Docker/Podman/containerd/kube)"),
+    click.option("--g4-webcam", is_flag=True, help="Enable HP ZBook 17 G4 webcam (UVC) and Conexant HDA codec so Zoom has camera, mic and speakers"),
     click.option("--zfs-compat-lockdep", is_flag=True, help="Disable the full lockdep selector chain (PROVE_LOCKING, LOCK_STAT, DEBUG_LOCK_ALLOC, DEBUG_SPINLOCK, DEBUG_MUTEXES, LOCKDEP) so ZFS builds when --lockdep is set"),
     click.option("--nvidia-compat", is_flag=True, help="Override LOCKDEP/SLUB_DEBUG_ON/DEBUG_MUTEXES=n so nvidia-drivers builds"),
 ]
