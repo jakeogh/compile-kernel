@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "compile_kernel"
-version = "1!0.0.1787253516"
+version = "1!0.0.1787555718"
 description = "Compiles kernels with verified options"
 authors = [
     { name = "Justin Keogh", email = "github.com@v6y.net" },
@@ -14,7 +14,7 @@ dependencies = [
     "click",
     "asserttool @ git+https://github.com/jakeogh/asserttool@4bd23a06c2161e488415acde89c29537e6720cc1",
     "click-auto-help @ git+https://github.com/jakeogh/click-auto-help@c53f57c78529a51ae9b03f579d7ee6f2d63ca03a",
-    "clicktool @ git+https://github.com/jakeogh/clicktool@a9894f9d3a06701c5f73cd8b2794028042c9b420",
+    "clicktool @ git+https://github.com/jakeogh/clicktool@7294ba6934225c028e48638fc0540bc57238ff00",
     "eprint @ git+https://github.com/jakeogh/eprint@6ee1deca0c24b684eb5093247d6bd22e11f1b057",
     "globalverbose @ git+https://github.com/jakeogh/globalverbose@59abc758c18c0b85e9e61c1e14e5a64a81bb220e",
     "hs @ git+https://github.com/jakeogh/hs@b33c88f35cd24e773fea6ca4758193c9e815536d",
