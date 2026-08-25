@@ -22,7 +22,6 @@ from asserttool import ic
 from asserttool import icp
 from asserttool import root_user
 from eprint import eprint
-from globalverbose import gvd
 from pathtool import file_exists_nonzero
 
 # from rich import print as pprint
@@ -1355,13 +1354,12 @@ def verify_kernel_config_setting(
         return  # all is well
 
     # mypy: Invalid index type "None | bool" for "Dict[bool, str]"; expected type "bool"  [index] (E)
-    if gvd:
-        ic(
-            define,
-            _current_state,
-            enabled_state,
-            module_state,
-        )
+    ic(
+        define,
+        _current_state,
+        enabled_state,
+        module_state,
+    )
 
     msg = (
         f"{define} is {state_table[enabled_state]} and {module_table[module_state]}!"

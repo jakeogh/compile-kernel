@@ -18,9 +18,8 @@ from asserttool import icp
 from click_auto_help import AHGroup
 from clicktool import click_add_options
 from clicktool import click_global_options
-from clicktool import tvicgvd
+from clicktool import tvic
 from eprint import eprint
-from globalverbose import gvd
 
 from compile_kernel import KernelBuild
 from compile_kernel import KernelFlags
@@ -104,12 +103,11 @@ def cli(
     dict_output: bool,
     verbose: bool = False,
 ) -> None:
-    tty, verbose = tvicgvd(
+    tty, verbose = tvic(
         ctx=ctx,
         verbose=verbose,
         verbose_inf=verbose_inf,
         ic=ic,
-        gvd=gvd,
     )
 
 
@@ -130,12 +128,11 @@ def configure(
     verbose: bool = False,
     **kwargs,
 ):
-    tty, verbose = tvicgvd(
+    tty, verbose = tvic(
         ctx=ctx,
         verbose=verbose,
         verbose_inf=verbose_inf,
         ic=ic,
-        gvd=gvd,
     )
     if not verbose:
         ic.disable()
@@ -143,8 +140,6 @@ def configure(
     else:
         ic.enable()
         logging.disable(logging.NOTSET)
-    if verbose_inf:
-        gvd.enable()
 
     fix = not no_fix
     warn_only = not fix
@@ -182,19 +177,16 @@ def generate_module_to_config_mapping(
     dict_output: bool,
     verbose: bool = False,
 ):
-    tty, verbose = tvicgvd(
+    tty, verbose = tvic(
         ctx=ctx,
         verbose=verbose,
         verbose_inf=verbose_inf,
         ic=ic,
-        gvd=gvd,
     )
     if not verbose:
         ic.disable()
     else:
         ic.enable()
-    if verbose_inf:
-        gvd.enable()
 
     _m_config_dict = generate_module_config_dict(path=kernel_dir)
 
@@ -233,19 +225,16 @@ def compare_loaded_modules_to_config(
     dict_output: bool,
     verbose: bool = False,
 ):
-    tty, verbose = tvicgvd(
+    tty, verbose = tvic(
         ctx=ctx,
         verbose=verbose,
         verbose_inf=verbose_inf,
         ic=ic,
-        gvd=gvd,
     )
     if not verbose:
         ic.disable()
     else:
         ic.enable()
-    if verbose_inf:
-        gvd.enable()
 
     _m_config_dict = generate_module_config_dict(path=kernel_dir)
     _lsmod_lines = hs.Command("lsmod")().splitlines()[1:]
@@ -306,12 +295,11 @@ def compile_and_install(
     verbose: bool = False,
     **kwargs,
 ):
-    tty, verbose = tvicgvd(
+    tty, verbose = tvic(
         ctx=ctx,
         verbose=verbose,
         verbose_inf=verbose_inf,
         ic=ic,
-        gvd=gvd,
     )
     if not verbose:
         ic.disable()
@@ -319,8 +307,6 @@ def compile_and_install(
     else:
         ic.enable()
         logging.disable(logging.NOTSET)
-    if verbose_inf:
-        gvd.enable()
 
     fix = not no_fix
     warn_only = not fix
@@ -367,19 +353,16 @@ def _install_kernel(
     verbose: bool = False,
     **kwargs,
 ):
-    tty, verbose = tvicgvd(
+    tty, verbose = tvic(
         ctx=ctx,
         verbose=verbose,
         verbose_inf=verbose_inf,
         ic=ic,
-        gvd=gvd,
     )
     if not verbose:
         ic.disable()
     else:
         ic.enable()
-    if verbose_inf:
-        gvd.enable()
 
     install_compiled_kernel(flags=_flags_from_kwargs(kwargs), variant=variant)
 
@@ -412,12 +395,11 @@ def check_config(
     verbose: bool = False,
     **kwargs,
 ):
-    tty, verbose = tvicgvd(
+    tty, verbose = tvic(
         ctx=ctx,
         verbose=verbose,
         verbose_inf=verbose_inf,
         ic=ic,
-        gvd=gvd,
     )
     if not verbose:
         ic.disable()
@@ -425,8 +407,6 @@ def check_config(
     else:
         ic.enable()
         logging.disable(logging.NOTSET)
-    if verbose_inf:
-        gvd.enable()
 
     warn_only = not fix
     if code_debug:
@@ -476,19 +456,16 @@ def diff_config(
     dict_output: bool,
     verbose: bool = False,
 ):
-    tty, verbose = tvicgvd(
+    tty, verbose = tvic(
         ctx=ctx,
         verbose=verbose,
         verbose_inf=verbose_inf,
         ic=ic,
-        gvd=gvd,
     )
     if not verbose:
         ic.disable()
     else:
         ic.enable()
-    if verbose_inf:
-        gvd.enable()
 
     with resources.path("compile_kernel", "diffconfig.py") as _diffconfig:
         icp(_diffconfig)
@@ -516,19 +493,16 @@ def grub_font(
     dict_output: bool,
     verbose: bool = False,
 ):
-    tty, verbose = tvicgvd(
+    tty, verbose = tvic(
         ctx=ctx,
         verbose=verbose,
         verbose_inf=verbose_inf,
         ic=ic,
-        gvd=gvd,
     )
     if not verbose:
         ic.disable()
     else:
         ic.enable()
-    if verbose_inf:
-        gvd.enable()
 
     set_grub_font(size=size)
 
@@ -542,19 +516,16 @@ def status(
     dict_output: bool,
     verbose: bool = False,
 ):
-    tty, verbose = tvicgvd(
+    tty, verbose = tvic(
         ctx=ctx,
         verbose=verbose,
         verbose_inf=verbose_inf,
         ic=ic,
-        gvd=gvd,
     )
     if not verbose:
         ic.disable()
     else:
         ic.enable()
-    if verbose_inf:
-        gvd.enable()
 
     build_status()
 
@@ -574,19 +545,16 @@ def check_config_perf(
     dict_output: bool,
     verbose: bool = False,
 ):
-    tty, verbose = tvicgvd(
+    tty, verbose = tvic(
         ctx=ctx,
         verbose=verbose,
         verbose_inf=verbose_inf,
         ic=ic,
-        gvd=gvd,
     )
     if not verbose:
         ic.disable()
     else:
         ic.enable()
-    if verbose_inf:
-        gvd.enable()
 
     if not dotconfigs:
         raise click.UsageError(
