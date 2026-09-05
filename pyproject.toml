@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "compile_kernel"
-version = "1!0.0.1787633988"
+version = "1!0.0.1788594681"
 description = "Compiles kernels with verified options"
 authors = [
     { name = "Justin Keogh", email = "github.com@v6y.net" },

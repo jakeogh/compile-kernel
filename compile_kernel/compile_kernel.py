@@ -568,10 +568,22 @@ def _verify_portage_bashrc() -> None:
     this; it exists so a module rebuild typed by hand targets the running
     kernel. Checked here because the failure otherwise surfaces later, in an
     unrelated emerge, with a confusing message.
+
+    A missing bashrc and one that lacks the line are different failures with
+    different fixes: the first means cfg-layer never materialized the group
+    that carries it (no active layer, or no sync), the second means the group
+    source itself is behind.
     """
     if not BASHRC_HOOK.is_file():
         raise RuntimeError(
             f"{BASHRC_HOOK} is missing — reinstall compile-kernel"
+        )
+    if not PORTAGE_BASHRC.exists():
+        raise RuntimeError(
+            f"{PORTAGE_BASHRC} does not exist.\n"
+            f"cfg-layer materializes it from the base group, so no active "
+            f"layer carries it or sync has not run. Check `cfg-layer status`, "
+            f"then `cfg-layer group activate base` and `cfg-layer sync`."
         )
     if _portage_bashrc_sources_hook():
         return
