@@ -1128,7 +1128,7 @@ def check_kernel_config_perf(*, path: Path) -> None:
         ]),
         ("Preemption / latency", [
             ("CONFIG_PREEMPT_DYNAMIC", "y", "MED", "runtime preempt selection via preempt= cmdline"),
-            ("CONFIG_PREEMPT_VOLUNTARY", "y", "INFO", "voluntary preempt — best interactive default"),
+            ("CONFIG_PREEMPT_LAZY", "y", "INFO", "lazy preempt — VOLUNTARY's successor; the only desktop model on 7.x x86"),
             ("CONFIG_HZ_1000", "y", "INFO", "1000Hz tick — best interactive responsiveness"),
             ("CONFIG_NO_HZ_IDLE", "y", "MED", "tickless when idle — reduces wakeups, saves power"),
             ("CONFIG_HIGH_RES_TIMERS", "y", "MED", "required for accurate timing"),
@@ -3058,13 +3058,15 @@ def check_kernel_config(
     _spec_add(spec, "CONFIG_IA32_EMULATION", required_state=False, module=False,
               warn=warn_only, url=None)
 
-    # Preemption — DYNAMIC with VOLUNTARY default for best interactive feel
-    # without rebuild. Mutually exclusive with NONE/PREEMPT/RT.
+    # Preemption — DYNAMIC with LAZY as the compiled-in default. Since 7.0 an
+    # arch with ARCH_HAS_PREEMPT_LAZY (x86 is one) offers only PREEMPT and
+    # PREEMPT_LAZY: VOLUNTARY depends on !ARCH_HAS_PREEMPT_LAZY, NONE on
+    # ARCH_NO_PREEMPT, and preempt=none/voluntary are compiled out of the
+    # cmdline parser as well. LAZY is the choice default and the designated
+    # successor to VOLUNTARY: full preemption, less eager for SCHED_NORMAL.
     _spec_add(spec, "CONFIG_PREEMPT_DYNAMIC", required_state=True, module=False,
               warn=warn_only, url=None)
-    _spec_add(spec, "CONFIG_PREEMPT_VOLUNTARY", required_state=True, module=False,
-              warn=warn_only, url=None)
-    _spec_add(spec, "CONFIG_PREEMPT_NONE", required_state=False, module=False,
+    _spec_add(spec, "CONFIG_PREEMPT_LAZY", required_state=True, module=False,
               warn=warn_only, url=None)
     _spec_add(spec, "CONFIG_PREEMPT", required_state=False, module=False,
               warn=warn_only, url=None)
@@ -4099,33 +4101,6 @@ def check_kernel_config(
         url="",
     )
 
-    # speed
-    _spec_add(
-        spec,
-        "CONFIG_PREEMPT_NONE",
-        required_state=False,
-        module=False,
-        warn=warn_only,
-        url="",
-    )
-    # speed
-    _spec_add(
-        spec,
-        "CONFIG_PREEMPT_VOLUNTARY",
-        required_state=True,
-        module=False,
-        warn=warn_only,
-        url="",
-    )
-    # speed
-    _spec_add(
-        spec,
-        "CONFIG_PREEMPT",
-        required_state=False,
-        module=False,
-        warn=warn_only,
-        url="",
-    )
     # new process accounting
     _spec_add(
         spec,
@@ -4191,7 +4166,7 @@ def check_kernel_config(
         url="",
     )
 
-    # auto cgroups... might contradict PREEMPT_NONE
+    # auto cgroups
     _spec_add(
         spec,
         "CONFIG_SCHED_AUTOGROUP",
