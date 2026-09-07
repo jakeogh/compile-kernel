@@ -5601,10 +5601,16 @@ def _build_one(
     )
     kver = _kernelrelease(build_dir)
 
-    # Prepare before any emerge: an unprepared tree is the only reason the zfs
-    # emerge below could fail for a reason that is not a real error, so doing
-    # this first means every failure past this point is worth crashing on.
-    _make("modules_prepare", build_dir=build_dir)
+    gcc_check(build_dir=build_dir)
+
+    # Build before any emerge. linux-mod-r1's pkg_setup dies unless
+    # Module.symvers exists in the object dir, and only a full build writes
+    # it; modules_prepare does not. On a fresh target that file has never
+    # existed, so the zfs emerge below died there. On a host with an earlier
+    # build the check passed against stale objects and zfs was built against
+    # them. genkernel reuses this dir (--no-clean --no-mrproper), so its own
+    # kernel step is incremental over these objects.
+    _make(f"-j{os.cpu_count()}", build_dir=build_dir)
     _link_module_build_dir(kver, build_dir)
 
     env = _emerge_env(build_dir)
@@ -5615,8 +5621,6 @@ def _build_one(
 
     if pre_module_rebuild:
         _emerge_zfs_module_rebuild(build_dir=build_dir, kver=kver)
-
-    gcc_check(build_dir=build_dir)
 
     _snapshot_existing_kernel_files(kver)
 
