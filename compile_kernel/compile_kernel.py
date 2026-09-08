@@ -5009,6 +5009,22 @@ def check_kernel_config(
         url=None,
     )
 
+    # No module signing. The .config is seeded from the running kernel, and a
+    # distribution kernel built with USE=modules-sign carries
+    # CONFIG_MODULE_SIG_KEY="${T}/kernel_key.pem", a path that only existed in
+    # its build sandbox; certs/Makefile then fails with "No rule to make
+    # target .../kernel_key.pem". MODULE_SIG_KEY, MODULE_SIG_ALL and
+    # MODULE_SIG_FORCE all depend on MODULE_SIG, so this one symbol removes
+    # the whole group from the seed.
+    _spec_add(
+        spec,
+        "CONFIG_MODULE_SIG",
+        required_state=False,
+        module=False,
+        warn=warn_only,
+        url=None,
+    )
+
     # --- string config values ---
     # LOCALVERSION owns the kernel's identity: kernel.release =
     # {version}{LOCALVERSION}. Every downstream name (vmlinuz, initramfs,
