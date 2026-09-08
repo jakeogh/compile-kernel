@@ -439,6 +439,55 @@ def _make(*args: str, build_dir: Path, capture: bool = False) -> str:
     return result.stdout.decode("utf8").strip() if capture else ""
 
 
+_KBUILD_TAG = re.compile(r"  [A-Z]+(?: \[M\])? +\S")
+
+
+def _build(build_dir: Path) -> None:
+    """Full parallel build, teed to build_dir/build.log.
+
+    In a parallel build the failing recipe's diagnostic does not come last:
+    sibling sub-makes drain what they already scheduled, so thousands of
+    lines follow it (amdgpu alone is several thousand objects) and the
+    terminal's scrollback is gone by the time make exits. --output-sync=target
+    keeps each recipe's output contiguous, including kbuild's "  CC  x.o" echo
+    and make's own "*** [x.o] Error" line, so the first "***" in the log
+    closes the block that caused the failure. That block is reprinted on
+    failure, and the log survives the terminal.
+    """
+    log = build_dir / "build.log"
+    cmd = [
+        "make",
+        "-C",
+        _SOURCE_DIR.as_posix(),
+        f"O={build_dir.as_posix()}",
+        f"-j{os.cpu_count()}",
+        "--output-sync=target",
+    ]
+    with (
+        open(log, "wb") as fh,
+        subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT) as proc,
+    ):
+        assert proc.stdout is not None
+        for chunk in iter(lambda: proc.stdout.read1(1 << 16), b""):
+            sys.stdout.buffer.write(chunk)
+            sys.stdout.buffer.flush()
+            fh.write(chunk)
+    if proc.returncode == 0:
+        return
+
+    lines = log.read_text(encoding="utf8", errors="replace").splitlines()
+    failed = [i for i, line in enumerate(lines) if line.startswith("make") and "***" in line]
+    if failed:
+        end = failed[0]
+        start = end
+        while start > 0 and end - start < 120 and not _KBUILD_TAG.match(lines[start]):
+            start -= 1
+        eprint(f"\n==== failed recipe, {log}:{start + 1}-{end + 1} ====")
+        for line in lines[start : end + 1]:
+            eprint(line)
+    raise RuntimeError(f"kernel build failed with status {proc.returncode}; full log: {log}")
+
+
 def _ensure_pristine_source() -> None:
     """Clear generated files out of the source tree so O= builds can run.
 
@@ -5610,7 +5659,7 @@ def _build_one(
     # build the check passed against stale objects and zfs was built against
     # them. genkernel reuses this dir (--no-clean --no-mrproper), so its own
     # kernel step is incremental over these objects.
-    _make(f"-j{os.cpu_count()}", build_dir=build_dir)
+    _build(build_dir)
     _link_module_build_dir(kver, build_dir)
 
     env = _emerge_env(build_dir)
