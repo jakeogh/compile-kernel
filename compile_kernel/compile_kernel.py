@@ -257,13 +257,15 @@ _KCONFIG_INDEX_CACHE: dict[str, dict[str, dict]] = {}
 
 def _kconfig_index(src: Path) -> dict[str, dict]:
     """Walk every Kconfig file under `src` once and return a dict
-    {SYMBOL: {type, depends_on, file, line}}.
+    {SYMBOL: {type, depends_on, selects, file, line}}.
 
     type ∈ {'bool', 'tristate', 'string', 'int', 'hex', None}.
     depends_on is the conjunction of every direct `depends on` line under the
     symbol AND every enclosing `if EXPR` block, joined by ' && '. This matches
     Kconfig's actual visibility logic (an `if EXPR` wrapper has identical
     semantics to a `depends on EXPR` on every symbol it contains).
+    selects is [(TARGET, condition-or-None)] for each `select` line, which
+    is what forces a symbol on regardless of what .config says about it.
     Cached per-src so subsequent calls are free.
     """
     key = src.resolve().as_posix()
@@ -271,8 +273,11 @@ def _kconfig_index(src: Path) -> dict[str, dict]:
         return _KCONFIG_INDEX_CACHE[key]
 
     cfg_re = re.compile(r"^(?:menu)?config\s+([A-Za-z0-9_]+)\s*$")
+    # anything that ends a symbol's body besides the next symbol
+    block_re = re.compile(r"^(choice|endchoice|menu\b|endmenu|source\b|comment\b)")
     type_re = re.compile(r"^(bool|tristate|string|int|hex)\b")
     dep_re = re.compile(r"^depends on\s+(.*?)\s*$")
+    sel_re = re.compile(r"^select\s+([A-Za-z0-9_]+)(?:\s+if\s+(.+?))?\s*$")
     if_re = re.compile(r"^if\s+(.+?)\s*$")
     endif_re = re.compile(r"^endif\b")
 
@@ -303,10 +308,11 @@ def _kconfig_index(src: Path) -> dict[str, dict]:
             name = m.group(1)
             type_: str | None = None
             depends: list[str] = list(if_stack)  # inherit enclosing if-block deps
+            selects: list[tuple[str, str | None]] = []
             j = i + 1
             while j < n:
                 inner = lines[j].lstrip().rstrip()
-                if cfg_re.match(inner):
+                if cfg_re.match(inner) or block_re.match(inner):
                     break
                 # nested if/endif inside the symbol body — uncommon but possible
                 ifm2 = if_re.match(inner)
@@ -325,11 +331,15 @@ def _kconfig_index(src: Path) -> dict[str, dict]:
                 dm = dep_re.match(inner)
                 if dm:
                     depends.append(dm.group(1))
+                sm = sel_re.match(inner)
+                if sm:
+                    selects.append((sm.group(1), sm.group(2)))
                 j += 1
             # Last-writer-wins for duplicate declarations across architectures
             index[name] = {
                 "type": type_,
                 "depends_on": " && ".join(f"({d})" for d in depends) if depends else None,
+                "selects": selects,
                 "file": kfile.as_posix(),
                 "line": i + 1,
             }
@@ -342,6 +352,19 @@ def _kconfig_index(src: Path) -> dict[str, dict]:
 def _kmeta(define: str, index: dict[str, dict]) -> dict | None:
     name = define[len("CONFIG_"):] if define.startswith("CONFIG_") else define
     return index.get(name)
+
+
+def _enabled_selectors(define: str, index: dict[str, dict], state: dict[str, str]) -> list[str]:
+    """Symbols that `select` this one and are themselves on in `state`."""
+    name = define[len("CONFIG_"):]
+    found = []
+    for sym, meta in index.items():
+        if state.get(f"CONFIG_{sym}") not in ("y", "m"):
+            continue
+        for target, cond in meta["selects"]:
+            if target == name:
+                found.append(f"CONFIG_{sym}" + (f" (if {cond})" if cond else ""))
+    return found
 
 
 def _filter_spec_for_kernel(
@@ -705,12 +728,16 @@ def _resolve_and_verify_config(
     sspec: StrConfigSpec,
     build_dir: Path,
 ) -> None:
-    """Propagate Kconfig selects/choice via olddefconfig, then verify every
-    required symbol survived.
+    """Propagate Kconfig selects/choice via olddefconfig, then verify the
+    whole spec survived: required symbols are on, and symbols the spec turns
+    off stayed off.
 
     scripts/config is text-only: it cannot propagate `select X` from a parent
     symbol nor resolve choice blocks, so e.g. UNWINDER_FRAME_POINTER=y exists
-    in .config while FRAME_POINTER does not until olddefconfig runs.
+    in .config while FRAME_POINTER does not until olddefconfig runs. The
+    reverse also holds: `# CONFIG_X is not set` is overruled by any enabled
+    symbol that selects X, and the seed decides which of those are enabled.
+    An off-pin that was silently re-selected is reported with its selectors.
     """
     _make("olddefconfig", build_dir=build_dir)
 
@@ -727,12 +754,13 @@ def _resolve_and_verify_config(
 
     missing: list[tuple[str, str, str]] = []
     for define, opt in spec.items():
-        if not opt.required_state:
-            continue
-        want = "m" if opt.module else "y"
         got = state.get(define, "absent")
-        if got != want and not (want == "y" and got == "m"):
-            missing.append((define, want, got))
+        if opt.required_state:
+            want = "m" if opt.module else "y"
+            if got != want and not (want == "y" and got == "m"):
+                missing.append((define, want, got))
+        elif got in ("y", "m"):
+            missing.append((define, "n", got))
     for define, svalue in sspec.items():
         got = state.get(define, "absent")
         if got != svalue:
@@ -744,11 +772,22 @@ def _resolve_and_verify_config(
 
     if missing:
         index = _kconfig_index(_SOURCE_DIR)
-        eprint("WARNING: the following required symbols did not survive olddefconfig:")
+        eprint("WARNING: the following spec symbols did not survive olddefconfig:")
         for sym, want, got in missing:
             meta = _kmeta(sym, index)
             if meta is None:
                 eprint(f"  {sym}: not in Kconfig (removed?) — prune from spec")
+            elif want == "n":
+                selectors = _enabled_selectors(sym, index, state)
+                eprint(
+                    f"  {sym}: spec turns it off, got={got}; "
+                    + (
+                        f"selected by: {', '.join(selectors)}"
+                        if selectors
+                        else "no enabled selector — check its default and choice"
+                    )
+                    + f"  (defined at {meta['file']}:{meta['line']})"
+                )
             elif got == "absent" and meta.get("depends_on"):
                 eprint(
                     f"  {sym}: hidden by unmet dependency — depends on: "
@@ -760,9 +799,9 @@ def _resolve_and_verify_config(
                     f"(type={meta.get('type')}, depends_on={meta.get('depends_on')})"
                 )
         raise RuntimeError(
-            f"{len(missing)} required config symbol(s) missing after olddefconfig"
+            f"{len(missing)} spec config symbol(s) not honoured after olddefconfig"
         )
-    icp("olddefconfig validated — all required symbols are set")
+    icp("olddefconfig validated — every spec symbol holds")
 
 
 def generate_module_config_dict(path: Path):
@@ -5013,17 +5052,23 @@ def check_kernel_config(
     # distribution kernel built with USE=modules-sign carries
     # CONFIG_MODULE_SIG_KEY="${T}/kernel_key.pem", a path that only existed in
     # its build sandbox; certs/Makefile then fails with "No rule to make
-    # target .../kernel_key.pem". MODULE_SIG_KEY, MODULE_SIG_ALL and
-    # MODULE_SIG_FORCE all depend on MODULE_SIG, so this one symbol removes
-    # the whole group from the seed.
-    _spec_add(
-        spec,
+    # target .../kernel_key.pem". MODULE_SIG_KEY is visible while
+    # MODULE_SIG || (IMA_APPRAISE_MODSIG && MODULES), and SECURITY_LOCKDOWN_LSM
+    # does `select MODULE_SIG if MODULES`, which overrules a plain
+    # `# CONFIG_MODULE_SIG is not set` at olddefconfig. All three are off.
+    for _sym in (
+        "CONFIG_SECURITY_LOCKDOWN_LSM",
+        "CONFIG_IMA_APPRAISE_MODSIG",
         "CONFIG_MODULE_SIG",
-        required_state=False,
-        module=False,
-        warn=warn_only,
-        url=None,
-    )
+    ):
+        _spec_add(
+            spec,
+            _sym,
+            required_state=False,
+            module=False,
+            warn=warn_only,
+            url=None,
+        )
 
     # --- string config values ---
     # LOCALVERSION owns the kernel's identity: kernel.release =
